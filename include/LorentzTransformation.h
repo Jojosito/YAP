@@ -41,22 +41,66 @@ FourMatrix<T> lorentzTransformation(const ThreeMatrix<T>& R)
 /// \return a 4D Lorentz-transformation matrix for a pure boost
 /// \param V #FourVector defining boost
 template <typename T>
-FourMatrix<T> lorentzTransformation(const FourVector<T>& V)
+FourMatrix<T> lorentzTransformation(FourVector<T> V)
 {
-    FourVector<T> B = (T(1) / V[0]) * V;
-    T gamma = T(1) / abs(B);
-    B[0] = -(gamma + 1);
+    // jojosito
+    /*FourVector<T> B = (T(1) / V[0]) * V;
+    T gamma = T(1) / sqrt(T(1) - norm(vect(B)));
+    B *= sqrt(gamma - T(1));
+    B[0] = -sqrt(gamma + T(1));
 
-    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B) * (gamma / (gamma + 1));
-    L[0][0] -= gamma * gamma + 1;
+    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B);
+    //L[0][0] = gamma;
+    return L;*/
+
+    // paolo
+    V *= T(1) / V[0];
+    T scalarBeta = (T) sqrt( V[1]*V[1] + V[2]*V[2] + V[3]*V[3] );
+    T gamma = (T) 1 / sqrt( (T) 1 - scalarBeta*scalarBeta );
+    FourVector<T> B(
+            {
+        - gamma*scalarBeta/(gamma-1),
+                V[1]/scalarBeta,
+                V[2]/scalarBeta,
+                V[3]/scalarBeta
+            } );
+    B *= sqrt(gamma-T(1));
+
+    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B);
+    L[0][0] = gamma;
     return L;
+
+
+    /*T gamma = T(1) / abs(V);
+    FourVector<T> B = (gamma / V[0]) * V;
+    B[0] = 1;
+
+    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B);
+    L[0][0] = gamma;
+    return L;*/
 }
 
 /// \return a 4D Lorentz-transformation matrix for a pure boost
 /// \param V #ThreeVector defining boost
 template <typename T>
-constexpr FourMatrix<T> lorentzTransformation(const ThreeVector<T>& V)
-{ return lorentzTransformation<T>(FourVector<T>(T(1), V)); }
+FourMatrix<T> lorentzTransformation(const ThreeVector<T>& V)
+{
+    /*T gamma = T(1) / sqrt(T(1) - norm(V));
+    FourVector<T> B(T(1), gamma * V);
+
+    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B);
+    L[0][0] = gamma;
+    return L;*/
+
+    /*T gamma = T(1) / sqrt(T(1) - norm(V));
+    FourVector<T> B(T(1), V);
+
+    FourMatrix<T> L = unitMatrix<T, 4>() + outer(B, B);
+    L[0][0] = gamma;
+    return L;*/
+
+    return lorentzTransformation<T>(FourVector<T>(T(1), V));
+}
 
 /// \return a 4D Lorentz-transformation matrix for a pure boost
 /// \param fourVecs the sum of these define the boost

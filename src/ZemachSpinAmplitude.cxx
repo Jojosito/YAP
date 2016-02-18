@@ -84,6 +84,8 @@ std::complex<double> ZemachSpinAmplitude::calc(int two_M, int two_m1, int two_m2
     if (pcR->indices().size() == 1)
         std::swap(pcR, pcS);
 
+    FDEBUG("Resonance pc: " << to_string(*pcR) << "; spectator pc: " << to_string(*pcS));
+
     // get resonance four-momentum
     auto R4 = model()->fourMomenta().p(d, pcR);
     // get spectator four-momentum

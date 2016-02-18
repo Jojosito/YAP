@@ -35,7 +35,10 @@ void HelicityAngles::calculate(DataPoint& d, unsigned dataPartitionIndex)
     // call an ISP PC's
     for (auto& kv : symmetrizationIndices())
         if (kv.first->indices().size() == model()->finalStateParticles().size())
-            calculateAngles(d, kv.first, model()->coordinateSystem(), unitMatrix<double, 4>(), dataPartitionIndex);
+            calculateAngles(d, kv.first, model()->coordinateSystem(),
+                            //unitMatrix<double, 4>(),
+                            lorentzTransformation(model()->fourMomenta().finalStateMomenta(d)),
+                            dataPartitionIndex);
 }
 
 //-------------------------
@@ -72,12 +75,19 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<Particl
             Phi_->setValue(phi_theta[0], d, symIndex, dataPartitionIndex);
             Theta_->setValue(phi_theta[1], d, symIndex, dataPartitionIndex);
 
-            //DEBUG("calculated helicity angles: phi = " << phi_theta[0] << ", theta = " << phi_theta[1] << " for " << *pc);
+            DEBUG("calculated helicity angles: phi = " << phi_theta[0] << ", theta = " << phi_theta[1] << " for " << *pc);
         }
 
         // continue down the decay tree
         calculateAngles(d, daughter, cP, b, dataPartitionIndex);
     }
+}
+
+//-------------------------
+std::ostream& HelicityAngles::printHelicityAngles(const DataPoint& d, std::ostream& os) const
+{
+    /// \todo implement
+    return os;
 }
 
 //-------------------------

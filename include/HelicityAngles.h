@@ -96,6 +96,9 @@ public:
     virtual std::string data_accessor_type() const override
     {return "HelicityAngles"; }
 
+    /// print helicity angles
+    std::ostream& printHelicityAngles(const DataPoint& d, std::ostream& os = std::cout) const;
+
     /// grant friend status to Model to call addParticleCombination
     friend class Model;
 
