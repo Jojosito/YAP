@@ -81,4 +81,27 @@ const bool orderless_equal(const ParticleVector& A, const ParticleVector& B)
                        {return std::count(A.begin(), A.end(), p) == std::count(B.begin(), B.end(), p);});
 }
 
+//-------------------------
+const bool orderless_contains(const ParticleVector& needle, const ParticleVector& haystack)
+{
+    if (needle == haystack)
+        return true;
+    if (needle.size() >= haystack.size())
+        return false;
+    // create set
+    std::set<ParticleVector::value_type> S(needle.begin(), needle.end());
+    return std::all_of(S.begin(), S.end(), [&](const ParticleVector::value_type& p)
+                       {return std::count(needle.begin(), needle.end(), p) <= std::count(haystack.begin(), haystack.end(), p);});
+}
+
+//------------------------- 
+std::function<bool(const std::shared_ptr<Particle>&)> is_named(std::string name)
+{
+    return std::bind([name](const std::shared_ptr<Particle>& p)
+                     {return p->name() == name;},
+                     std::placeholders::_1);
+}
+
+
+
 }

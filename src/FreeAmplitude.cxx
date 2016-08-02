@@ -64,14 +64,6 @@ std::string to_string(const FreeAmplitude& fa)
 
 
 //-------------------------
-FreeAmplitudeSet find(const FreeAmplitudeSet& fas, int two_m)
-{
-    FreeAmplitudeSet S;
-    std::copy_if(fas.begin(), fas.end(), std::inserter(S, S.end()), [&two_m](const FreeAmplitudeSet::value_type & fa) {return fa->twoM() == two_m;});
-    return S;
-}
-
-//-------------------------
 FreeAmplitudeSet find(const FreeAmplitudeSet& fas, const DecayChannel* const dc)
 {
     FreeAmplitudeSet S;
