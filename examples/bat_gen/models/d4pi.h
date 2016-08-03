@@ -169,7 +169,16 @@ inline fit_fitFraction d4pi_fit_fitFraction()
     m.setPrior(free_amplitude(*M, from(a_1), to(rho), l_equals(2)), new BCGaussianPrior(0.241, quad(0.033, 0.024)), new BCGaussianPrior( 82., quad(5., 4.)));
     m.setPrior(free_amplitude(*M, from(a_1), to(sigma)),            new BCGaussianPrior(0.439, quad(0.026, 0.021)), new BCGaussianPrior(193., quad(4., 4.)));
 
-    // todo transform amplitudes and errors
+    // transform into angular momentum basis
+    basis::canonical<double> c(basis::transversity<double>(
+                                   std::polar(0.624, rad(357.)),    // A_longitudinal
+                                   std::polar(0.157, rad(120.)),    // A_parallel
+                                   std::polar(0.384, rad(163.)),    // A_perpendicular
+                                   /*diagonalMatrix<double, 3>({quad(0.027, 0.020),
+                                                              quad(0.020, 0.015),
+                                                              quad(0.023, 0.015)}) */));
+
+
     m.setPrior(free_amplitude(*M, to(rho), l_equals(0)), new BCGaussianPrior(0.157, quad(0.027, 0.020)), new BCGaussianPrior(120., quad(7., 8.)));
     m.setPrior(free_amplitude(*M, to(rho), l_equals(1)), new BCGaussianPrior(0.384, quad(0.020, 0.015)), new BCGaussianPrior(163., quad(3., 3.)));
     m.setPrior(free_amplitude(*M, to(rho), l_equals(2)), new BCGaussianPrior(0.624, quad(0.023, 0.015)), new BCGaussianPrior(357., quad(3., 3.)));
