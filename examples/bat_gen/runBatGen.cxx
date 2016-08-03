@@ -36,7 +36,7 @@ int main()
         // new bat_gen("DKSPIPI_Helicity", D_K0pi0pi0(std::make_unique<yap::HelicityFormalism>()))
         // new bat_gen("DKKPI", dkkpi(std::make_unique<yap::ZemachFormalism>()))
         // new bat_gen("DKKPI", dkkpi(std::make_unique<yap::HelicityFormalism>()))
-        new bat_gen("D4PI", d4pi(), {{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}})
+        new bat_gen("D4PI", d4pi_model(), {{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}})
     };
 
     for (bat_gen* m : test_models) {

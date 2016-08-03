@@ -28,12 +28,12 @@
 #include <chrono>
 #include <random>
 
-const double quad(std::vector<double> S)
+/*const double quad(std::vector<double> S)
 { return sqrt(std::accumulate(S.begin(), S.end(), 0., [](double a, double s) {return a + s * s;})); }
 
 template <typename ... Types>
 constexpr double quad(double s0, Types ... additional)
-{ return quad({s0, additional...}); }
+{ return quad({s0, additional...}); }*/
 
 int main()
 {
@@ -77,8 +77,10 @@ int main()
     // end timing
     auto end = std::chrono::steady_clock::now();
 
-    for (size_t i = 0; i < D->decayTrees().at(0).size(); ++i)
-        std::cout << i << " = " << to_string(*D->decayTrees().at(0)[i]) << std::endl;
+    auto isp = lone_elt(m.model()->initialStateParticles()).first;
+
+    for (size_t i = 0; i < isp->decayTrees().at(0).size(); ++i)
+        std::cout << i << " = " << to_string(*isp->decayTrees().at(0)[i]) << std::endl;
 
     m.PrintSummary();
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
