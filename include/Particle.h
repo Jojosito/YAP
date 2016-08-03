@@ -34,6 +34,7 @@
 #include "ParticleCombination.h"
 #include "QuantumNumbers.h"
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -139,6 +140,10 @@ inline std::string to_string(const ParticleVector& p)
 /// equality comparison
 /// doesn't care about order
 const bool orderless_equal(const ParticleVector& A, const ParticleVector& B);
+
+/// equality comparison, checks that haystack contains needle
+/// doesn't care about order
+const bool orderless_contains(const ParticleVector& needle, const ParticleVector& haystack);
 
 /// streamer
 inline std::ostream& operator<<(std::ostream& os, const Particle& p)

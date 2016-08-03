@@ -155,3 +155,4 @@ std::vector<std::vector<T> > combinations(const std::vector<T>& V, size_t n)
 { return combinations(V.begin(), V.end(), n); }
 
 #endif
+
