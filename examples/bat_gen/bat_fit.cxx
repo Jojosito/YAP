@@ -42,10 +42,10 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
         if (fa->variableStatus() == yap::VariableStatus::fixed)
             continue;
         // add amplitude parameter
-        AddParameter("amp(" + to_string(*fa->decayChannel()) + " M = " + yap::spin_to_string(fa->twoM()) + ")",
+        AddParameter("amp(" + to_string(*fa->decayChannel()) + " M = " + yap::spin_to_string(fa->twoM()) + ", L = " + std::to_string(fa->spinAmplitude()->L()) + ")",
                      1.e-3, 2 * norm(fa->value()));
         /// add phase parameter
-        AddParameter("phase(" + to_string(*fa->decayChannel()) + " M = " + yap::spin_to_string(fa->twoM()) + ")",
+        AddParameter("phase(" + to_string(*fa->decayChannel()) + " M = " + yap::spin_to_string(fa->twoM()) + ", L = " + std::to_string(fa->spinAmplitude()->L()) +  ")",
                      -180, 180);
         /// add free amplitude to list
         FreeAmplitudes_.push_back(fa);
@@ -57,7 +57,8 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     for (const auto& b2_dtvi : Integral_.integrals())
         for (const auto& dt : b2_dtvi.second.decayTrees()) {
             DecayTrees_.push_back(dt);
-            AddObservable("fit_frac(" + to_string(*dt->freeAmplitude()->decayChannel()) + " M = " + yap::spin_to_string(dt->freeAmplitude()->twoM()) + ")", 0, 1.1);
+            AddObservable("fit_frac(" + to_string(*dt->freeAmplitude()->decayChannel())
+                    + " M = " + to_string(*dt->freeAmplitude()->spinAmplitude()) +  ")", 0, 1.1);
         }
     CalculatedFitFractions_.assign(1, yap::RealIntegralElementVector(DecayTrees_.size()));
 }
