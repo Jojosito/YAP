@@ -112,6 +112,21 @@ const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtv
 }
 
 //-------------------------
+const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvi, const std::set<DecayTreeVectorIntegral>& dtvis)
+{
+    // total integral
+    auto I = integral(dtvi);
+
+    RealIntegralElementVector ff;
+
+    for (auto& dtvi : dtvis) {
+        auto i = integral(dtvi);
+        ff.push_back(i/I);
+    }
+    return ff;
+}
+
+//-------------------------
 const ComplexIntegralElementMatrix cached_integrals(const DecayTreeVectorIntegral& dtvi)
 {
     ComplexIntegralElementMatrix I(dtvi.decayTrees().size(), ComplexIntegralElementVector(dtvi.decayTrees().size()));

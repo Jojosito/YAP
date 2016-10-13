@@ -130,8 +130,11 @@ const RealIntegralElementVector diagonal_integrals(const DecayTreeVectorIntegral
 
 /// \return vector of fit fractions of DecayTree's in DecayTreeVectorIntegral
 /// \param dtvi DecayTreeVectorIntegral to retrieve values from
-const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvi);
+const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvis);
 
+/// \return vector of fit fractions of DecayTree's in DecayTreeVectorIntegral
+/// \param dtvi DecayTreeVectorIntegral to retrieve values from
+const RealIntegralElementVector fit_fractions(const std::set<DecayTreeVectorIntegral>& dtvi);
 
 }
 
