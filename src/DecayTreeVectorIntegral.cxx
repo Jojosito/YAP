@@ -112,15 +112,15 @@ const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtv
 }
 
 //-------------------------
-const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvi, const std::set<DecayTreeVectorIntegral>& dtvis)
+const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvi, const std::vector<DecayTreeVector>& dtvv)
 {
     // total integral
     auto I = integral(dtvi);
 
     RealIntegralElementVector ff;
 
-    for (auto& dtvi : dtvis) {
-        auto i = integral(dtvi);
+    for (auto& dtv : dtvv) {
+        auto i = integral(dtvi, dtv);
         ff.push_back(i/I);
     }
     return ff;
@@ -161,6 +161,32 @@ const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi)
         I += dtvi.integral(i);
         for (unsigned j = i + 1; j < dtvi.diagonals().size(); ++j)
             I += dtvi.integral(i, j);
+    }
+    return I;
+}
+
+//-------------------------
+const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi, const DecayTreeVector& dtv)
+{
+    auto dts = dtvi.decayTrees();
+
+    // find indices
+    std::vector<unsigned> indices;
+    for (auto dt : dtv) {
+        auto it = std::find(dts.begin(), dts.end(), dt);
+        if (it == dts.end())
+            throw exceptions::Exception("Trying to calculate integral for a DecayTree which is not in the DecayTreeVectorIntegral.", "integral");
+        indices.push_back(std::distance(dts.begin(), it));
+    }
+
+    RealIntegralElement I(0.);
+    for (auto i : indices) {
+        I += dtvi.integral(i);
+        for (auto j : indices) {
+            if (j <= i)
+                continue;
+            I += dtvi.integral(i, j);
+        }
     }
     return I;
 }
