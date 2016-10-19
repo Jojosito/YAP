@@ -37,7 +37,7 @@ int main()
 {
     yap::plainLogs(el::Level::Info);
 
-    unsigned i_model = 0;
+    unsigned i_model = 2;
 
     std::string model_name;
     switch (i_model) {
@@ -93,7 +93,7 @@ int main()
 
     // load fit data and partition it
     LOG(INFO) << "Load data";
-    load_data(m->fitData(), *m->model(), m->axes(), D_mass, *t_mcmc, 1e4);
+    load_data(m->fitData(), *m->model(), m->axes(), D_mass, *t_mcmc, 1e5);
     m->fitPartitions() = yap::DataPartitionBlock::create(m->fitData(), 4);
 
     // get FSP mass ranges
@@ -101,7 +101,7 @@ int main()
 
     // generate integration data
     std::mt19937 g(0);
-    unsigned n_integrationPoints = 2e4;
+    unsigned n_integrationPoints = 1e6;
     if (true) {
         m->integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m->model()), D_mass, m->axes(), m2r, g, std::numeric_limits<unsigned>::max());
         // m->setNIntegrationPoints(4e4, 4e4);
@@ -144,7 +144,7 @@ int main()
     // m->SetMinimumEfficiency(0.85);
     // m->SetMaximumEfficiency(0.99);
 
-    m->SetNIterationsRun(static_cast<int>(50e3 / m->GetNChains()));
+    m->SetNIterationsRun(static_cast<int>(1e5 / m->GetNChains()));
 
     // m->WriteMarkovChain("output/" + m->GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 
