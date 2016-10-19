@@ -26,7 +26,7 @@ int main()
 {
     yap::plainLogs(el::Level::Info);
 
-    unsigned i_model = 0;
+    unsigned i_model = 2;
 
     // create model
     std::string model_name;
