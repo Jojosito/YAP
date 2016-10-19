@@ -184,8 +184,8 @@ inline std::unique_ptr<Model> d4pi()
 
     LOG(INFO) << std::endl << "Free amplitudes: ";
     for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed()))
-        LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)";
-
+        LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
+            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")";
     return M;
 }
 
@@ -212,13 +212,15 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
         //double ab = abs(fa->value());
         //double ar = deg(arg(fa->value()));
         double rangeLo = 0.5;
-        double rangeHi = 1.5;
+        double rangeHi = 2.5;
         //m.setPriors(fa, new ConstantPrior(rangeLo*ab, rangeHi*ab),
         //        new ConstantPrior(ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360));
-        m.setRealImagRanges(fa, std::min(rangeLo*re, rangeHi*re), std::max(rangeLo*re, rangeHi*re),
-                std::min(rangeLo*im, rangeHi*im), std::max(rangeLo*im, rangeHi*im));
+        //m.setRealImagRanges(fa, std::min(rangeLo*re, rangeHi*re), std::max(rangeLo*re, rangeHi*re),
+        //        std::min(rangeLo*im, rangeHi*im), std::max(rangeLo*im, rangeHi*im));
         //m.setAbsArgRanges(fa, rangeLo*ab, rangeHi*ab,
          //       ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360);
+
+        m.setRealImagRanges(fa, -rangeHi*fabs(re), rangeHi*fabs(re), -rangeHi*fabs(im), rangeHi*fabs(im));
 /*
         if (++i%3 != 0) {
             m.fix(fa, abs(fa->value()), deg(arg(fa->value())));

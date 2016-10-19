@@ -35,10 +35,10 @@ int main()
     yap::plainLogs(el::Level::Info);
 
     // create bat_fit object
-    auto m = d3pi_fit_fitFractions("D3PI_frac_fit", yap_model<yap::ZemachFormalism>());
-    double D_mass = 1.86961;
-    //auto m = d4pi_fit_fitFraction();
-    //double D_mass = 1.8648400;
+    //auto m = d3pi_fit_fitFractions("D3PI_frac_fit", yap_model<yap::ZemachFormalism>());
+    //double D_mass = 1.86961;
+    auto m = d4pi_fit_fitFraction();
+    double D_mass = 1.8648400;
 
     FLOG(INFO) << "Created model";
 
