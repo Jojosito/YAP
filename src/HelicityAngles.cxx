@@ -13,9 +13,7 @@ namespace yap {
 
 //-------------------------
 HelicityAngles::HelicityAngles(Model& m) :
-    StaticDataAccessor(m, equal_up_and_down),
-    Phi_(RealCachedValue::create(*this)),
-    Theta_(RealCachedValue::create(*this))
+    StaticDataAccessor(m, equal_up_and_down)
 {
     registerWithModel();
 }
@@ -34,13 +32,13 @@ void HelicityAngles::addToStaticDataAccessors()
 //-------------------------
 double HelicityAngles::phi(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
 {
-    return Phi_->value(d, symmetrizationIndex(pc));
+    //return Phi_->value(d, symmetrizationIndex(pc));
 }
 
 //-------------------------
 double HelicityAngles::theta(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
 {
-    return Theta_->value(d, symmetrizationIndex(pc));
+    //return Theta_->value(d, symmetrizationIndex(pc));
 }
 
 //-------------------------
@@ -54,12 +52,14 @@ void HelicityAngles::calculate(DataPoint& d, StatusManager& sm) const
     for (auto& kv : symmetrizationIndices())
         if (not kv.first->parent())
             calculateAngles(d, kv.first, model()->coordinateSystem(), unitMatrix<double, 4>(), sm);
+
+    cachedForDataPoint_[&sm] = &d;
 }
 
 //-------------------------
 void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc,
                                      const CoordinateSystem<double, 3>& C, const FourMatrix<double>& boosts,
-                                     StatusManager& sm) const
+                                     const StatusManager& sm) const
 {
     // terminate recursion
     if (is_final_state_particle_combination(*pc))
@@ -81,7 +81,7 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const P
     for (auto& daughter : pc->daughters()) {
 
         // if unset, calculate and set angles of parent to first daughter's
-        if (sm.status(*Phi_, symIndex) == CalculationStatus::uncalculated or sm.status(*Theta_, symIndex) == CalculationStatus::uncalculated) {
+        //if (sm.status(*Phi_, symIndex) == CalculationStatus::uncalculated or sm.status(*Theta_, symIndex) == CalculationStatus::uncalculated) {
 
             // boost daughter momentum from data frame into pc rest frame
             const auto p = boost_boosts * model()->fourMomenta()->p(d, daughter);
@@ -94,9 +94,8 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const P
             if (std::isnan(phi_theta[0]))
                 phi_theta[0] = phi_theta[1];
 
-            Phi_->setValue(phi_theta[0], d, symIndex, sm);
-            Theta_->setValue(phi_theta[1], d, symIndex, sm);
-        }
+            cachedAngles_[&sm][symIndex] = phi_theta;
+        //}
 
         // recurse down the decay tree
         calculateAngles(d, daughter, cP, boost, sm);
