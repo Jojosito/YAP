@@ -9,6 +9,8 @@
 #include "ParticleCombination.h"
 #include "StatusManager.h"
 
+#include "logging.h"
+
 namespace yap {
 
 //-------------------------
@@ -16,6 +18,7 @@ HelicityAngles::HelicityAngles(Model& m) :
     StaticDataAccessor(m, equal_up_and_down)
 {
     registerWithModel();
+    addToStaticDataAccessors();
 }
 
 //-------------------------
@@ -42,8 +45,7 @@ const std::array<double, 2>& HelicityAngles::helicityAngles(const DataPoint& d, 
 //-------------------------
 void HelicityAngles::calculate(DataPoint& d, StatusManager& sm) const
 {
-    // set angles uncalculated
-    sm.set(*this, CalculationStatus::uncalculated);
+    DEBUG("HelicityAngles::calculate");
 
     // call on ISP PC's
     // \todo allow for designating the boost that takes from the data frame to the lab frame (possibly event dependent)
@@ -78,22 +80,18 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const P
 
     for (auto& daughter : pc->daughters()) {
 
-        // if unset, calculate and set angles of parent to first daughter's
-        //if (sm.status(*Phi_, symIndex) == CalculationStatus::uncalculated or sm.status(*Theta_, symIndex) == CalculationStatus::uncalculated) {
+        // boost daughter momentum from data frame into pc rest frame
+        const auto p = boost_boosts * model()->fourMomenta()->p(d, daughter);
 
-            // boost daughter momentum from data frame into pc rest frame
-            const auto p = boost_boosts * model()->fourMomenta()->p(d, daughter);
+        auto phi_theta = angles<double>(vect<double>(p), cP);
 
-            auto phi_theta = angles<double>(vect<double>(p), cP);
+        // set ambiguous phi to theta
+        // todo: in this cases, theta should be 0 or pi. In most cases it is, but sometimes not.
+        // Not checking if theta == 0 or pi results in tests passing which would otherwise not
+        if (std::isnan(phi_theta[0]))
+            phi_theta[0] = phi_theta[1];
 
-            // set ambiguous phi to theta
-            // todo: in this cases, theta should be 0 or pi. In most cases it is, but sometimes not.
-            // Not checking if theta == 0 or pi results in tests passing which would otherwise not
-            if (std::isnan(phi_theta[0]))
-                phi_theta[0] = phi_theta[1];
-
-            cachedAngles_[&sm][symIndex] = phi_theta;
-        //}
+        cachedAngles_[&sm][symIndex] = phi_theta;
 
         // recurse down the decay tree
         calculateAngles(d, daughter, cP, boost, sm);
