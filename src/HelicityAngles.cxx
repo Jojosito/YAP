@@ -30,15 +30,13 @@ void HelicityAngles::addToStaticDataAccessors()
 }
 
 //-------------------------
-double HelicityAngles::phi(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
+const std::array<double, 2>& HelicityAngles::helicityAngles(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
 {
-    //return Phi_->value(d, symmetrizationIndex(pc));
-}
+    for (auto& kv : cachedForDataPoint_)
+        if (kv.second == &d)
+            return cachedAngles_.at(kv.first).at(symmetrizationIndex(pc));
 
-//-------------------------
-double HelicityAngles::theta(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
-{
-    //return Theta_->value(d, symmetrizationIndex(pc));
+    throw exceptions::Exception("HelicityAngles have not been cached for given DataPoint", "HelicityAngles::angles");
 }
 
 //-------------------------

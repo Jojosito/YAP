@@ -69,11 +69,8 @@ public:
     /// \param sm StatusManager to update
     virtual void calculate(DataPoint& d, StatusManager& sm) const override;
 
-    /// get azimuthal angle
-    double phi(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const;
-
-    /// get polar angle
-    double theta(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const;
+    /// get helicity angles
+    const std::array<double, 2>& helicityAngles(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const;
 
     /// grant friend status to Model to call addParticleCombination
     friend class Model;
