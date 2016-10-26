@@ -18,6 +18,9 @@ HelicityAngles::HelicityAngles(Model& m) :
     StaticDataAccessor(m, equal_up_and_down)
 {
     registerWithModel();
+
+    // HelicityAngles will not be added to StaticDataAccessors by registerWithModel,
+    // since it has size 0. So we need to add it manually here
     addToStaticDataAccessors();
 }
 
@@ -45,8 +48,6 @@ const std::array<double, 2>& HelicityAngles::helicityAngles(const DataPoint& d, 
 //-------------------------
 void HelicityAngles::calculate(DataPoint& d, StatusManager& sm) const
 {
-    DEBUG("HelicityAngles::calculate");
-
     // call on ISP PC's
     // \todo allow for designating the boost that takes from the data frame to the lab frame (possibly event dependent)
     for (auto& kv : symmetrizationIndices())
