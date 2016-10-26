@@ -130,7 +130,7 @@ TEST_CASE( "HelicityAngles_boostRotate" )
             // compare results
             for (auto& pc_i : M.helicityAngles()->symmetrizationIndices())
                 if (pc_i.first->indices().size() < M.finalStateParticles().size())
-                    resultingThetas[pc_i.first].push_back(M.helicityAngles()->theta(dp, pc_i.first));
+                    resultingThetas[pc_i.first].push_back(M.helicityAngles()->helicityAngles(dp, pc_i.first)[1]);
         }
 
 

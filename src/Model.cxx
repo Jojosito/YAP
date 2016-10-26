@@ -324,6 +324,8 @@ void Model::lock()
     // prune remaining DataAccessor's
     for (auto& D : DataAccessors_)
         D->pruneSymmetrizationIndices();
+    for (auto& D : StaticDataAccessors_)
+        D->pruneSymmetrizationIndices();
 
     // remove data accessors from list that don't need storage
     for (auto it = DataAccessors_.begin(); it != DataAccessors_.end(); ) {

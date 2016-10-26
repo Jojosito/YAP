@@ -80,8 +80,8 @@ TEST_CASE( "HelicityAngles" )
 {
 
     // disable debug logs in test
-    yap::disableLogs(el::Level::Debug);
-    //yap::plainLogs(el::Level::Debug);
+    //yap::disableLogs(el::Level::Debug);
+    yap::plainLogs(el::Level::Debug);
 
     // use common radial size for all resonances
     double radialSize = 3.; // [GeV^-1]
@@ -134,8 +134,9 @@ TEST_CASE( "HelicityAngles" )
         // boost into total rest frame
         momenta = lorentzTransformation(-momenta) * momenta;
 
-        data.push_back(momenta);
-        const auto dp = data.back();
+        data.addEmptyDataPoints(1);
+        auto dp = data.back();
+        M.setFinalStateMomenta(dp, momenta, data);
 
         yap::ParticleCombinationMap<std::array<double, 2> > phi_theta;
 
@@ -147,8 +148,9 @@ TEST_CASE( "HelicityAngles" )
 
         // compare results
         for (auto& kv : phi_theta) {
-            REQUIRE( cos(M.helicityAngles()->phi(dp, kv.first))   == Approx(cos(kv.second[0])) );
-            REQUIRE( M.helicityAngles()->theta(dp, kv.first) == Approx(kv.second[1]) );
+            DEBUG("dp = " << &dp);
+            REQUIRE( cos(M.helicityAngles()->helicityAngles(dp, kv.first)[0])   == Approx(cos(kv.second[0])) );
+            REQUIRE( M.helicityAngles()->helicityAngles(dp, kv.first)[1] == Approx(kv.second[1]) );
         }
     }
 }
