@@ -124,16 +124,13 @@ TEST_CASE( "HelicityAngles_boostRotate" )
                 }
             }
 
-            data.addEmptyDataPoints(1);
+            data.push_back(momenta);
             auto dp = data.back();
-            M.setFinalStateMomenta(dp, momenta, data);
 
             // compare results
             // \todo do w/o symIndices
-           /* for (auto& pc_i : M.helicityAngles().symmetrizationIndices())
-                if (pc_i.first->indices().size() < M.finalStateParticles().size())
-                    resultingThetas[pc_i.first].push_back(M.helicityAngles().helicityAngles(dp, pc_i.first)[1]);
-                    */
+            for (auto& pc_rho : rho->particleCombinations())
+                resultingThetas[pc_rho].push_back(M.helicityAngles().helicityAngles(dp, data, pc_rho)[1]);
         }
 
 
