@@ -19,20 +19,15 @@ namespace yap {
 //-------------------------
 const std::array<double, 2>& HelicityAngles::helicityAngles(const DataPoint& d, const StatusManager& sm, const std::shared_ptr<const ParticleCombination>& pc) const
 {
-    DEBUG("HelicityAngles::helicityAngles for DataPoint " << &d << " and pc " << to_string(*pc));
-
     // check if DataPoint is currently in cache
     if (cachedForDataPoint_[&sm] == &d) {
         // find entry
         for (const auto& kv : cachedAngles_[&sm])
-            if (equal_up_and_down(kv.first, pc)) {
-                DEBUG("return cached value (" << kv.second[0] << ", " << kv.second[1] << ")");
+            if (equal_up_and_down(kv.first, pc))
                 return kv.second;
-            }
     }
     else {
         // reset and clear
-        DEBUG("Reset for new DataPoint " << &d);
         cachedForDataPoint_[&sm] = nullptr;
         cachedAngles_[&sm].clear();
     }
@@ -53,8 +48,6 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
     if (is_final_state_particle_combination(*pc))
         return;
 
-    DEBUG("HelicityAngles::calculateAngles for pc " << to_string(*pc));
-
     // get pc's 4-mom in data frame
     const auto P = Model_->fourMomenta()->p(d, pc);
 
@@ -63,10 +56,9 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
 
     // calculate boost from data frame into pc rest frame
     const auto boost = lorentzTransformation(-(boosts * P));
-    const auto boost_boosts = boost * boosts;
 
     // boost daughter momentum from data frame into pc rest frame
-    const auto p = boost_boosts * Model_->fourMomenta()->p(d, pc->daughters()[0]);
+    const auto p = boost * boosts * Model_->fourMomenta()->p(d, pc->daughters()[0]);
 
     auto phi_theta = angles<double>(vect<double>(p), cP);
 
@@ -77,7 +69,6 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
         phi_theta[0] = phi_theta[1];
 
     cachedAngles_.at(&sm)[pc] = phi_theta;
-    DEBUG("  = (" << cachedAngles_.at(&sm).at(pc)[0] << ", " << cachedAngles_.at(&sm).at(pc)[1] << ")  \tfor " << to_string(*pc));
 
     for (auto& daughter : pc->daughters())
         // recurse down the decay tree
