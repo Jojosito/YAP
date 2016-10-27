@@ -134,9 +134,8 @@ TEST_CASE( "HelicityAngles" )
         // boost into total rest frame
         momenta = lorentzTransformation(-momenta) * momenta;
 
-        data.addEmptyDataPoints(1);
+        data.push_back(momenta);
         auto dp = data.back();
-        M.setFinalStateMomenta(dp, momenta, data);
 
         yap::ParticleCombinationMap<std::array<double, 2> > phi_theta;
 
@@ -148,9 +147,8 @@ TEST_CASE( "HelicityAngles" )
 
         // compare results
         for (auto& kv : phi_theta) {
-            DEBUG("dp = " << &dp);
-            //REQUIRE( cos(M.helicityAngles().helicityAngles(dp, kv.first)[0])   == Approx(cos(kv.second[0])) );
-            REQUIRE( M.helicityAngles().helicityAngles(dp, kv.first)[1] == Approx(kv.second[1]) );
+            REQUIRE( cos(M.helicityAngles().helicityAngles(dp, data, kv.first)[0])   == Approx(cos(kv.second[0])) );
+            REQUIRE( M.helicityAngles().helicityAngles(dp, data, kv.first)[1] == Approx(kv.second[1]) );
         }
     }
 }

@@ -19,17 +19,20 @@ namespace yap {
 //-------------------------
 const std::array<double, 2>& HelicityAngles::helicityAngles(const DataPoint& d, const StatusManager& sm, const std::shared_ptr<const ParticleCombination>& pc) const
 {
-    DEBUG("HelicityAngles::helicityAngles for DataPoint " << &d);
+    DEBUG("HelicityAngles::helicityAngles for DataPoint " << &d << " and pc " << to_string(*pc));
 
     // check if DataPoint is currently in cache
     if (cachedForDataPoint_[&sm] == &d) {
         // find entry
         for (const auto& kv : cachedAngles_[&sm])
-            if (equal_up_and_down(kv.first, pc))
+            if (equal_up_and_down(kv.first, pc)) {
+                DEBUG("return cached value (" << kv.second[0] << ", " << kv.second[1] << ")");
                 return kv.second;
+            }
     }
     else {
         // reset and clear
+        DEBUG("Reset for new DataPoint " << &d);
         cachedForDataPoint_[&sm] = nullptr;
         cachedAngles_[&sm].clear();
     }
@@ -50,6 +53,8 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
     if (is_final_state_particle_combination(*pc))
         return;
 
+    DEBUG("HelicityAngles::calculateAngles for pc " << to_string(*pc));
+
     // get pc's 4-mom in data frame
     const auto P = Model_->fourMomenta()->p(d, pc);
 
@@ -60,25 +65,23 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
     const auto boost = lorentzTransformation(-(boosts * P));
     const auto boost_boosts = boost * boosts;
 
-    for (auto& daughter : pc->daughters()) {
+    // boost daughter momentum from data frame into pc rest frame
+    const auto p = boost_boosts * Model_->fourMomenta()->p(d, pc->daughters()[0]);
 
-        // boost daughter momentum from data frame into pc rest frame
-        const auto p = boost_boosts * Model_->fourMomenta()->p(d, daughter);
+    auto phi_theta = angles<double>(vect<double>(p), cP);
 
-        auto phi_theta = angles<double>(vect<double>(p), cP);
+    // set ambiguous phi to theta
+    // todo: in this cases, theta should be 0 or pi. In most cases it is, but sometimes not.
+    // Not checking if theta == 0 or pi results in tests passing which would otherwise not
+    if (std::isnan(phi_theta[0]))
+        phi_theta[0] = phi_theta[1];
 
-        // set ambiguous phi to theta
-        // todo: in this cases, theta should be 0 or pi. In most cases it is, but sometimes not.
-        // Not checking if theta == 0 or pi results in tests passing which would otherwise not
-        if (std::isnan(phi_theta[0]))
-            phi_theta[0] = phi_theta[1];
+    cachedAngles_.at(&sm)[pc] = phi_theta;
+    DEBUG("  = (" << cachedAngles_.at(&sm).at(pc)[0] << ", " << cachedAngles_.at(&sm).at(pc)[1] << ")  \tfor " << to_string(*pc));
 
-        cachedAngles_.at(&sm)[pc] = phi_theta;
-        DEBUG("calc'd " << cachedAngles_[&sm][symIndex][0]);
-
+    for (auto& daughter : pc->daughters())
         // recurse down the decay tree
         calculateAngles(d, sm, daughter, cP, boost);
-    }
 }
 
 }
