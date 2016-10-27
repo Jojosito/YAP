@@ -11,6 +11,8 @@
 
 #include "logging.h"
 
+#include <assert.h>
+
 namespace yap {
 
 //-------------------------
@@ -53,8 +55,14 @@ void HelicityAngles::calculate(DataPoint& d, StatusManager& sm) const
     cachedForDataPoint_[&sm] = nullptr;
 
     static const std::array<double,2> nans({nan(""), nan("")});
-    for (auto& angles : cachedAngles_[&sm])
+    if (cachedAngles_[&sm].empty())
+        for (unsigned i=0; i<nSymmetrizationIndices(); ++i)
+            cachedAngles_[&sm][i] = nans;
+    for (auto& angles : cachedAngles_[&sm]) {
         angles.second = nans;
+        assert(isnan(angles.second[0]));
+        DEBUG("set to nan");
+    }
 
     // call on ISP PC's
     // \todo allow for designating the boost that takes from the data frame to the lab frame (possibly event dependent)
@@ -90,7 +98,7 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const P
 
     for (auto& daughter : pc->daughters()) {
 
-        auto& cache = cachedAngles_[&sm][symIndex];
+        auto& cache = cachedAngles_.at(&sm).at(symIndex);
         if (isnan(cache[0])) {
             // boost daughter momentum from data frame into pc rest frame
             const auto p = boost_boosts * model()->fourMomenta()->p(d, daughter);
@@ -104,6 +112,10 @@ void HelicityAngles::calculateAngles(DataPoint& d, const std::shared_ptr<const P
                 phi_theta[0] = phi_theta[1];
 
             cache = phi_theta;
+            DEBUG("calc'd " << cachedAngles_[&sm][symIndex][0]);
+        }
+        else {
+            DEBUG("already calc'd");
         }
 
         // recurse down the decay tree

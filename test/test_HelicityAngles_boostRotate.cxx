@@ -124,8 +124,9 @@ TEST_CASE( "HelicityAngles_boostRotate" )
                 }
             }
 
-            data.push_back(momenta);
-            const auto dp = data.back();
+            data.addEmptyDataPoints(1);
+            auto dp = data.back();
+            M.setFinalStateMomenta(dp, momenta, data);
 
             // compare results
             for (auto& pc_i : M.helicityAngles()->symmetrizationIndices())
