@@ -80,8 +80,8 @@ TEST_CASE( "HelicityAngles" )
 {
 
     // disable debug logs in test
-    //yap::disableLogs(el::Level::Debug);
-    yap::plainLogs(el::Level::Debug);
+    yap::disableLogs(el::Level::Debug);
+    //yap::plainLogs(el::Level::Debug);
 
     // use common radial size for all resonances
     double radialSize = 3.; // [GeV^-1]
@@ -135,7 +135,7 @@ TEST_CASE( "HelicityAngles" )
         momenta = lorentzTransformation(-momenta) * momenta;
 
         data.push_back(momenta);
-        auto dp = data.back();
+        const auto dp = data.back();
 
         yap::ParticleCombinationMap<std::array<double, 2> > phi_theta;
 
