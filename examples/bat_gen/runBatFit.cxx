@@ -48,37 +48,42 @@ int main()
             model_name = "DKKPI";
             break;
         case 2:
-            model_name = "D4PI";
+            model_name = "D4PI_data";
             break;
         default:
             throw yap::exceptions::Exception("No valid model requested.", "runBatFit::main");
     }
 
     // open file
-    auto file = TFile::Open(("output/" + model_name + "_mcmc.root").data(), "READ");
+    //auto file = TFile::Open(("output/" + model_name + "_mcmc.root").data(), "READ");
+    auto file = TFile::Open("/nfs/hicran/project/belle/users/jrauch/CopiedFromKEK/DataSkim_0000_analysis.root ", "READ");
     if (file->IsZombie())
         throw yap::exceptions::Exception("could not open file", "main");
 
     TTree* t_mcmc = nullptr;
-    file->GetObject((model_name + "_mcmc").data(), t_mcmc);
+    //file->GetObject((model_name + "_mcmc").data(), t_mcmc);
+    file->GetObject("t", t_mcmc);
     if (!t_mcmc)
         throw yap::exceptions::Exception("could not retrieve mcmc tree", "main");
+    t_mcmc->Print();
 
-    TTree* t_pars = nullptr;
+
+    /*TTree* t_pars = nullptr;
     file->GetObject((model_name + "_parameters").data(), t_pars);
     if (!t_pars)
         throw yap::exceptions::Exception("could not retrieve mcmc tree", "main");
+     */
 
     // create model
     bat_fit* m = nullptr;
     double D_mass(0);
     switch (i_model) {
         case 0:
-            m = new bat_fit(d3pi_fit(model_name + "_fit", yap_model<yap::ZemachFormalism>(), find_mass_axes(*t_pars)));
+            //m = new bat_fit(d3pi_fit(model_name + "_fit", yap_model<yap::ZemachFormalism>(), find_mass_axes(*t_pars)));
             D_mass = 1.86961; // D+
             break;
         case 1:
-            m = new bat_fit(dkkpi_fit(model_name + "_fit", yap_model<yap::HelicityFormalism>(), find_mass_axes(*t_pars)));
+            //m = new bat_fit(dkkpi_fit(model_name + "_fit", yap_model<yap::HelicityFormalism>(), find_mass_axes(*t_pars)));
             D_mass = 1.86961; // D+
             break;
         case 2:
@@ -93,7 +98,7 @@ int main()
 
     // load fit data and partition it
     LOG(INFO) << "Load data";
-    load_data(m->fitData(), *m->model(), m->axes(), D_mass, *t_mcmc, 1e5);
+    load_data(m->fitData(), *m->model(), m->axes(), D_mass, *t_mcmc, 100000, 0);
     m->fitPartitions() = yap::DataPartitionBlock::create(m->fitData(), 4);
 
     // get FSP mass ranges
