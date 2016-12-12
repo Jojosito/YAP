@@ -33,10 +33,14 @@
 #include <RelativisticBreitWigner.h>
 #include <SpinAmplitudeCache.h>
 
+#include <DTo4piStructs.h>
+
 #include <BAT/BCAux.h>
 #include <BAT/BCGaussianPrior.h>
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
+
+#include <TTree.h>
 
 #include <complex>
 #include <memory>
