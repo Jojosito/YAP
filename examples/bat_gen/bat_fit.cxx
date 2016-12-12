@@ -24,11 +24,6 @@
 #include <TTree.h>
 
 #include <algorithm>
-#include <assert.h>
-
-#include <DTo4piStructs.h>
-
-
 
 // -----------------------
 bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vector<std::vector<unsigned> >& pcs)
@@ -138,11 +133,11 @@ std::vector<std::vector<unsigned> > find_mass_axes(TTree& t_pars)
 
 //-------------------------
 void set_address(const yap::MassAxes::value_type& a,
-                 std::vector<float>& m2,
+                 std::vector<double>& m2,
                  TTree& t_mcmc)
 {
     m2.push_back(0);
-    assert(t_mcmc.SetBranchAddress(indices_string(*a, "m2_", "").data(), &m2.back()) == 0);
+    t_mcmc.SetBranchAddress(indices_string(*a, "m2_", "").data(), &m2.back());
 }
 
 //-------------------------
@@ -152,15 +147,26 @@ size_t load_data(yap::DataSet& data, const yap::Model& M, const yap::MassAxes& A
         throw yap::exceptions::Exception("mass axes empty", "load_data");
 
     // set branch addresses
-    EVENT* E;
-    t_mcmc.SetBranchAddress("E", &E);
-
     std::vector<double> m2;
+    m2.reserve(A.size());
+    std::for_each(A.begin(), A.end(), std::bind(set_address, std::placeholders::_1, std::ref(m2), std::ref(t_mcmc)));
+    if (m2.size() != A.size())
+        throw yap::exceptions::Exception("not all mass axes loaded from TTree", "load_data");
+
+    //
+    // load data
+    //
+    int Phase = -1;
+    t_mcmc.SetBranchAddress("Phase", &Phase);
+    unsigned Iteration;
+    t_mcmc.SetBranchAddress("Iteration", &Iteration);
+    unsigned Chain;
+    t_mcmc.SetBranchAddress("Chain", &Chain);
 
     unsigned long long n_entries = t_mcmc.GetEntries();
 
 
-    if (N <= 0)
+    if (N < 0)
         // attempt to load all data
         N = n_entries;
 
@@ -173,19 +179,13 @@ size_t load_data(yap::DataSet& data, const yap::Model& M, const yap::MassAxes& A
     size_t old_size = data.size();
 
     for (unsigned long long n = 0; n < n_entries and n_attempted < N; ++n) {
-        LOG(INFO) << "GetEntry " << n;
-
         t_mcmc.GetEntry(n);
 
-        m2.clear();
-        m2.push_back(E->m2_01);
-        m2.push_back(E->m2_12);
-        m2.push_back(E->m2_23);
-        m2.push_back(E->m2_02);
-        m2.push_back(E->m2_13);
+        if (Phase <= 0)
+            continue;
 
-        //if (Iteration % lag != 0)
-          //  continue;
+        if (Iteration % lag != 0)
+            continue;
 
         // if (fabs(m2[0] - 1.35 * 1.35) > 0.1 or m2[1] > 1.55 or m2[1] < 0.58)
         //     continue;
@@ -193,11 +193,8 @@ size_t load_data(yap::DataSet& data, const yap::Model& M, const yap::MassAxes& A
         ++n_attempted;
 
         auto P = calculate_four_momenta(initial_mass, M, A, m2);
-        if (P.empty()) {
-            std::cout << "point is out of phase space!\n";
-           // exit(0);
-            continue;
-        }
+        if (P.empty())
+            std::cout << "point is out of phase space!";
         data.push_back(P);
     }
 
