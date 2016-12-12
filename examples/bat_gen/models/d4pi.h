@@ -60,6 +60,65 @@ double scale_f_2_pipi    = 12.687283302;
 double scale_sigma_pipi  = 0.204794164 ;
 
 
+//-------------------------
+size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, double BDT_cut, bool mc_phasespace_only = false)
+{
+    // set branch addresses
+    EVENT* E = nullptr;
+    t.SetBranchAddress("E", &E);
+
+    TRUTH* T = nullptr;
+    t.SetBranchAddress("T", &t);
+
+    double BDT;
+    t.SetBranchAddress("BDT", &BDT);
+
+    unsigned long long old_size = data.size();
+    unsigned long long n_entries = t.GetEntries();
+
+    if (N <= 0) // attempt to load all data
+        N = n_entries;
+
+    int n_loaded = 0;
+
+    std::vector<yap::FourVector<double>> P;
+
+    for (unsigned long long n = 0; n < n_entries and n_loaded < N; ++n) {
+        t.GetEntry(n);
+
+        if (BDT < BDT_cut)
+            continue;
+
+        if (mc_phasespace_only)
+            if (not T->mc_good_D0 and not T->mc_direct_4pi)
+                continue;
+
+        P.clear();
+        P.push_back(convert(E->mom_piPlus1));
+        P.push_back(convert(E->mom_piMinus1));
+        P.push_back(convert(E->mom_piPlus2));
+        P.push_back(convert(E->mom_piMinus2));
+
+        data.push_back(P);
+        ++n_loaded;
+    }
+
+    if (data.size() == old_size)
+        LOG(INFO) << "No data loaded.";
+    else {
+        LOG(INFO) << "Loaded " << data.size() - old_size << " data points (" << ((data.size() - old_size) * data[0].bytes() * 1.e-6) << " MB)"
+                << " from a tree of size " << n_entries;
+        if (old_size != 0)
+            LOG(INFO) << "Total data size now " << data.size() << " points (" << (data.bytes() * 1.e-6) << " MB)";
+    }
+
+    if (int(data.size() - old_size) < N)
+        LOG(WARNING) << "could not load as many data points as requested.";
+
+    return data.size() - old_size;
+}
+
+
 inline std::unique_ptr<Model> d4pi()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
