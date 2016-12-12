@@ -10,21 +10,13 @@
 #include "tools.h"
 
 #include <Exceptions.h>
-#include <HelicityFormalism.h>
-#include <MassRange.h>
-#include <PHSP.h>
-#include <RelativisticBreitWigner.h>
-#include <ZemachFormalism.h>
 #include <logging.h>
-#include <make_unique.h>
 
 #include <BAT/BCAux.h>
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
 
-#include <TCanvas.h>
 #include <TChain.h>
-#include <TEventList.h>
 #include <TFile.h>
 #include <TTree.h>
 
@@ -45,9 +37,8 @@ int main()
 
     // MC data
     TChain* t_mcmc = new TChain("t");
-    // stream 1
-    t_mcmc->Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_s01_??_analysis.root");
-    t_mcmc->AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/");
+    t_mcmc->Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_s0?_analysis.root");
+    t_mcmc->AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_analysis_TMVA_weights.root");
 
     double BDT_cut = 0.2;
 
@@ -62,6 +53,7 @@ int main()
 
 
     // load integration (MC) data
+    LOG(INFO) << "Load integration (MC) data";
     load_data_4pi(m->integralData(), *t_mcmc, 200000, BDT_cut, true);
     m->integralPartitions() = yap::DataPartitionBlock::create(m->integralData(), 4);
 
