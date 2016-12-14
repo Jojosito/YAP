@@ -40,6 +40,8 @@
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
 
+#include <TDirectory.h>
+#include <TEventList.h>
 #include <TTree.h>
 
 #include <complex>
@@ -76,15 +78,22 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
     TRUTH* T = nullptr;
     if (mc_phasespace_only)
         t.SetBranchAddress("T", &T);
-
-    double BDT;
-    t.SetBranchAddress("BDT", &BDT);
+    else
+        t.SetBranchStatus("T", 0);
 
     const unsigned long long old_size = data.size();
     const unsigned long long n_entries = t.GetEntries();
 
+    // get event list (apply BDT cut), speeds up loading
+    t.Draw(">>eventList", ("BDT >= " + std::to_string(BDT_cut)).c_str(), "");
+    auto eventList = (TEventList*)gDirectory->Get("eventList");
+    LOG(INFO) << eventList->GetN() << " events after BDT cut";
+    auto eventListArray = eventList->GetList();
+
+    t.SetBranchStatus("BDT", 0);
+
     if (N <= 0) // attempt to load all data
-        N = n_entries;
+        N = eventList->GetN();
 
     data.reserve(N);
 
@@ -96,18 +105,12 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
     // get K0 mass
     const double K0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["K0"].mass();
 
+    for (long i=0; i<eventList->GetN(); ++i) {
+        unsigned long long n = eventListArray[i];
 
-    for (unsigned long long n = 0; n < n_entries and n_loaded < N; ++n) {
         DEBUG("try to load entry " << n << " (entries loaded so far: " << n_loaded << ")");
         if (t.GetEntry(n) < 1) {
             LOG(INFO) << "could not load entry " << n;
-            continue;
-        }
-
-
-        // BDT cut
-        if (BDT < BDT_cut) {
-            DEBUG("  BDT cut");
             continue;
         }
 
@@ -147,10 +150,12 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
         P.push_back(convert(E->mom_piMinus2));
 
         data.push_back(P);
-        ++n_loaded;
+
+        if (++n_loaded >= N)
+            break;
         DEBUG("  Loaded");
 
-        if (n_loaded%100 == 1)
+        if (n_loaded%100 == 0)
             std::cout << "\r" << 100. * n_loaded/N << "%                           ";
     }
 
