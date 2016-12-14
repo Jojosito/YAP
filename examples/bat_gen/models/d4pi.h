@@ -65,38 +65,81 @@ double scale_sigma_pipi  = 0.204794164 ;
 
 
 //-------------------------
-size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, double BDT_cut, bool mc_phasespace_only = false)
+size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
+                     const double K0_cut = 0, // cut away events with pi+pi- mass within +-K0_cut around K0 mass
+                     const bool mc_phasespace_only = false) // only load phasespace MC events
 {
     // set branch addresses
     EVENT* E = nullptr;
     t.SetBranchAddress("E", &E);
 
     TRUTH* T = nullptr;
-    t.SetBranchAddress("T", &t);
+    if (mc_phasespace_only)
+        t.SetBranchAddress("T", &T);
 
     double BDT;
     t.SetBranchAddress("BDT", &BDT);
 
-    unsigned long long old_size = data.size();
-    unsigned long long n_entries = t.GetEntries();
+    const unsigned long long old_size = data.size();
+    const unsigned long long n_entries = t.GetEntries();
 
     if (N <= 0) // attempt to load all data
         N = n_entries;
 
+    data.reserve(N);
+
     int n_loaded = 0;
 
     std::vector<yap::FourVector<double>> P;
+    std::vector<double> masses;
+
+    // get K0 mass
+    const double K0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["K0"].mass();
+
 
     for (unsigned long long n = 0; n < n_entries and n_loaded < N; ++n) {
-        t.GetEntry(n);
-
-        if (BDT < BDT_cut)
+        DEBUG("try to load entry " << n << " (entries loaded so far: " << n_loaded << ")");
+        if (t.GetEntry(n) < 1) {
+            LOG(INFO) << "could not load entry " << n;
             continue;
+        }
 
+
+        // BDT cut
+        if (BDT < BDT_cut) {
+            DEBUG("  BDT cut");
+            continue;
+        }
+
+        // MC PHSP cut
         if (mc_phasespace_only)
-            if (not T->mc_good_D0 and not T->mc_direct_4pi)
+            if (not T->mc_good_D0 and not T->mc_direct_4pi) {
+                DEBUG("  PHSP cut");
                 continue;
+            }
 
+        // K0 cut
+        if (K0_cut > 0) {
+            masses.clear();
+            masses.push_back((E->mom_piPlus1 + E->mom_piMinus1).M());
+            masses.push_back((E->mom_piPlus1 + E->mom_piMinus2).M());
+            masses.push_back((E->mom_piPlus2 + E->mom_piMinus1).M());
+            masses.push_back((E->mom_piPlus2 + E->mom_piMinus2).M());
+
+            bool cut(false);
+            for (auto m : masses)
+                if (fabs(m - K0_mass) < K0_cut) {
+                    cut = true;
+                    break;
+                }
+
+            if (cut) {
+                DEBUG("  K0 cut");
+                continue;
+            }
+        }
+
+        // Fill 4-momenta
         P.clear();
         P.push_back(convert(E->mom_piPlus1));
         P.push_back(convert(E->mom_piMinus1));
@@ -105,6 +148,10 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, double BDT_cut, bool m
 
         data.push_back(P);
         ++n_loaded;
+        DEBUG("  Loaded");
+
+        if (n_loaded%100 == 1)
+            std::cout << "\r" << 100. * n_loaded/N << "%                           ";
     }
 
     if (data.size() == old_size)
@@ -274,7 +321,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
         double im = imag(fa->value());
         //double ab = abs(fa->value());
         //double ar = deg(arg(fa->value()));
-        double rangeLo = 0.5;
+        //double rangeLo = 0.5;
         double rangeHi = 2.5;
         //m.setPriors(fa, new ConstantPrior(rangeLo*ab, rangeHi*ab),
         //        new ConstantPrior(ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360));
