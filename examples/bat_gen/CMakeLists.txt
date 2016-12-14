@@ -18,6 +18,7 @@ add_custom_target(link-macros
 set(PROGRAMS
     runBatGen
     runBatFit
+    runBatFit_4pi
     runBatFitFitFractions
     runFitFractions)
 
