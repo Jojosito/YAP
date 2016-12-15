@@ -32,38 +32,38 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.1;
+    const double BDT_cut = 0.2;
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
     // real data
-    TChain* t = new TChain("t");
-    t->Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_0?_analysis.root");
-    t->AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_analysis_TMVA_weights.root");
+    {
+        TChain t("t");
+        t.Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_0?_analysis.root");
+        t.AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_analysis_TMVA_weights.root");
+        LOG(INFO) << "Load data";
+        load_data_4pi(m.fitData(), t, 300, BDT_cut, K0_cut, false);
+        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
+    }
 
     // MC data
-    TChain* t_mcmc = new TChain("t");
-    t_mcmc->Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_s0_analysis.root");
-    t_mcmc->AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_analysis_s0_TMVA_weights.root");
-
-    // load fit data and partition it
-    LOG(INFO) << "Load data";
-    load_data_4pi(m.fitData(), *t, 300000, BDT_cut, K0_cut);
-    m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
-
-    // load integration (MC) data
-    LOG(INFO) << "Load integration (MC) data";
-    load_data_4pi(m.integralData(), *t_mcmc, 300000, BDT_cut, K0_cut, true);
-    m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), 4);
+    {
+        TChain t_mcmc("t");
+        t_mcmc.Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_s0_analysis.root");
+        t_mcmc.AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_analysis_s0_TMVA_weights.root");
+        LOG(INFO) << "Load integration (MC) data";
+        load_data_4pi(m.integralData(), t_mcmc, 300, BDT_cut, K0_cut, true);
+        m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), 4);
+    }
 
     // open log file
     BCLog::OpenLog("output/" + m.GetSafeName() + "_log.txt", BCLog::detail, BCLog::detail);
 
     // set precision
     m.SetPrecision(BCEngineMCMC::kMedium);
-    m.SetNIterationsPreRunMax(1e6);
+    m.SetNIterationsPreRunMax(1e5);
     m.SetNChains(4);
     // m.SetMinimumEfficiency(0.85);
     // m.SetMaximumEfficiency(0.99);
