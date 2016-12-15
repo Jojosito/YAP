@@ -53,6 +53,7 @@ bool a_rho_pi_S  = true;
 bool a_rho_pi_D  = true;
 bool a_rho_sigma = true;
 bool rho_rho     = true;
+bool omega       = true;
 bool f_0_pipi    = true;
 bool f_2_pipi    = true;
 bool sigma_pipi  = true;
@@ -116,7 +117,9 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
 
         // MC PHSP cut
         if (mc_phasespace_only)
-            if (not T->mc_good_D0 and not T->mc_direct_4pi) {
+            if (not (T->mc_good_D0 and
+                     T->mc_good_DS and
+                     T->mc_direct_4pi)) {
                 DEBUG("  PHSP cut");
                 continue;
             }
@@ -201,8 +204,8 @@ inline std::unique_ptr<Model> d4pi()
     rho->addStrongDecay(piPlus, piMinus);
 
     // omega
-    //auto omega = DecayingParticle::create(T["omega"], radialSize, std::make_shared<BreitWigner>(T["omega"]));
-    //omega->addStrongDecay({piPlus, piMinus});
+    auto omega = DecayingParticle::create(T["omega"], radialSize, std::make_shared<BreitWigner>(T["omega"]));
+    omega->addStrongDecay({piPlus, piMinus});
     
     // sigma / f_0(500)
     auto sigma = DecayingParticle::create(T["f_0(500)"], radialSize, std::make_shared<BreitWigner>(T["f_0(500)"]));
@@ -247,6 +250,12 @@ inline std::unique_ptr<Model> d4pi()
         
         for (auto& fa : free_amplitudes(*D, to(rho, rho)))
             *fa = static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+
+        if (omega) {
+            D->addWeakDecay(rho,   omega);
+            D->addWeakDecay(omega, omega);
+        }
+
     }
     if (a_rho_pi_S or a_rho_pi_D) {
         D->addWeakDecay(a_1, piMinus);
