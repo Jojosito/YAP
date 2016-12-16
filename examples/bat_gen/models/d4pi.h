@@ -72,31 +72,34 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
                      const double K0_cut = 0, // cut away events with pi+pi- mass within +-K0_cut around K0 mass
                      const bool mc_phasespace_only = false) // only load phasespace MC events
 {
-    // set branch addresses
-    EVENT* E = nullptr;
-    t.SetBranchAddress("E", &E);
-
-    TRUTH* T = nullptr;
-    if (mc_phasespace_only)
-        t.SetBranchAddress("T", &T);
-    else
-        t.SetBranchStatus("T", 0);
-
-    const unsigned long long old_size = data.size();
-    const unsigned long long n_entries = t.GetEntries();
+    const auto old_size = data.size();
+    const auto n_entries = t.GetEntries();
 
     // get event list (apply BDT cut), speeds up loading
     t.Draw(">>eventList", ("BDT >= " + std::to_string(BDT_cut)).c_str(), "");
     auto eventList = (TEventList*)gDirectory->Get("eventList");
     LOG(INFO) << eventList->GetN() << " events after BDT cut";
+    // apply phasespace cut
+    if (mc_phasespace_only) {
+        t.SetEventList(eventList);
+        t.Draw(">>eventListPHSP", "mc_good_D0 && mc_good_DS && mc_direct_4pi", "");
+        eventList = (TEventList*)gDirectory->Get("eventListPHSP");
+        LOG(INFO) << eventList->GetN() << " events after phasespace cut";
+    }
     auto eventListArray = eventList->GetList();
 
+    // set branch addresses
+    EVENT* E = nullptr;
+    t.SetBranchAddress("E", &E);
+    t.SetBranchStatus("T", 0);
     t.SetBranchStatus("BDT", 0);
 
     if (N <= 0) // attempt to load all data
         N = eventList->GetN();
+    else
+        N = std::min(N, eventList->GetN());
 
-    data.reserve(N);
+    data.reserve(old_size + N);
 
     int n_loaded = 0;
 
@@ -114,15 +117,6 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
             LOG(INFO) << "could not load entry " << n;
             continue;
         }
-
-        // MC PHSP cut
-        if (mc_phasespace_only)
-            if (not (T->mc_good_D0 and
-                     T->mc_good_DS and
-                     T->mc_direct_4pi)) {
-                DEBUG("  PHSP cut");
-                continue;
-            }
 
         // K0 cut
         if (K0_cut > 0) {
@@ -161,13 +155,14 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
         if (n_loaded%100 == 0)
             std::cout << "\r" << 100. * n_loaded/N << "%                           ";
     }
+    std::cout << std::endl;
 
     if (data.size() == old_size)
         LOG(INFO) << "No data loaded.";
     else {
         LOG(INFO) << "Loaded " << data.size() - old_size << " data points (" << ((data.size() - old_size) * data[0].bytes() * 1.e-6) << " MB)"
                 << " from a tree of size " << n_entries;
-        if (old_size != 0)
+        if (old_size)
             LOG(INFO) << "Total data size now " << data.size() << " points (" << (data.bytes() * 1.e-6) << " MB)";
     }
 
@@ -252,7 +247,7 @@ inline std::unique_ptr<Model> d4pi()
             *fa = static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
 
         if (omega) {
-            D->addWeakDecay(rho,   omega);
+            D->addWeakDecay(rho,   omega); // \todo do I need this?
             D->addWeakDecay(omega, omega);
         }
 
