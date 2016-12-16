@@ -84,7 +84,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             std::replace(str.begin(), str.end(), '\t', ' ');
 
             AddObservable(str, 0, 1.1);
-            GetObservables().Back().SetNbins(1000);
+            //GetObservables().Back().SetNbins(1000);
         }
     // }
 
