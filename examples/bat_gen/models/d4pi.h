@@ -11,6 +11,7 @@
 #include "../fit_fitFraction.h"
 #include "../tools.h"
 
+#include <a1MassShape.h>
 #include <Attributes.h>
 #include <AmplitudeBasis.h>
 #include <BreitWigner.h>
@@ -37,6 +38,7 @@
 
 #include <BAT/BCAux.h>
 #include <BAT/BCGaussianPrior.h>
+#include <BAT/BCConstantPrior.h>
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
 
@@ -49,26 +51,26 @@
 
 using namespace yap;
 
-bool a_rho_pi_S  = true;
-bool a_rho_pi_D  = true;
-bool a_rho_sigma = true;
-bool rho_rho     = true;
-bool omega       = true;
-bool f_0_pipi    = true;
-bool f_2_pipi    = true;
-bool sigma_pipi  = true;
+const bool a_rho_pi_S  = true;
+const bool a_rho_pi_D  = true;
+const bool a_rho_sigma = true;
+const bool rho_rho     = true;
+const bool omega_omega = true;
+const bool f_0_pipi    = true;
+const bool f_2_pipi    = true;
+const bool sigma_pipi  = true;
 
 // scaling to reproduce (approximately) the fit fractions of the FOCUS model
-double scale_rho_rho     = 0.7158375483;
-double scale_a_rho_pi_D  = 4.2395231085;
-double scale_a_rho_sigma = 1.0739853519;
-double scale_f_0_pipi    = 0.3762733548;
-double scale_f_2_pipi    = 12.687283302;
-double scale_sigma_pipi  = 0.204794164 ;
+const double scale_rho_rho     = 0.7158375483;
+const double scale_a_rho_pi_D  = 4.2395231085;
+const double scale_a_rho_sigma = 1.0739853519;
+const double scale_f_0_pipi    = 0.3762733548;
+const double scale_f_2_pipi    = 12.687283302;
+const double scale_sigma_pipi  = 0.204794164 ;
 
 
 //-------------------------
-size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
+inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
                      const double K0_cut = 0, // cut away events with pi+pi- mass within +-K0_cut around K0 mass
                      const bool mc_phasespace_only = false) // only load phasespace MC events
 {
@@ -147,12 +149,12 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
         P.push_back(convert(E->mom_piMinus2));
 
         data.push_back(P);
+        DEBUG("  Loaded");
 
         if (++n_loaded >= N)
             break;
-        DEBUG("  Loaded");
 
-        if (n_loaded%100 == 0)
+        if (n_loaded%10 == 0)
             std::cout << "\r" << 100. * n_loaded/N << "%                           ";
     }
     std::cout << std::endl;
@@ -172,7 +174,7 @@ size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BDT_cut,
     return data.size() - old_size;
 }
 
-
+//-------------------------
 inline std::unique_ptr<Model> d4pi()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
@@ -207,7 +209,8 @@ inline std::unique_ptr<Model> d4pi()
     sigma->addStrongDecay(piPlus, piMinus);
     
     // a_1
-    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
+    //auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
+    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<a1MassShape>(T["a_1+"]));
     if (a_rho_pi_S or a_rho_pi_D)
         a_1->addStrongDecay(rho,   piPlus);
     if (a_rho_sigma)
@@ -246,9 +249,15 @@ inline std::unique_ptr<Model> d4pi()
         for (auto& fa : free_amplitudes(*D, to(rho, rho)))
             *fa = static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
 
-        if (omega) {
-            D->addWeakDecay(rho,   omega); // \todo do I need this?
+        if (omega_omega) {
+            //D->addWeakDecay(rho,   omega); // \todo do I need this?
             D->addWeakDecay(omega, omega);
+
+            //for (auto& fa : free_amplitudes(*D, to(rho, omega)))
+            //    *fa = 0.5 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+
+            for (auto& fa : free_amplitudes(*D, to(omega, omega)))
+                *fa = 0.5 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
         }
 
     }
@@ -308,6 +317,7 @@ inline std::unique_ptr<Model> d4pi()
     return M;
 }
 
+//-------------------------
 inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pcs = {})
 {
     bat_fit m(name, d4pi(), pcs);
@@ -316,6 +326,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     auto D     = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("D0")));
     auto rho   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
     auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
+    auto omega = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega")));
 
     auto fixed_amp = free_amplitude(*a_1, to(rho), l_equals(0));
     if (fixed_amp) {
@@ -324,29 +335,48 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     }
 
     LOG(INFO) << "setting priors";
-    //unsigned i = 0;
+    // set priors: complete range in real and imag
     for (const auto& fa : m.freeAmplitudes()) {
         double re = real(fa->value());
         double im = imag(fa->value());
-        //double ab = abs(fa->value());
-        //double ar = deg(arg(fa->value()));
-        //double rangeLo = 0.5;
-        double rangeHi = 2.5;
-        //m.setPriors(fa, new ConstantPrior(rangeLo*ab, rangeHi*ab),
-        //        new ConstantPrior(ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360));
-        //m.setRealImagRanges(fa, std::min(rangeLo*re, rangeHi*re), std::max(rangeLo*re, rangeHi*re),
-        //        std::min(rangeLo*im, rangeHi*im), std::max(rangeLo*im, rangeHi*im));
-        //m.setAbsArgRanges(fa, rangeLo*ab, rangeHi*ab,
-         //       ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360);
+
+        double rangeHi = 2.0;
 
         m.setRealImagRanges(fa, -rangeHi*fabs(re), rangeHi*fabs(re), -rangeHi*fabs(im), rangeHi*fabs(im));
-/*
-        if (++i%3 != 0) {
-            m.fix(fa, abs(fa->value()), deg(arg(fa->value())));
-            LOG(INFO) << "fixed amplitude " << to_string(*fa);
-        }
-*/
     }
+
+    // set priors: range around expected value
+    for (const auto& fa : m.freeAmplitudes()) {
+        if (omega_omega) {
+            // omega omega amplitude over whole range
+            auto omega_fa = free_amplitudes(*D, to(omega, omega));
+            if (std::find(omega_fa.begin(), omega_fa.end(), fa) != omega_fa.end()) {
+                LOG(INFO) << "do not set abs arg prior for omega amplitude";
+                continue;
+            }
+        }
+
+        double re = real(fa->value());
+        double im = imag(fa->value());
+
+        double ab = abs(fa->value());
+        double ar = deg(arg(fa->value()));
+        double rangeLo = 0.5;
+        double rangeHi = 2.0;
+        m.setPriors(fa, new BCConstantPrior(rangeLo*ab, rangeHi*ab),
+                new BCConstantPrior(ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360));
+        m.setRealImagRanges(fa, std::min(rangeLo*re, rangeHi*re), std::max(rangeLo*re, rangeHi*re),
+                std::min(rangeLo*im, rangeHi*im), std::max(rangeLo*im, rangeHi*im));
+        m.setAbsArgRanges(fa, rangeLo*ab, rangeHi*ab,
+                ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360);
+    }
+
+
+
+
+    // free a_1 width
+    //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
+    //m.GetParameters().Back().SetPriorConstant();
 
     return m;
 }
