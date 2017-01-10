@@ -16,6 +16,7 @@ add_custom_target(link-macros
     COMMAND ${CMAKE_COMMAND} -E create_symlink ../../../examples/bat_gen/macros macros)
 
 set(PROGRAMS
+	a1_integrals
     runBatGen
     runBatFit
     runBatFit_4pi
