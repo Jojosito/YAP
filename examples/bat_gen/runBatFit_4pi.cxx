@@ -40,11 +40,14 @@ int main()
 
     const unsigned nData = 200000; // number of Data points we want
 
+    //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
+    std::string dir("/home/ne53mad/CopiedFromKEK/");
+
     // real data
     {
         TChain t("t");
-        t.Add("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_0?_analysis.root");
-        t.AddFriend("t", "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/DataSkim_analysis_TMVA_weights.root");
+        t.Add((dir + "DataSkim_0?_analysis.root").c_str());
+        t.AddFriend("t", (dir + "DataSkim_analysis_TMVA_weights.root").c_str());
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
@@ -55,8 +58,8 @@ int main()
         if (nLoaded >= nData)
             break;
         TChain t_mcmc("t");
-        t_mcmc.Add(TString::Format("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_s%d_analysis.root", i));
-        t_mcmc.AddFriend("t", TString::Format("/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/FourPionsSkim_analysis_s%d_TMVA_weights.root", i));
+        t_mcmc.Add(dir + TString::Format("FourPionsSkim_s%d_analysis.root", i));
+        t_mcmc.AddFriend("t", dir + TString::Format("FourPionsSkim_analysis_s%d_TMVA_weights.root", i));
         LOG(INFO) << "Load integration (MC) data";
         load_data_4pi(m.integralData(), t_mcmc, nData-nLoaded, BDT_cut, K0_cut, true);
     }
@@ -68,12 +71,12 @@ int main()
 
     // set precision
     m.SetPrecision(BCEngineMCMC::kMedium);
-    m.SetNIterationsPreRunMax(1e6);
+    m.SetNIterationsPreRunMax(1e5);
     m.SetNChains(4);
     // m.SetMinimumEfficiency(0.85);
     // m.SetMaximumEfficiency(0.99);
 
-    m.SetNIterationsRun(static_cast<int>(1e6 / m.GetNChains()));
+    m.SetNIterationsRun(static_cast<int>(1e5 / m.GetNChains()));
 
     // start timing:
     const auto start = std::chrono::steady_clock::now();
