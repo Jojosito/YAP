@@ -50,6 +50,8 @@ int main()
     TGraph g_a1_im;
     TGraph g_a1_norm;
 
+    const unsigned n_threads = 4;
+
     // create model
     auto m = a1_fit();
 
@@ -57,14 +59,8 @@ int main()
     // get FSP mass ranges
     auto m2r = yap::squared(mass_range(a1_mass, m.axes(), m.model()->finalStateParticles()));
     m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), a1_mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
-    m.setNIntegrationPoints(n_integrationPoints, 1e5, 4);
-    try {
-        m.integrate();
-    }
-    catch (std::exception& e) {
-        LOG(ERROR) << "Failed to integrate: " << e.what();
-        throw;
-    }
+    m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
+    m.integrate();
     double norm_width = integral(m.modelIntegral()).value() / pow(a1_mass, 3. / 2);
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
@@ -78,15 +74,8 @@ int main()
         m2r = yap::squared(mass_range(mass, m.axes(), m.model()->finalStateParticles()));
 
         m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
-        m.setNIntegrationPoints(n_integrationPoints, 1e5, 4);
-
-        try {
-            m.integrate();
-        }
-        catch (std::exception& e) {
-            LOG(ERROR) << "Failed to integrate: " << e.what();
-            continue;
-        }
+        m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
+        m.integrate();
 
         double value = integral(m.modelIntegral()).value();
         if (not isnan(value)) {
