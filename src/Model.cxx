@@ -420,6 +420,8 @@ DataSet Model::createDataSet(size_t n)
     // create empty data set
     DataSet D(*this);
 
+    HelicityAngles_.addToCache(D);
+
     D.addEmptyDataPoints(n);
 
     return D;
