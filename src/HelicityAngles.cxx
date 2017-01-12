@@ -13,8 +13,15 @@ namespace yap {
 //-------------------------
 const spherical_angles<double>& HelicityAngles::operator()(const DataPoint& d, const StatusManager& sm, const std::shared_ptr<const ParticleCombination>& pc) const
 {
+    // check if StatusManager is in cache
+    auto it = CachedAngles_.find(&sm);
+    if (CachedAngles_.find(&sm) == CachedAngles_.end()) {
+        addToCache(sm);
+        it = CachedAngles_.find(&sm);
+    }
+
     // get entries for status manager
-    auto& cachedAngles = CachedAngles_.at(&sm);
+    angles_cache& cachedAngles = it->second;
     auto& cachedForDataPoint = CachedForDataPoint_.at(&sm);
 
 
