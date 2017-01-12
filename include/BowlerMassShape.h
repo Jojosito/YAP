@@ -18,8 +18,8 @@
 
 /// \file
 
-#ifndef yap_a1MassShape_h
-#define yap_a1MassShape_h
+#ifndef yap_BowlerMassShape_h
+#define yap_BowlerMassShape_h
 
 #include "fwd/DataPartition.h"
 #include "fwd/DataPoint.h"
@@ -28,7 +28,7 @@
 #include "fwd/ParticleTable.h"
 #include "fwd/StatusManager.h"
 
-#include "BreitWigner.h"
+#include "Flatte.h"
 #include "DecayTreeVectorIntegral.h"
 
 #include <complex>
@@ -36,26 +36,25 @@
 
 namespace yap {
 
-/// \class BreitWigner
-/// \brief Class for a_1(1260) mass shape. Its a Breit-Wigner with mass dependent width
-/// \author Daniel Greenwald
+/// \class BowlerMassShape
+/// \brief Class for mass shape with Bowler parameterization. Its a Flatte with mass dependent width
+/// \author Johannes Rauch
 /// \ingroup MassShapes
 ///
-/// Amplitude is 1 / (mass^2 - s - i*mass*width)\n\n
-class a1MassShape : public BreitWigner
+class BowlerMassShape : public Flatte
 {
 public:
 
     /// Constructor
     /// \param mass Mass of resonance [GeV]
     /// \param width Width of resonance [GeV]
-    a1MassShape(double mass, double width) :
-        BreitWigner(mass, width), Integral_(ownersDecayTrees()) {}
+    BowlerMassShape(double mass, double width) :
+        Flatte(mass), Integral_(ownersDecayTrees()) {}
 
     /// Constructor
     /// \param pde ParticleTableEntry to get mass and width from
-    a1MassShape(const ParticleTableEntry& pde) :
-        BreitWigner(pde), Integral_(ownersDecayTrees()) {}
+    BowlerMassShape(const ParticleTableEntry& pde) :
+        Flatte(pde), Integral_(ownersDecayTrees()) {}
 
     using BreitWigner::calculate;
     
@@ -67,8 +66,14 @@ public:
 
 private:
 
-    /// Integral
-    DecayTreeVectorIntegral Integral_;
+    /// Integral for mass
+    std::map<double, DecayTreeVectorIntegral> Integrals_;
+
+    /// number of integrals to use over mass range
+    unsigned nIntegrals_;
+
+    /// number of samples per integral
+    unsigned nSamples_;
 
 };
 

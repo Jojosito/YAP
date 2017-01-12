@@ -3,10 +3,10 @@ set(INCLUDE_DIRECTORIES
 include_directories(${INCLUDE_DIRECTORIES})
 
 set(YAP_SOURCES
-	a1MassShape.cxx
 	AmplitudeComponent.cxx
   	Attributes.cxx
 	BlattWeisskopf.cxx
+	BowlerMassShape.cxx
 	BreitWigner.cxx
 	CachedValue.cxx
 	ClebschGordan.cxx

@@ -1,4 +1,4 @@
-#include "a1MassShape.h"
+#include "BowlerMassShape.h"
 
 #include "CachedValue.h"
 #include "CalculationStatus.h"
@@ -11,7 +11,7 @@
 namespace yap {
 
 //-------------------------
-void a1MassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
+void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
 {
     // if no calculation necessary, exit
     if (D.status(*T(), si) != CalculationStatus::uncalculated)

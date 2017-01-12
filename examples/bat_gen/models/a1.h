@@ -12,9 +12,8 @@
 #include "../bat_fit.h"
 #include "../tools.h"
 
-#include <a1MassShape.h>
-#include <Attributes.h>
 #include <AmplitudeBasis.h>
+#include <Attributes.h>
 #include <BreitWigner.h>
 #include <DecayChannel.h>
 #include <DecayingParticle.h>

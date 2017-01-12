@@ -11,9 +11,9 @@
 #include "../fit_fitFraction.h"
 #include "../tools.h"
 
-#include <a1MassShape.h>
-#include <Attributes.h>
 #include <AmplitudeBasis.h>
+#include <Attributes.h>
+#include <BowlerMassShape.h>
 #include <BreitWigner.h>
 #include <DecayChannel.h>
 #include <DecayingParticle.h>
@@ -210,7 +210,7 @@ inline std::unique_ptr<Model> d4pi()
     
     // a_1
     //auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
-    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<a1MassShape>(T["a_1+"]));
+    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BowlerMassShape>(T["a_1+"]));
     if (a_rho_pi_S or a_rho_pi_D)
         a_1->addStrongDecay(rho,   piPlus);
     if (a_rho_sigma)
