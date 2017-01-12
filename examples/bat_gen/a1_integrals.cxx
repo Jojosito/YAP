@@ -27,19 +27,19 @@ int main()
 {
     yap::plainLogs(el::Level::Info);
 
-    const unsigned n_integrationPoints = 1e3;
+    const unsigned n_integrationPoints = 1e4;
 
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
 
-    const double m_pi = T[211].mass();
-    const double m_D0 = T[421].mass();
+    const double m_pi = T["pi+"].mass();
+    const double m_D0 = T["D0"].mass();
 
-    std::mt19937 g(0);
+    std::mt19937 g(164852419);
 
-    const unsigned nBins = 10;
+    const unsigned nBins = 50;
     const double low = 3.*m_pi;
     const double hi =  m_D0 - m_pi;
-    const double a1_mass = 1.240;
+    const double a1_mass = T["a_1+"].mass();
     const double a1_width = 0.560;
 
     TH1D h("3piIntegral", "3piIntegral", nBins, low, hi);
