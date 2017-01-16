@@ -22,6 +22,7 @@
 #define yap_FourMomenta_
 
 #include "fwd/CachedValue.h"
+#include "fwd/CoordinateSystem.h"
 #include "fwd/DataPoint.h"
 #include "fwd/FinalStateParticle.h"
 #include "fwd/FourVector.h"
@@ -136,6 +137,17 @@ private:
 /// \param squared_masses phase-space coordinate
 std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, const FinalStateParticleVector& FPSs,
                                                         const MassAxes& axes, const std::vector<double>& squared_masses);
+
+/// Calculate four-momenta for final-state particles for phase-space coordinate
+/// And apply rotation into given coordinate system
+/// \param initial_mass initial mass of decaying system
+/// \param FSPs Vector of final state particles
+/// \param axes phase-space axes
+/// \param squared_masses phase-space coordinate
+/// \param coordinate_system coordinate system
+std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, const FinalStateParticleVector& FSPs,
+                                                        const MassAxes& axes, const std::vector<double>& squared_masses,
+                                                        const CoordinateSystem<double, 3>& coordinate_system);
 
 /// Calculate four-momenta for final-state particles for phase-space coordinate
 /// And apply rotation into model's coordinate system

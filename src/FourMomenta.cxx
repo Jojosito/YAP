@@ -351,18 +351,28 @@ std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, con
 }
 
 //-------------------------
-std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, const Model& M,
-                                                        const MassAxes& axes, const std::vector<double>& squared_masses)
+std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, const FinalStateParticleVector& FSPs,
+                                                        const MassAxes& axes, const std::vector<double>& squared_masses,
+                                                        const CoordinateSystem<double, 3>& coordinate_system)
 {
-    auto P = calculate_four_momenta(initial_mass, M.finalStateParticles(), axes, squared_masses);
+    auto P = calculate_four_momenta(initial_mass, FSPs, axes, squared_masses);
 
     // adjust for user-provided coordinate system
-    const auto& C = M.coordinateSystem();
     for (auto& p : P)
-        p = FourVector<double>(p[0], p[1] * C[0] + p[2] * C[1] + p[3] * C[2]);
+        p = FourVector<double>(p[0], p[1] * coordinate_system[0] +
+                                     p[2] * coordinate_system[1] +
+                                     p[3] * coordinate_system[2]);
 
     return P;
 }
+
+//-------------------------
+std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, const Model& M,
+                                                        const MassAxes& axes, const std::vector<double>& squared_masses)
+{
+    return calculate_four_momenta(initial_mass, M.finalStateParticles(), axes, squared_masses, M.coordinateSystem());
+}
+
 
 
 }
