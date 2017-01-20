@@ -8,6 +8,7 @@
 #include "models/a1.h"
 #include "tools.h"
 
+#include <DalitzPhspIntegral.h>
 #include <Exceptions.h>
 #include <MassRange.h>
 #include <PHSP.h>
@@ -61,7 +62,7 @@ int main()
     m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), a1_mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
     m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
     m.integrate();
-    double norm_width = integral(m.modelIntegral()).value() / pow(a1_mass, 3. / 2);
+    double norm_width = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles()) * integral(m.modelIntegral()).value() / pow(a1_mass, 3. / 2);
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
     LOG(INFO) << "norm_width = " << norm_width;
@@ -77,7 +78,7 @@ int main()
         m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
         m.integrate();
 
-        double value = integral(m.modelIntegral()).value();
+        const double value = dalitz_phasespace_volume(mass, m.model()->finalStateParticles()) * integral(m.modelIntegral()).value();
         if (not isnan(value)) {
             h.SetBinContent(i, value);
             g_int.SetPoint(g_int.GetN(), mass, value);
@@ -92,7 +93,7 @@ int main()
             g_a1_norm.SetPoint(g_a1_norm.GetN(), mass, norm(a));
         }
 
-        LOG(INFO) << "Integral(" << mass << ") = " << integral(m.modelIntegral()).value();
+        LOG(INFO) << "Integral(" << mass << ") = " << value;
     }
 
     h.Draw();
