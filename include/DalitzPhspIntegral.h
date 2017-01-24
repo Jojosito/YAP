@@ -34,10 +34,10 @@ public:
     double operator()(double mab2) const;
 
 private:
-    double M_;
-    double ma_;
-    double mb_;
-    double mc_;
+    double M2_;
+    double ma2_;
+    double mb2_;
+    double mc2_;
 };
 
 }
