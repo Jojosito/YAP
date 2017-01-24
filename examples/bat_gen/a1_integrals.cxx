@@ -37,14 +37,17 @@ int main()
 
     std::mt19937 g(164852419);
 
-    const unsigned nBins = 50;
-    const double low = 3.*m_pi;
-    const double hi =  m_D0 - m_pi;
+    const unsigned nBins = 150;
+    const double low_m = 3.*m_pi;
+    const double hi_m =  m_D0 - m_pi;
+    //const double hi_m = 3;
     const double a1_mass = T["a_1+"].mass();
     const double a1_width = 0.560;
 
-    TH1D h("3piIntegral", "3piIntegral", nBins, low, hi);
+    TH1D h("3piIntegral", "3piIntegral", nBins, low_m*low_m, hi_m*hi_m);
 
+    TGraph g_phsp;
+    TGraph g_density;
     TGraph g_int;
     TGraph g_w;
     TGraph g_a1_re;
@@ -62,6 +65,7 @@ int main()
     m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), a1_mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
     m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
     m.integrate();
+
     double norm_width = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles()) * integral(m.modelIntegral()).value() / pow(a1_mass, 3. / 2);
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
@@ -69,7 +73,8 @@ int main()
 
     for (unsigned i = 1; i <= nBins; ++i) {
 
-        double mass = h.GetXaxis()->GetBinCenter(i);
+        double m2 = h.GetXaxis()->GetBinCenter(i);
+        double mass = sqrt(m2);
 
         // get FSP mass ranges
         m2r = yap::squared(mass_range(mass, m.axes(), m.model()->finalStateParticles()));
@@ -78,22 +83,27 @@ int main()
         m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
         m.integrate();
 
-        const double value = dalitz_phasespace_volume(mass, m.model()->finalStateParticles()) * integral(m.modelIntegral()).value();
+        const double phsp = dalitz_phasespace_volume(mass, m.model()->finalStateParticles());
+        const double density = integral(m.modelIntegral()).value();
+        const double value = phsp * density;
         if (not isnan(value)) {
             h.SetBinContent(i, value);
-            g_int.SetPoint(g_int.GetN(), mass, value);
+            g_phsp.SetPoint(g_int.GetN(), m2, phsp);
+            g_density.SetPoint(g_int.GetN(), m2, density);
+            g_int.SetPoint(g_int.GetN(), m2, value);
 
             double w = value / pow(mass, 3./2) * a1_width / norm_width;
-            g_w.SetPoint(g_w.GetN(), mass, w);
+            //w = a1_width;
+            g_w.SetPoint(g_w.GetN(), m2, w);
 
             std::complex<double> a = 1. / std::complex<double>(a1_mass * a1_mass - mass * mass, -a1_mass * w);
 
-            g_a1_re.SetPoint(g_a1_re.GetN(), mass, real(a));
-            g_a1_im.SetPoint(g_a1_re.GetN(), mass, imag(a));
-            g_a1_norm.SetPoint(g_a1_norm.GetN(), mass, norm(a));
+            g_a1_re.SetPoint(g_a1_re.GetN(), m2, real(a));
+            g_a1_im.SetPoint(g_a1_re.GetN(), m2, imag(a));
+            g_a1_norm.SetPoint(g_a1_norm.GetN(), m2, norm(a));
         }
 
-        LOG(INFO) << "Integral(" << mass << ") = " << value;
+        LOG(INFO) << "Integral(" << mass << " GeV) = " << value;
     }
 
     h.Draw();
@@ -102,11 +112,13 @@ int main()
     TFile file("a_1_3pi_integral.root", "RECREATE");
     file.cd();
     h.Write();
-    file.WriteTObject(&g_int, "g_int");
-    file.WriteTObject(&g_w, "g_w");
-    file.WriteTObject(&g_a1_re, "g_a1_re");
-    file.WriteTObject(&g_a1_im, "g_a1_im");
-    file.WriteTObject(&g_a1_norm, "g_a1_norm");
+    file.WriteTObject(&g_phsp, "g_phsp_volume_vs_m2");
+    file.WriteTObject(&g_density, "g_density_vs_m2");
+    file.WriteTObject(&g_int, "g_integral_vs_m2");
+    file.WriteTObject(&g_w, "g_width_vs_m2");
+    file.WriteTObject(&g_a1_re, "g_a1_re_vs_m2");
+    file.WriteTObject(&g_a1_im, "g_a1_im_vs_m2");
+    file.WriteTObject(&g_a1_norm, "g_a1_norm_vs_m2");
 
     file.Close();
 
