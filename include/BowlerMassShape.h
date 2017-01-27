@@ -28,11 +28,13 @@
 #include "fwd/ParticleTable.h"
 #include "fwd/StatusManager.h"
 
+#include "BreitWigner.h"
 #include "Flatte.h"
 #include "DecayTreeVectorIntegral.h"
 
 #include <complex>
 #include <memory>
+#include <mutex>
 
 namespace yap {
 
@@ -41,7 +43,7 @@ namespace yap {
 /// \author Johannes Rauch
 /// \ingroup MassShapes
 ///
-class BowlerMassShape : public Flatte
+class BowlerMassShape : public BreitWigner
 {
 public:
 
@@ -49,12 +51,12 @@ public:
     /// \param mass Mass of resonance [GeV]
     /// \param width Width of resonance [GeV]
     BowlerMassShape(double mass, double width) :
-        Flatte(mass), Integral_(ownersDecayTrees()) {}
+        BreitWigner(mass, width) { }
 
     /// Constructor
     /// \param pde ParticleTableEntry to get mass and width from
     BowlerMassShape(const ParticleTableEntry& pde) :
-        Flatte(pde), Integral_(ownersDecayTrees()) {}
+        BreitWigner(pde) { }
 
     using BreitWigner::calculate;
     
@@ -66,14 +68,13 @@ public:
 
 private:
 
-    /// Integral for mass
-    std::map<double, DecayTreeVectorIntegral> Integrals_;
+    void calculateMassDependentWidth() const;
 
-    /// number of integrals to use over mass range
-    unsigned nIntegrals_;
+    double massDependentWidth(double m2) const;
 
-    /// number of samples per integral
-    unsigned nSamples_;
+    /// mass dependend width (vs m2)
+    mutable std::map<double, double> MassDependentWidth_;
+    mutable std::mutex CacheMutex_;
 
 };
 
