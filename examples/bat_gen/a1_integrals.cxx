@@ -10,10 +10,11 @@
 
 #include <DalitzPhspIntegral.h>
 #include <Exceptions.h>
-#include <MassRange.h>
-#include <PHSP.h>
+#include <ImportanceSampler.h>
 #include <logging.h>
 #include <make_unique.h>
+#include <MassRange.h>
+#include <PHSP.h>
 
 #include <TFile.h>
 #include <TGraph.h>
@@ -59,14 +60,15 @@ int main()
     // create model
     auto m = a1_fit();
 
-    // Get normalizing width
-    // get FSP mass ranges
-    auto m2r = yap::squared(mass_range(a1_mass, m.axes(), m.model()->finalStateParticles()));
-    m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), a1_mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
-    m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
-    m.integrate();
+    ImportanceSamplerGenerator impSampGen(*m.model(), n_threads);
 
-    double norm_width = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles()) * integral(m.modelIntegral()).value() / pow(a1_mass, 3. / 2);
+
+
+    // Get normalizing width
+    double norm_width = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles())
+                        * impSampGen(a1_mass, n_integrationPoints)
+                        / pow(a1_mass, 3. / 2);
+
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
     LOG(INFO) << "norm_width = " << norm_width;
@@ -76,15 +78,8 @@ int main()
         double m2 = h.GetXaxis()->GetBinCenter(i);
         double mass = sqrt(m2);
 
-        // get FSP mass ranges
-        m2r = yap::squared(mass_range(mass, m.axes(), m.model()->finalStateParticles()));
-
-        m.integrationPointGenerator() = std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), mass, m.axes(), m2r, g, std::numeric_limits<unsigned>::max());
-        m.setNIntegrationPoints(n_integrationPoints, 1e5, n_threads);
-        m.integrate();
-
         const double phsp = dalitz_phasespace_volume(mass, m.model()->finalStateParticles());
-        const double density = integral(m.modelIntegral()).value();
+        const double density = impSampGen(mass, n_integrationPoints);
         const double value = phsp * density;
         if (not isnan(value)) {
             h.SetBinContent(i, value);

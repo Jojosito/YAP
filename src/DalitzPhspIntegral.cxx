@@ -37,7 +37,8 @@ double dalitz_phasespace_volume(double isp_mass, const FinalStateParticleVector&
     if (fsps.size() != 3)
         throw exceptions::Exception("Can only calculate Dalitz phasespace volume for 3 final state particles", "dalitz_phasespace_volume");
 
-    const double prefactor = 1. / (isp_mass*isp_mass); // \todo is this correct ???
+    //const double prefactor = 1. / (isp_mass*isp_mass); // \todo is this correct ???
+    const double prefactor = 1.;
 
     DalitzIntegrand f(isp_mass, fsps);
     double lowerBound = pow(fsps[0]->mass() + fsps[1]->mass(), 2); // (m_a + m_b)^2
@@ -52,7 +53,7 @@ double dalitz_phasespace_volume(double isp_mass, const FinalStateParticleVector&
 
     for (unsigned i = 0; i < 10; ++i) {
         result = prefactor *DEIntegrator<DalitzIntegrand>::Integrate(f, lowerBound, upperBound, absErr, evaluations, errorEstimate);
-        assert (result < volume_upper_bound);
+        assert (result <= volume_upper_bound);
 
         DEBUG("Dalitz phasespace volume = " << result << "; calculated with " << evaluations << "evaluations");
 

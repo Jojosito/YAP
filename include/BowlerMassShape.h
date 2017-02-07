@@ -51,12 +51,12 @@ public:
     /// \param mass Mass of resonance [GeV]
     /// \param width Width of resonance [GeV]
     BowlerMassShape(double mass, double width) :
-        BreitWigner(mass, width) { }
+        BreitWigner(mass, width), CalculatedForMass_(0.), CalculatedForWidth_(0.) { }
 
     /// Constructor
     /// \param pde ParticleTableEntry to get mass and width from
     BowlerMassShape(const ParticleTableEntry& pde) :
-        BreitWigner(pde) { }
+        BreitWigner(pde), CalculatedForMass_(0.), CalculatedForWidth_(0.) { }
 
     using BreitWigner::calculate;
     
@@ -75,6 +75,8 @@ private:
     /// mass dependend width (vs m2)
     mutable std::map<double, double> MassDependentWidth_;
     mutable std::mutex CacheMutex_;
+    mutable double CalculatedForMass_;
+    mutable double CalculatedForWidth_;
 
 };
 

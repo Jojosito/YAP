@@ -211,6 +211,8 @@ inline std::unique_ptr<Model> d4pi()
     // a_1
     //auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
     auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BowlerMassShape>(T["a_1+"]));
+    std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
+
     if (a_rho_pi_S or a_rho_pi_D)
         a_1->addStrongDecay(rho,   piPlus);
     if (a_rho_sigma)
@@ -256,8 +258,10 @@ inline std::unique_ptr<Model> d4pi()
             //for (auto& fa : free_amplitudes(*D, to(rho, omega)))
             //    *fa = 0.5 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
 
-            for (auto& fa : free_amplitudes(*D, to(omega, omega)))
-                *fa = 0.5 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+            for (auto& fa : free_amplitudes(*D, to(omega, omega))) {
+                *fa = -0.4 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+                //fa->variableStatus() = VariableStatus::fixed; // test
+            }
         }
 
     }
@@ -326,7 +330,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     auto D     = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("D0")));
     auto rho   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
     auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
-    auto omega = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega")));
+    auto omega = omega_omega ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega"))) : nullptr;
 
     auto fixed_amp = free_amplitude(*a_1, to(rho), l_equals(0));
     if (fixed_amp) {
@@ -347,28 +351,28 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 
     // set priors: range around expected value
     for (const auto& fa : m.freeAmplitudes()) {
-        if (omega_omega) {
+        /*if (omega_omega) {
             // omega omega amplitude over whole range
             auto omega_fa = free_amplitudes(*D, to(omega, omega));
             if (std::find(omega_fa.begin(), omega_fa.end(), fa) != omega_fa.end()) {
                 LOG(INFO) << "do not set abs arg prior for omega amplitude";
                 continue;
             }
-        }
+        }*/
 
         double re = real(fa->value());
         double im = imag(fa->value());
 
         double ab = abs(fa->value());
         double ar = deg(arg(fa->value()));
-        double rangeLo = 0.5;
-        double rangeHi = 2.0;
-        m.setPriors(fa, new BCConstantPrior(rangeLo*ab, rangeHi*ab),
-                new BCConstantPrior(ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360));
+        double rangeLo = -200.;
+        double rangeHi = 202.;
+        m.setPriors(fa, new BCConstantPrior(std::max(0., rangeLo*ab), rangeHi*ab),
+                new BCConstantPrior(ar - 180, ar + 180));
         m.setRealImagRanges(fa, std::min(rangeLo*re, rangeHi*re), std::max(rangeLo*re, rangeHi*re),
                 std::min(rangeLo*im, rangeHi*im), std::max(rangeLo*im, rangeHi*im));
-        m.setAbsArgRanges(fa, rangeLo*ab, rangeHi*ab,
-                ar - (1.-rangeLo) * 360, ar + (rangeHi-1.) * 360);
+        m.setAbsArgRanges(fa, std::max(0., rangeLo*ab), rangeHi*ab,
+                          ar - 180, ar + 180);
     }
 
 

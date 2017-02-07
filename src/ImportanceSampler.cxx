@@ -1,5 +1,6 @@
 #include "ImportanceSampler.h"
 
+#include "AmplitudeBasis.h"
 #include "CalculationStatus.h"
 #include "DataPartition.h"
 #include "DataSet.h"
@@ -9,6 +10,9 @@
 #include "FourVector.h"
 #include "IntegralElement.h"
 #include "make_unique.h"
+#include "MassAxes.h"
+#include "PHSP.h"
+#include "MassRange.h"
 #include "Model.h"
 #include "ModelIntegral.h"
 #include "VariableStatus.h"
@@ -130,8 +134,10 @@ void ImportanceSampler::calculate(ModelIntegral& I, Generator g, unsigned N, uns
         unsigned NN = N;
         for (size_t i = 0; i < m.size(); ++i) {
             int nn = NN / (m.size() - i);
+            // copy generator
+            Generator gCopy(g);
             n_sub.push_back(std::async(std::launch::async, &ImportanceSampler::calculate_subset,
-                                       std::ref(m[i]), g, nn, n / t));
+                                       std::ref(m[i]), std::ref(gCopy), nn, n / t));
             NN -= nn;
         }
 
@@ -150,7 +156,7 @@ void ImportanceSampler::calculate(ModelIntegral& I, Generator g, unsigned N, uns
 }
 
 //-------------------------
-unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral*>& J, Generator g, unsigned N, unsigned n)
+unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral*>& J, Generator& g, unsigned N, unsigned n)
 {
     if (!J[0]->model())
         throw exceptions::Exception("Model is nullptr", "ImportanceSampler::partially_calculate");
@@ -250,6 +256,84 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV)
         for (size_t j = 0; j < J.size(); ++j)
             *J[j] += (*m[i][j] *= f[i]);
 
+}
+
+//-------------------------
+ImportanceSamplerGenerator::ImportanceSamplerGenerator(const Model& m, unsigned n_threads, unsigned seed) :
+        N_threads_(n_threads), M_(&m)
+{
+    for (unsigned i = 1; i <= N_threads_; ++i)
+        Rnd_.push_back(std::mt19937(i * seed));
+}
+
+//-------------------------
+double ImportanceSamplerGenerator::operator()(double isp_mass, unsigned n_integrationPoints, unsigned n_batchSize)
+{
+    // mass range
+    auto m2r = yap::squared(mass_range(isp_mass, M_->massAxes(), M_->finalStateParticles()));
+
+    // generators
+    using Generator = std::function<std::vector<yap::FourVector<double> >()>;
+    std::vector<Generator> generators(4);
+
+    for (unsigned i = 0; i < N_threads_; ++i) {
+
+        generators[i] = std::bind(yap::phsp<std::mt19937>, std::cref(*M_), isp_mass, M_->massAxes(), m2r,
+                                  Rnd_[i], std::numeric_limits<unsigned>::max());
+
+        //LOG(INFO) << "random number for thread " << i << ": " << Rnd_[i]();
+    }
+
+    // Model integral
+    yap::ModelIntegral Integral_(*M_);
+
+    // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
+    auto J = select_changed(Integral_);
+
+    // reset those to be recalculated
+    for (auto& j : J)
+        Integrator::reset(*j);
+
+    if (N_threads_ <= 1) {
+        calculate_subset(J, generators[0], n_integrationPoints, n_batchSize);
+    } else {
+
+        // create copies for running with in each partition
+        std::vector<std::unique_ptr<DecayTreeVectorIntegral> > m_deleter; // RAII
+        m_deleter.reserve(N_threads_ * J.size());
+        std::vector<std::vector<DecayTreeVectorIntegral*> > m(N_threads_);
+        for (auto& m_j : m) {
+            m_j.reserve(J.size());
+            for (const auto& j : J) {
+                m_deleter.push_back(std::make_unique<DecayTreeVectorIntegral>(*j));
+                m_j.push_back(m_deleter.back().get());
+            }
+        }
+
+        // run over each subset storing number of events used in each calculation
+        std::vector<std::future<unsigned> > n_sub;
+        n_sub.reserve(N_threads_);
+        // create thread for each partial calculation
+        for (size_t i = 0; i < N_threads_; ++i) {
+            n_sub.push_back(std::async(std::launch::async, &calculate_subset,
+                                       std::ref(m[i]), std::ref(generators[i]),
+                                       n_integrationPoints/N_threads_, n_batchSize/N_threads_));
+        }
+
+        // calculate data fractions:
+        // also waits for threads to finish calculating
+        std::vector<double> f;
+        f.reserve(n_sub.size());
+        std::transform(n_sub.begin(), n_sub.end(), std::back_inserter(f), std::mem_fn(&std::future<unsigned>::get));
+        double N = std::accumulate(f.begin(), f.end(), 0.);
+        std::transform(f.begin(), f.end(), f.begin(), std::bind(std::divides<double>(), std::placeholders::_1, N));
+
+        for (size_t i = 0; i < m.size(); ++i)
+            for (size_t j = 0; j < J.size(); ++j)
+                *J[j] += (*m[i][j] *= f[i]);
+    }
+
+    return integral(Integral_).value();
 }
 
 }

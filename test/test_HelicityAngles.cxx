@@ -108,8 +108,8 @@ TEST_CASE( "HelicityAngles" )
 
     for (unsigned int iEvt = 0; iEvt < 100; ++iEvt) {
 
-        // generate random phase space point (with 100 attempts before failing)
-        auto momenta = yap::phsp(*M, D_mass, A, m2r, g, 100);
+        // generate random phase space point (with 1000 attempts before failing)
+        auto momenta = yap::phsp(*M, D_mass, A, m2r, g, 1000);
         if (momenta.empty())
             continue;
 

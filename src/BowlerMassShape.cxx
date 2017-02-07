@@ -1,6 +1,6 @@
 #include "BowlerMassShape.h"
 
-#include "AmplitudeBasis.h"
+
 #include "Attributes.h"
 #include "BreitWigner.h"
 #include "CachedValue.h"
@@ -19,8 +19,6 @@
 #include "ImportanceSampler.h"
 #include "logging.h"
 #include "make_unique.h"
-#include "MassAxes.h"
-#include "MassRange.h"
 #include "MathUtilities.h"
 #include "Model.h"
 #include "ModelIntegral.h"
@@ -28,22 +26,23 @@
 #include "ParticleCombination.h"
 #include "ParticleTable.h"
 #include "PDL.h"
-#include "PHSP.h"
+
 #include "QuantumNumbers.h"
 #include "RelativisticBreitWigner.h"
 #include "SpinAmplitudeCache.h"
 
 #include <algorithm>
 #include <assert.h>
-#include <random>
+
 
 namespace yap {
 
 //-------------------------
 void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
 {
-    /// \todo also recalculate if mass or width have changed
-    if (MassDependentWidth_.empty())
+    if (MassDependentWidth_.empty() or
+        mass() ->value() != CalculatedForMass_ or
+        width()->value() != CalculatedForWidth_ )
         calculateMassDependentWidth();
 
     // if no calculation necessary, exit
@@ -66,8 +65,11 @@ void BowlerMassShape::calculateMassDependentWidth() const
 {
     std::lock_guard<std::mutex> guard(CacheMutex_);
 
-    if (not MassDependentWidth_.empty())
+    if (not MassDependentWidth_.empty() and
+        mass() ->value() == CalculatedForMass_ and
+        width()->value() == CalculatedForWidth_)
         return;
+
 
     // \todo: not hardcode
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
@@ -108,7 +110,7 @@ void BowlerMassShape::calculateMassDependentWidth() const
     M->lock();
 
     //-------------------------
-    const unsigned n_integrationPoints = 1e6;
+    const unsigned n_integrationPoints = 1e4;
     const unsigned n_threads = 4;
     const unsigned nBins = 150;
 
@@ -116,25 +118,13 @@ void BowlerMassShape::calculateMassDependentWidth() const
     const double low_m = 3.*m_pi;
     const double hi_m = T["D0"].mass() - m_pi;
 
+    ImportanceSamplerGenerator impSampGen(*M, n_threads);
 
-
-    /// stores integral result
-    yap::ModelIntegral Integral_(*M);
-
-    // Get normalizing width
+      // Get normalizing width
     // get FSP mass ranges
     const double a1_mass = mass()->value(); // nominal mass
-    auto m2r = yap::squared(mass_range(a1_mass, M->massAxes(), M->finalStateParticles()));
-
-    /// function for generating new points for integration
-    std::mt19937 rnd(164852419);
-    using Generator = std::function<std::vector<yap::FourVector<double> >()>;
-    Generator g = std::bind(yap::phsp<std::mt19937>, std::cref(*M), a1_mass, M->massAxes(), m2r,
-                            rnd, std::numeric_limits<unsigned>::max());
-    yap::ImportanceSampler::calculate(Integral_, g, n_integrationPoints, n_integrationPoints, n_threads);
-
     double norm_width = dalitz_phasespace_volume(a1_mass, M->finalStateParticles())
-                        * integral(Integral_).value()
+                        * impSampGen(a1_mass, n_integrationPoints)
                         / pow(a1_mass, 3. / 2);
 
     if (isnan(norm_width) or norm_width == 0)
@@ -149,14 +139,8 @@ void BowlerMassShape::calculateMassDependentWidth() const
         const double m2 = low_m*low_m + (hi_m*hi_m - low_m*low_m) * pow(i, scaling)/pow(nBins-1, scaling);
         const double mass = sqrt(m2);
 
-        // get FSP mass ranges
-        m2r = yap::squared(mass_range(mass, M->massAxes(), M->finalStateParticles()));
-        g = std::bind(yap::phsp<std::mt19937>, std::cref(*M), mass, M->massAxes(), m2r,
-                      rnd, std::numeric_limits<unsigned>::max());
-        yap::ImportanceSampler::calculate(Integral_, g, n_integrationPoints, n_integrationPoints, n_threads);
-
         const double phsp = dalitz_phasespace_volume(mass, M->finalStateParticles());
-        const double density = integral(Integral_).value();
+        const double density = impSampGen(mass, n_integrationPoints);
 
         double w = phsp * density / pow(mass, 3./2) * width()->value() / norm_width;
         if (std::isnan(w))
@@ -170,11 +154,18 @@ void BowlerMassShape::calculateMassDependentWidth() const
 
         MassDependentWidth_[m2] = w;
     }
+
+    CalculatedForMass_  = mass() ->value();
+    CalculatedForWidth_ = width()->value();
+
 }
 
 //-------------------------
 double BowlerMassShape::massDependentWidth(double m2) const
 {
+    if (MassDependentWidth_.empty())
+        throw exceptions::Exception("Cache is empty", "BowlerMassShape::massDependentWidth");
+
     // linear interpolation
     auto next = MassDependentWidth_.upper_bound(m2);
     assert(next->first >= m2);

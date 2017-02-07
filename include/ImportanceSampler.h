@@ -27,9 +27,11 @@
 #include "fwd/DataPoint.h"
 #include "fwd/DecayTreeVectorIntegral.h"
 #include "fwd/FourVector.h"
+#include "fwd/Model.h"
 #include "fwd/ModelIntegral.h"
 
 #include <functional>
+#include <random>
 
 namespace yap {
 
@@ -76,7 +78,28 @@ public:
     /// perform calculation for one data partition
     static unsigned calculate_partition(std::vector<DecayTreeVectorIntegral*>& J, DataPartition& D);
 
-    static unsigned calculate_subset(std::vector<DecayTreeVectorIntegral*>& J, Generator g, unsigned N, unsigned n);
+    /// \param N number of points to generate
+    /// \param n batch size of points to generate
+    static unsigned calculate_subset(std::vector<DecayTreeVectorIntegral*>& J, Generator& g, unsigned N, unsigned n);
+
+};
+
+class ImportanceSamplerGenerator : private ImportanceSampler
+{
+public:
+    ImportanceSamplerGenerator(const Model& m, unsigned n_threads = 1, unsigned seed = 52350863);
+
+    // generate and return integral
+    double operator()(double isp_mass, unsigned n_integrationPoints = 1e4, unsigned n_batchSize = 1e4);
+
+private:
+    // number of threads
+    const unsigned N_threads_;
+
+    const Model* M_;
+
+    // one generator per thread
+    std::vector<std::mt19937> Rnd_;
 
 };
 

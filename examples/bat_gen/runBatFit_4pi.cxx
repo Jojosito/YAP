@@ -38,11 +38,12 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 200000; // number of Data points we want
+    const unsigned nData = 400000; // number of Data points we want
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
 
+    /*
     // real data
     {
         TChain t("t");
@@ -62,7 +63,26 @@ int main()
         t_mcmc.AddFriend("t", dir + TString::Format("FourPionsSkim_analysis_s%d_TMVA_weights.root", i));
         LOG(INFO) << "Load integration (MC) data";
         load_data_4pi(m.integralData(), t_mcmc, nData-nLoaded, BDT_cut, K0_cut, true);
+    }*/
+
+    // real data, pre-filtered
+    {
+        TChain t("t");
+        t.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.root").c_str());
+        t.AddFriend("t", (dir + "DataSkim_analysis_TMVA_weights.root").c_str());
+        LOG(INFO) << "Load data";
+        load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
+        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
     }
+    { // MC data, pre-filtered
+        TChain t_mcmc("t");
+        t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.root").c_str());
+        t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0_TMVA_weights.root").c_str());
+        LOG(INFO) << "Load integration (MC) data";
+        load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+    }
+
+    // partition integral data
     m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), 4);
 
 
@@ -83,12 +103,17 @@ int main()
 
     // run MCMC, marginalizing posterior
     m.MarginalizeAll(BCIntegrate::kMargMetropolis);
+    //m.MCMCUserInitialize();
+    //m.FindMode();
 
     // end timing
     const auto end = std::chrono::steady_clock::now();
 
     LOG(INFO) << "Find global mode";
-    m.FindMode(m.GetBestFitParameters());
+    auto globalMode = m.FindMode(m.GetBestFitParameters());
+
+    const double llGlobMode = m.LogLikelihood(globalMode);
+    LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
 
     // delete data
     m.fitData().clear();
@@ -98,6 +123,19 @@ int main()
     m.PrintSummary();
     LOG(INFO) << "Generate plots";
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
+
+    LOG(INFO) << "Fit fractions";
+    double sum(0);
+    for (const auto& mci : m.modelIntegral().integrals()) {
+        auto ff = fit_fractions(mci.Integral);
+        for (size_t i = 0; i < ff.size(); ++i) {
+            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << ff[i].value()*100. << " %";
+            sum += ff[i].value();
+        }
+    }
+    LOG(INFO) << "Sum = " << sum*100 << " %";
+
+    LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
 
     // timing:
     const auto diff = end - start;
