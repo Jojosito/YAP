@@ -153,6 +153,8 @@ protected:
     /// Free amplitudes of model to set
     yap::FreeAmplitudeVector FreeAmplitudes_;
 
+    yap::NonnegativeRealParameterVector Admixtures_;
+
     /// BCPrior on abs(FreeAmplitude)
     std::vector<std::unique_ptr<BCPrior> > AbsPriors_;
 

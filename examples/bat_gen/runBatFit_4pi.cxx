@@ -27,18 +27,17 @@
 
 int main()
 {
-    yap::plainLogs(el::Level::Info);
-    yap::plainLogs(el::Level::Debug);
+    yap::plainLogs(el::Level::Global);
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.2;
+    const double BDT_cut = 0.21;
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 400000; // number of Data points we want
+    const unsigned nData = 4000;//00; // number of Data points we want
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
@@ -102,9 +101,13 @@ int main()
     const auto start = std::chrono::steady_clock::now();
 
     // run MCMC, marginalizing posterior
-    m.MarginalizeAll(BCIntegrate::kMargMetropolis);
-    //m.MCMCUserInitialize();
-    //m.FindMode();
+    bool mcmc = false;
+    if (mcmc)
+        m.MarginalizeAll(BCIntegrate::kMargMetropolis);
+    else {
+        m.MCMCUserInitialize();
+        m.FindMode();
+    }
 
     // end timing
     const auto end = std::chrono::steady_clock::now();
@@ -124,16 +127,7 @@ int main()
     LOG(INFO) << "Generate plots";
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
 
-    LOG(INFO) << "Fit fractions";
-    double sum(0);
-    for (const auto& mci : m.modelIntegral().integrals()) {
-        auto ff = fit_fractions(mci.Integral);
-        for (size_t i = 0; i < ff.size(); ++i) {
-            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << ff[i].value()*100. << " %";
-            sum += ff[i].value();
-        }
-    }
-    LOG(INFO) << "Sum = " << sum*100 << " %";
+    d4pi_printFitFractions(m);
 
     LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
 

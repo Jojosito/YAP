@@ -23,6 +23,8 @@
 
 #include "fwd/AttributeUtilities.h"
 #include "fwd/DecayingParticle.h"
+#include "fwd/Particle.h"
+
 
 #include <functional>
 #include <string>
@@ -65,6 +67,7 @@ struct has_decay_tree;
 struct has_decay_channel;
 
 struct parent_particle;
+struct daughter_particle;
 template <typename> class name_of;
 
 struct has_a_mass;
@@ -73,15 +76,26 @@ struct has_a_mass;
 template <typename C = std::owner_less<std::shared_ptr<const DecayingParticle> > >
 using by_parent = compare_by<parent_particle, C>;
 
+/// functor to compare by daughter
+template <typename Cd = std::owner_less<std::shared_ptr<const Particle> > >
+using by_daughter = compare_by<daughter_particle, Cd>;
+
 /// functor to check particle name
 using is_named = check_attribute<name_of<identity> >;
 
 /// functor to return name of parent_particle
 using parent_name = name_of<parent_particle>;
 
+/// functor to return name of daughter_particle
+using daughter_name = name_of<daughter_particle>;
+
 /// functor to compare by parent name
 template <typename C = std::less<std::string> >
 using by_parent_name = compare_by<parent_name, C>;
+
+/// functor to compare by daughter name
+template <typename C = std::less<std::string> >
+using by_daughter_name = compare_by<daughter_name, C>;
 
 }
 

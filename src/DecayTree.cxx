@@ -33,6 +33,16 @@ DecayTree::DecayTree(std::shared_ptr<FreeAmplitude> free_amp, int two_M, const S
         throw exceptions::Exception("FreeAmplitude's DecayChannel is nullptr", "DecayTree::DecayTree");
 }
 
+
+//-------------------------
+const DecayTreeVector DecayTree::daughterDecayTreeVector() const
+{
+    DecayTreeVector dtv;
+    for (auto& kv : DaughterDecayTrees_)
+        dtv.push_back(kv.second);
+    return dtv;
+}
+
 //-------------------------
 const Model* DecayTree::model() const
 {

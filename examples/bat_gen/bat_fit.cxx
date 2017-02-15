@@ -25,6 +25,7 @@
 #include <TTree.h>
 
 #include <algorithm>
+#include <assert.h>
 
 // -----------------------
 bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vector<std::vector<unsigned> >& pcs)
@@ -70,6 +71,18 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
         FreeAmplitudes_.push_back(fa);
     }
     
+    // loop over admixtures
+    for (auto& comp : model()->components()) {
+        // ignore fixed free amplitudes
+        if (comp.admixture()->variableStatus() == yap::VariableStatus::fixed)
+            continue;
+        auto adm_name = "admixture_" + comp.particle()->name() + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
+
+        AddParameter(adm_name, 0, 2e100);
+
+        Admixtures_.push_back(comp.admixture());
+    }
+
     // // add observables for all fit fractions
     // int N = std::accumulate(Integral_.integrals().begin(), Integral_.integrals().end(), 0,
     //                         [](int n, const yap::IntegralMap::value_type& v)
@@ -219,6 +232,9 @@ void bat_fit::setParameters(const std::vector<double>& p)
 {
     for (size_t i = 0; i < FreeAmplitudes_.size(); ++i)
         *FreeAmplitudes_[i] = std::complex<double>(p[i * 2], p[i * 2 + 1]);
+
+    for (size_t i = 0; i < Admixtures_.size(); ++i)
+        *Admixtures_[i] = p[FreeAmplitudes_.size()*2 + i];
 
     yap::set_values(Parameters_.begin(), Parameters_.end(), p.begin() + FirstParameter_, p.end());
 

@@ -40,8 +40,8 @@ int main()
 
     const unsigned nBins = 150;
     const double low_m = 3.*m_pi;
-    const double hi_m =  m_D0 - m_pi;
-    //const double hi_m = 3;
+    //const double hi_m =  m_D0 - m_pi;
+    const double hi_m = sqrt(3.1);
     const double a1_mass = T["a_1+"].mass();
     const double a1_width = 0.560;
 
@@ -88,6 +88,13 @@ int main()
             g_int.SetPoint(g_int.GetN(), m2, value);
 
             double w = value / pow(mass, 3./2) * a1_width / norm_width;
+
+
+            // K*K threshold
+            double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
+            if (mKK2 > 0)
+                w += 0.4 * sqrt(mKK2);
+
             //w = a1_width;
             g_w.SetPoint(g_w.GetN(), m2, w);
 

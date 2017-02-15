@@ -59,11 +59,14 @@ class ModelComponent
 {
 public:
     /// Constructor
-    ModelComponent(const DecayTreeVector& dtv, double adm = 1.);
+    ModelComponent(const DecayTreeVector& dtv, DecayingParticle* p, double adm = 1.);
 
     /// \return DecayTrees (const)
     const DecayTreeVector& decayTrees() const
     { return DecayTrees_; }
+
+    const DecayingParticle* particle() const
+    { return P_; }
 
     /// \return Admixture_ (const)
     const std::shared_ptr<NonnegativeRealParameter>& admixture() const
@@ -76,6 +79,8 @@ public:
 private:
     /// DecayTrees to be coherently summed
     DecayTreeVector DecayTrees_;
+
+    DecayingParticle* P_;
 
     /// incoherent sum admixture (real) multiplying intensity of DecayTrees
     std::shared_ptr<NonnegativeRealParameter> Admixture_;

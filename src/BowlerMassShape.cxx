@@ -1,5 +1,6 @@
 #include "BowlerMassShape.h"
 
+#include "../../examples/bat_gen/models/d4pi_scales.h"
 
 #include "Attributes.h"
 #include "BreitWigner.h"
@@ -88,7 +89,7 @@ void BowlerMassShape::calculateMassDependentWidth() const
     auto a_1 = DecayingParticle::create(T["a_1+"], radialSize);
 
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<RelativisticBreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // sigma / f_0(500)
@@ -98,14 +99,14 @@ void BowlerMassShape::calculateMassDependentWidth() const
 
     // a_1 -> sigma pi
     a_1->addStrongDecay(sigma, piPlus);
-    *free_amplitude(*a_1, to(sigma)) = std::polar(1.0739853519 * 0.439, rad(193.));
+    *free_amplitude(*a_1, to(sigma)) = std::polar(scale_a_sigma_pi * 0.439, rad(193.));
 
     // a_1 -> rho pi
     a_1->addStrongDecay(rho,   piPlus);
     // S wave
     *free_amplitude(*a_1, to(rho), l_equals(0)) = 1;
     // D wave
-    *free_amplitude(*a_1, to(rho), l_equals(2)) = std::polar(1.0739853519 * 0.241, rad(82.));
+    *free_amplitude(*a_1, to(rho), l_equals(2)) = std::polar(scale_a_rho_pi_D * 0.241, rad(82.));
 
     M->lock();
 
@@ -116,7 +117,7 @@ void BowlerMassShape::calculateMassDependentWidth() const
 
     const double m_pi = T["pi+"].mass();
     const double low_m = 3.*m_pi;
-    const double hi_m = T["D0"].mass() - m_pi;
+    const double hi_m = 1.01 * (T["D0"].mass() - m_pi);
 
     ImportanceSamplerGenerator impSampGen(*M, n_threads);
 
@@ -129,9 +130,9 @@ void BowlerMassShape::calculateMassDependentWidth() const
 
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
-    LOG(INFO) << "norm_width = " << norm_width;
+    DEBUG("norm_width = " << norm_width);
 
-    LOG(INFO) << "m2; width";
+    DEBUG("m2; width");
     for (unsigned i = 0; i <= nBins; ++i) {
 
         static const double scaling = 1.5; // gives higher density of samples at lower m2, where the width is changing more rapidly
@@ -147,7 +148,7 @@ void BowlerMassShape::calculateMassDependentWidth() const
             w = 0;
         w = std::max(0., w);
 
-        LOG(INFO) << m2 << "; " << w;
+        DEBUG(m2 << "; " << w);
 
         if (i > 0)
             assert(w > 0);
@@ -178,7 +179,14 @@ double BowlerMassShape::massDependentWidth(double m2) const
     double dist = m2 - prev->first;
     double rel = dist/range;
 
-    return rel * prev->second + (1. - rel) * next->second;
+    double w = rel * prev->second + (1. - rel) * next->second;
+
+    // K*K threshold
+    double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
+    if (mKK2 > 0)
+        w += 0.375 * sqrt(mKK2); // hardcoded and roughly taken from FOCUS
+
+    return w;
 }
 
 }

@@ -7,7 +7,7 @@
 #ifndef __BAT__A1__H
 #define __BAT__A1__H
 
-#include "d4pi.h"
+#include "d4pi_scales.h"
 
 #include "../bat_fit.h"
 #include "../tools.h"
@@ -34,13 +34,11 @@
 #include <RelativisticBreitWigner.h>
 #include <SpinAmplitudeCache.h>
 
-
 #include <BAT/BCAux.h>
 #include <BAT/BCGaussianPrior.h>
 #include <BAT/BCConstantPrior.h>
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
-
 
 #include <complex>
 #include <memory>
@@ -70,7 +68,7 @@ inline std::unique_ptr<Model> a1()
     //
     
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<RelativisticBreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // omega
@@ -84,7 +82,7 @@ inline std::unique_ptr<Model> a1()
 
     // a_1 -> sigma pi 
     a_1->addStrongDecay(sigma, piPlus);
-    *free_amplitude(*a_1, to(sigma)) = std::polar(scale_a_rho_sigma * 0.439, rad(193.));
+    *free_amplitude(*a_1, to(sigma)) = std::polar(scale_a_sigma_pi * 0.439, rad(193.));
 
     // a_1 -> rho pi
     a_1->addStrongDecay(rho,   piPlus);

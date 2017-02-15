@@ -196,7 +196,7 @@ struct has_decay_tree : public has_pointed_to_object<DecayTree, Particle, DecayT
     virtual const bool operator()(const DecayTree& dt) const override;
 };
 
-/// Functor class to check whehter argument has a particular DecayChannel
+/// Functor class to check whether argument has a particular DecayChannel
 /// \ingroup Attributes
 struct has_decay_channel : public has_pointed_to_object<DecayChannel, Particle, FreeAmplitude, DecayTree>
 {
@@ -248,6 +248,20 @@ struct parent_particle : public attribute_of<std::shared_ptr<const DecayingParti
     /// Model::Component& functor
     virtual std::shared_ptr<const DecayingParticle> operator()(const ModelComponent& c) const override;
 };
+
+
+/// struct to access 1st daughter particle of an object
+/// \ingroup Attributes
+struct daughter_particle : public attribute_of<std::shared_ptr<const Particle>,
+                                             DecayTree>
+{
+    /// \note functors inherited
+    using attribute_of::operator();
+
+    /// DecayTree& functor
+    virtual std::shared_ptr<const Particle> operator()(const DecayTree& dt) const override;
+};
+
 
 /// functor to get name of return value of attribute
 template <typename A>

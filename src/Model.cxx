@@ -30,8 +30,8 @@ INITIALIZE_EASYLOGGINGPP
 namespace yap {
 
 //-------------------------
-ModelComponent::ModelComponent(const DecayTreeVector& dtv, double adm) :
-    DecayTrees_(dtv),
+ModelComponent::ModelComponent(const DecayTreeVector& dtv, DecayingParticle* p, double adm) :
+    DecayTrees_(dtv), P_(p),
     Admixture_(std::make_shared<NonnegativeRealParameter>(adm))
 {
     if (DecayTrees_.empty())
@@ -303,7 +303,7 @@ void Model::lock()
             addParticleCombination(*pc);
         // and create components
         for (auto dtv : group(isp->decayTrees(), by_m<>()))
-            Components_.emplace_back(dtv);
+            Components_.emplace_back(dtv, &*isp);
     }
     
     // call prune() for all initial states

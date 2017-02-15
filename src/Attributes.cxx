@@ -261,6 +261,14 @@ std::shared_ptr<const DecayingParticle> parent_particle::operator()(const ModelC
         return nullptr;
     return operator()(c.decayTrees()[0]);
 }
+
+//-------------------------
+std::shared_ptr<const Particle> daughter_particle::operator()(const DecayTree& dt) const
+{
+    if (!dt.model())
+        throw exceptions::Exception("model is nullptr", "daughter_particle::operator()(DecayTree)");
+    return dt.freeAmplitude()->decayChannel()->daughters()[0];
+}
     
 //-------------------------
 const bool has_a_mass_shape::operator()(const Particle& p) const

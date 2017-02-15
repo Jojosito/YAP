@@ -11,12 +11,14 @@
 #include "models/dkkpi.h"
 #include "tools.h"
 
+#include <Group.h>
 #include <HelicityFormalism.h>
 #include <ImportanceSampler.h>
 #include <logging.h>
 #include <make_unique.h>
 #include <MassRange.h>
 #include <PHSP.h>
+#include <Sort.h>
 #include <ZemachFormalism.h>
 
 #include <algorithm>
@@ -65,15 +67,8 @@ int main()
     LOG(INFO) << "Created " << m->integralData().size() << " data points (" << (m->integralData().bytes() * 1.e-6) << " MB)";
     m->integrate();
 
-    double sum(0);
-    for (const auto& mci : m->modelIntegral().integrals()) {
-        auto ff = fit_fractions(mci.Integral);
-        for (size_t i = 0; i < ff.size(); ++i) {
-            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << ff[i].value()*100. << " %";
-            sum += ff[i].value();
-        }
-    }
-    LOG(INFO) << "Sum = " << sum*100 << " %";
+    d4pi_printFitFractions(*m);
+
 
     delete m;
 
