@@ -242,7 +242,6 @@ inline std::unique_ptr<Model> d4pi()
         
         for (auto& fa : free_amplitudes(*D, to(rho, rho))) {
             *fa = static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
-            fa->variableStatus() = VariableStatus::fixed; // test
         }
 
         if (omega_omega) {
@@ -254,14 +253,13 @@ inline std::unique_ptr<Model> d4pi()
 
             for (auto& fa : free_amplitudes(*D, to(omega, omega))) {
                 *fa = omega_rel_amp * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
-                //fa->variableStatus() = VariableStatus::fixed; // test
             }
         }
 
     }
     if (a_rho_pi_S or a_rho_pi_D) {
         D->addWeakDecay(a_1, piMinus);
-        //free_amplitude(*D, to(a_1))->variableStatus() = VariableStatus::fixed;
+        free_amplitude(*D, to(a_1))->variableStatus() = VariableStatus::fixed;
 
         auto a_rho_S = free_amplitude(*a_1, to(rho), l_equals(0));
         auto a_omega_S = omega_omega ? free_amplitude(*a_1, to(omega), l_equals(0)) : nullptr;
@@ -284,15 +282,7 @@ inline std::unique_ptr<Model> d4pi()
         }
 
         // no P wave
-        //assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
-        *free_amplitude(*a_1, to(rho), l_equals(1)) = 0.;
-        free_amplitude(*a_1, to(rho), l_equals(1))->variableStatus() = VariableStatus::fixed;
-
-        if (omega_omega) {
-            *free_amplitude(*a_1, to(omega), l_equals(1)) = 0.;
-            free_amplitude(*a_1, to(omega), l_equals(1))->variableStatus() = VariableStatus::fixed;
-        }
-
+        assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
 
         // D wave
         if (a_rho_pi_D) {
@@ -426,72 +416,6 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     return m;
 }
 
-//-------------------------
-inline fit_fitFraction d4pi_fit_fitFraction()
-{
-    // create bat_fit object
-    fit_fitFraction m("D4PI_frac_fit", d4pi());
-
-    //double D_mass = 1.8648400;
-
-    m.GetParameter("N_1").Fix(1);
-
-    // find particles
-    auto D     = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("D0")));
-    auto rho   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
-    auto sigma = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
-    auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
-    auto f_0   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0")));
-    auto f_2   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_2")));
-
-    // set fit fractions to fit
-    /// \todo does not yet work with more than one decayTree
-    //m.setFitFraction(decay_trees(*D, yap::from(D), yap::to(a_1), yap::l_equals(0)), 43.3e-2,   quad(2.5e-2, 1.9e-2));
-    //m.setFitFraction(decay_trees(*D, yap::from(D), yap::to(a_1), yap::l_equals(1)), 2.5e-2,    quad(0.5e-2, 0.4e-2));
-    m.setFitFraction(decay_tree(*D, yap::from(D), yap::to(f_0), yap::l_equals(0)), 8.3e-2,    quad(0.7e-2, 0.6e-2));
-
-    amplitude_basis::canonical<double> c(amplitude_basis::transversity<double>(
-            complex_basis::cartesian<double>(std::complex<double>( 1.1e-2),  quad(0.3e-2, 0.3e-2)),
-            complex_basis::cartesian<double>(std::complex<double>( 6.4e-2),  quad(0.6e-2, 0.5e-2)),
-            complex_basis::cartesian<double>(std::complex<double>(16.88e-2), quad(1.0e-2, 0.8e-2))));
-
-    /// \todo does not yet work with more than one decayTree
-    //for (unsigned l = 0; l<3; ++l)
-    //    m.setFitFraction(decay_trees(*D, yap::from(D), yap::to(rho), yap::l_equals(l)), real(c.amplitudes()[l]), c.covariance()[l][l][0][0]);
-
-    m.setFitFraction(decay_tree(*D, yap::from(D), yap::to(f_0)),   2.4e-2,  quad(2.4e-2, 0.4e-2));
-    m.setFitFraction(decay_tree(*D, yap::from(D), yap::to(f_2)),   4.9e-2,  quad(4.9e-2, 0.5e-2));
-    m.setFitFraction(decay_tree(*D, yap::from(D), yap::to(sigma)), 8.2e-2,  quad(8.2e-2, 0.7e-2));
-
-    // set free amplitude parameters of fit
-    m.fix(free_amplitude(*D, yap::from(D), yap::to(a_1)), 1., 0.);
-    //m.fix(free_amplitude(*D, yap::from(a_1), yap::to(rho), yap::l_equals(1)), 0., 0.);
-    m.setPriors(free_amplitude(*D, yap::from(a_1), yap::to(rho), yap::l_equals(2)), new BCGaussianPrior(0.241, quad(0.033, 0.024)), new BCGaussianPrior( 82., quad(5.,   4.)));
-
-    m.setPriors(free_amplitude(*D, yap::from(D), yap::to(f_0), yap::l_equals(0)), new BCGaussianPrior(0.493, quad(0.026, 0.021)), new BCGaussianPrior(193., quad(4.,   4.)));
-
-    // polar -> cartesian; transversity -> canonical
-    amplitude_basis::canonical<double> can(amplitude_basis::transversity<double>(
-            complex_basis::cartesian<double>(complex_basis::polar<double>(0.624, rad(357.), {quad(0.023, 0.015), quad(3., 3.)})), // A_longitudinal
-            complex_basis::cartesian<double>(complex_basis::polar<double>(0.157, rad(120.), {quad(0.027, 0.020), quad(7., 8.)})), // A_parallel
-            complex_basis::cartesian<double>(complex_basis::polar<double>(0.384, rad(163.), {quad(0.020, 0.015), quad(3., 3.)})))); // A_perpendicular
-
-    for (unsigned l = 0; l<3; ++l) {
-        // cartesian -> polar
-        complex_basis::polar<double> polar(can[l]);
-
-        m.setPriors(free_amplitude(*D, yap::from(D), yap::to(rho), yap::l_equals(l)),
-                new BCGaussianPrior(polar.value()[0], polar.covariance()[0][0]),
-                new BCGaussianPrior(polar.value()[1], polar.covariance()[1][1]));
-    }
-
-
-    m.setPriors(free_amplitude(*D, yap::from(D), yap::to(f_0)),   new BCGaussianPrior(0.233, quad(0.019, 0.015)), new BCGaussianPrior(261., quad(7., 3.)));
-    m.setPriors(free_amplitude(*D, yap::from(D), yap::to(f_2)),   new BCGaussianPrior(0.338, quad(0.021, 0.016)), new BCGaussianPrior(317., quad(4., 4.)));
-    m.setPriors(free_amplitude(*D, yap::from(D), yap::to(sigma)), new BCGaussianPrior(0.432, quad(0.027, 0.022)), new BCGaussianPrior(254., quad(4., 5.)));
-
-    return m;
-}
 
 //-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
@@ -631,7 +555,6 @@ inline void d4pi_printFitFractions(bat_fit& m)
             LOG(INFO) << yap::daughter_name()(groupedDecayTrees[i][0])
                       << "   L = " << yap::orbital_angular_momentum()(groupedDecayTrees[i][0])
                       << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
-            //for (const auto& fa : sort(groupedDecayTrees[i], yap::compare_by<yap::is_fixed>(), yap::by_parent_name<>()))
             for (const auto& fa : groupedDecayTrees[i])
                 LOG(INFO) << yap::to_string(*fa);
 
@@ -663,7 +586,6 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
     }
-
 }
 
 #endif
