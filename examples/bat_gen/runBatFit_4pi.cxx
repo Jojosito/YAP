@@ -31,13 +31,13 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.21;
+    const double BDT_cut = 0.15;
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 4000;//00; // number of Data points we want
+    const unsigned nData = 400000; // number of Data points we want
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");

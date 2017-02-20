@@ -73,11 +73,6 @@ private:
     /// Add cache for StatusManager (thread safe)
     void addToCache(const StatusManager& sm) const;
 
-private:
-
-    /// Add cache for StatusManager (thread safe)
-    void addToCache(const StatusManager& sm) const;
-
     /// recursive helicity-angle calculator that travels down decay trees for all channels
     void calculateAngles(const DataPoint& d, const StatusManager& sm,
                          const std::shared_ptr<const ParticleCombination>& pc,

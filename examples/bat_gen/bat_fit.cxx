@@ -78,7 +78,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             continue;
         auto adm_name = "admixture_" + comp.particle()->name() + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, 2e100);
+        AddParameter(adm_name, 0, 10.);
 
         Admixtures_.push_back(comp.admixture());
     }
@@ -103,6 +103,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     // }
 
     FirstParameter_ = GetParameters().Size();
+    assert(FirstParameter_ = 2*FreeAmplitudes_.size() + Admixtures_.size());
     FirstObservable_ = GetObservables().Size();
 }
 
@@ -230,13 +231,19 @@ size_t load_data(yap::DataSet& data, const yap::Model& M, const yap::MassAxes& A
 //-------------------------
 void bat_fit::setParameters(const std::vector<double>& p)
 {
+    DEBUG("p.size() = " << p.size());
+    DEBUG("FreeAmplitudes_.size() = " << FreeAmplitudes_.size());
+    DEBUG("Admixtures_.size() = " << Admixtures_.size());
+    DEBUG("Parameters_.size() = " << Parameters_.size());
+
     for (size_t i = 0; i < FreeAmplitudes_.size(); ++i)
         *FreeAmplitudes_[i] = std::complex<double>(p[i * 2], p[i * 2 + 1]);
 
     for (size_t i = 0; i < Admixtures_.size(); ++i)
         *Admixtures_[i] = p[FreeAmplitudes_.size()*2 + i];
 
-    yap::set_values(Parameters_.begin(), Parameters_.end(), p.begin() + FirstParameter_, p.end());
+    yap::set_values(Parameters_.begin(), Parameters_.end(),
+            p.begin() + FirstParameter_, p.begin() + Parameters_.size());
 
     integrate();
 

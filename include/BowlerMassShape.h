@@ -50,13 +50,15 @@ public:
     /// Constructor
     /// \param mass Mass of resonance [GeV]
     /// \param width Width of resonance [GeV]
-    BowlerMassShape(double mass, double width) :
-        BreitWigner(mass, width), CalculatedForMass_(0.), CalculatedForWidth_(0.) { }
+    BowlerMassShape(double mass, double width);
 
     /// Constructor
     /// \param pde ParticleTableEntry to get mass and width from
-    BowlerMassShape(const ParticleTableEntry& pde) :
-        BreitWigner(pde), CalculatedForMass_(0.), CalculatedForWidth_(0.) { }
+    BowlerMassShape(const ParticleTableEntry& pde);
+
+    /// Get K*K coupling
+    std::shared_ptr<PositiveRealParameter> coupling()
+    { return KsKCoupling_; }
 
     using BreitWigner::calculate;
     
@@ -71,6 +73,9 @@ private:
     void calculateMassDependentWidth() const;
 
     double massDependentWidth(double m2) const;
+
+    /// K*K coupling
+    std::shared_ptr<PositiveRealParameter> KsKCoupling_;
 
     /// mass dependend width (vs m2)
     mutable std::map<double, double> MassDependentWidth_;

@@ -194,15 +194,16 @@ inline std::unique_ptr<Model> d4pi()
     sigma->addStrongDecay(piPlus, piMinus);
     
     // a_1
-    //auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
-    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BowlerMassShape>(T["a_1+"]));
-    std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
+    auto a_1 = a1_bowler ? DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BowlerMassShape>(T["a_1+"])) :
+                           DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
+    if (a1_bowler)
+        std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
 
     if (a_rho_pi_S or a_rho_pi_D) {
-        a_1->addStrongDecay(rho,   piPlus);
-        if (omega_omega) {
+        //a_1->addStrongDecay(rho,   piPlus);
+        a_1->addWeakDecay(rho,   piPlus);
+        if (omega_omega)
             a_1->addStrongDecay(omega,   piPlus);
-        }
     }
     if (a_sigma_pi)
         a_1->addStrongDecay(sigma, piPlus);
@@ -226,6 +227,8 @@ inline std::unique_ptr<Model> d4pi()
     auto pipiFlat = DecayingParticle::create("pipiFlat", QuantumNumbers(0, 0), radialSize);
     pipiFlat->addStrongDecay(piPlus, piMinus);
     
+    const double omega_rel_amp = -0.01;
+
     //
     // D0 channels
     //
@@ -237,8 +240,10 @@ inline std::unique_ptr<Model> d4pi()
                                                  std::polar(scale_rho_rho * 0.157, rad(120.)),    // A_parallel
                                                  std::polar(scale_rho_rho * 0.384, rad(163.)) )); // A_perpendicular
         
-        for (auto& fa : free_amplitudes(*D, to(rho, rho)))
+        for (auto& fa : free_amplitudes(*D, to(rho, rho))) {
             *fa = static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+            fa->variableStatus() = VariableStatus::fixed; // test
+        }
 
         if (omega_omega) {
             //D->addWeakDecay(rho,   omega); // \todo do I need this?
@@ -248,7 +253,7 @@ inline std::unique_ptr<Model> d4pi()
             //    *fa = 0.5 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
 
             for (auto& fa : free_amplitudes(*D, to(omega, omega))) {
-                *fa = -0.4 * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
+                *fa = omega_rel_amp * static_cast<std::complex<double> >(c[fa->spinAmplitude()->L()]);
                 //fa->variableStatus() = VariableStatus::fixed; // test
             }
         }
@@ -256,36 +261,51 @@ inline std::unique_ptr<Model> d4pi()
     }
     if (a_rho_pi_S or a_rho_pi_D) {
         D->addWeakDecay(a_1, piMinus);
-        free_amplitude(*D, to(a_1))->variableStatus() = VariableStatus::fixed;
+        //free_amplitude(*D, to(a_1))->variableStatus() = VariableStatus::fixed;
 
         auto a_rho_S = free_amplitude(*a_1, to(rho), l_equals(0));
-        auto a_omega_S = free_amplitude(*a_1, to(omega), l_equals(0));
+        auto a_omega_S = omega_omega ? free_amplitude(*a_1, to(omega), l_equals(0)) : nullptr;
         auto a_rho_D = free_amplitude(*a_1, to(rho), l_equals(2));
-        auto a_omega_D = free_amplitude(*a_1, to(omega), l_equals(2));
+        auto a_omega_D = omega_omega ? free_amplitude(*a_1, to(omega), l_equals(2)) : nullptr;
 
         // S wave
         if (a_rho_pi_S) {
             *a_rho_S = 1;// will be fixed in d4pi_fit
             LOG(INFO) << "set a_rho_pi_S to 1";
-            *a_omega_S = -0.1;
+            if (a_omega_S)
+                *a_omega_S = omega_rel_amp;
         }
         else{
             *a_rho_S = 0.;
             a_rho_S->variableStatus() = VariableStatus::fixed;
             LOG(INFO) << "fixed a_rho_S to 0";
-            *a_omega_S = 0.;
+            if (a_omega_S)
+                *a_omega_S = 0.;
         }
+
+        // no P wave
+        //assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
+        *free_amplitude(*a_1, to(rho), l_equals(1)) = 0.;
+        free_amplitude(*a_1, to(rho), l_equals(1))->variableStatus() = VariableStatus::fixed;
+
+        if (omega_omega) {
+            *free_amplitude(*a_1, to(omega), l_equals(1)) = 0.;
+            free_amplitude(*a_1, to(omega), l_equals(1))->variableStatus() = VariableStatus::fixed;
+        }
+
 
         // D wave
         if (a_rho_pi_D) {
             *a_rho_D = std::polar(scale_a_rho_pi_D * 0.241, rad(82.));
-            *a_omega_D = -0.1 * std::polar(scale_a_rho_pi_D * 0.241, rad(82.));;
+            if (a_omega_D)
+                *a_omega_D = omega_rel_amp * std::polar(scale_a_rho_pi_D * 0.241, rad(82.));;
         }
         else {
             *a_rho_D = 0.;
             a_rho_D->variableStatus() = VariableStatus::fixed;
             LOG(INFO) << "fixed a_rho_D to 0";
-            *a_omega_D = 0.;
+            if (a_omega_D)
+                *a_omega_D = 0.;
         }
     }
     if (f_0_pipi) {
@@ -338,6 +358,8 @@ inline std::unique_ptr<Model> d4pi()
             assert( comp.admixture()->variableStatus() == yap::VariableStatus::fixed );
             LOG(INFO) << "fixed D0 admixture";
         }
+        else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed)
+            *comp.admixture() = 0.1;
     }
 
     return M;
@@ -373,15 +395,6 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 
     // set priors: range around expected value
     for (const auto& fa : m.freeAmplitudes()) {
-        /*if (omega_omega) {
-            // omega omega amplitude over whole range
-            auto omega_fa = free_amplitudes(*D, to(omega, omega));
-            if (std::find(omega_fa.begin(), omega_fa.end(), fa) != omega_fa.end()) {
-                LOG(INFO) << "do not set abs arg prior for omega amplitude";
-                continue;
-            }
-        }*/
-
         double re = real(fa->value());
         double im = imag(fa->value());
 
@@ -404,6 +417,11 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     // free a_1 width
     //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
     //m.GetParameters().Back().SetPriorConstant();
+
+    if (a1_bowler) {
+        //m.addParameter("K*K_coupling", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->coupling(), 0, 1.);
+        //m.GetParameters().Back().SetPriorConstant();
+    }
 
     return m;
 }
@@ -507,82 +525,99 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
 
         // a_rho_pi_S
-        auto blub = yap::filter(decayTrees, yap::to(a_1));
-        blub.erase(std::remove_if(blub.begin(), blub.end(),
-                [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
-                blub.end());
-        groupedDecayTrees.push_back(blub);
+        if (a_rho_pi_S) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         // a_rho_pi_D
-        blub = yap::filter(decayTrees, yap::to(a_1));
-        blub.erase(std::remove_if(blub.begin(), blub.end(),
-                [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
-                blub.end());
-        groupedDecayTrees.push_back(blub);
+        if (a_rho_pi_D) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         // a_sigma_pi
-        blub = yap::filter(decayTrees, yap::to(a_1));
-        blub.erase(std::remove_if(blub.begin(), blub.end(),
-                [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
-                blub.end());
-        groupedDecayTrees.push_back(blub);
+        if (a_sigma_pi) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         // rho_rho
         // omega_omega
-        DecayTreeVector rhos = yap::filter(decayTrees, yap::to(rho));
-        DecayTreeVector omegas = yap::filter(decayTrees, yap::to(omega));
-        rhos.insert(rhos.end(), omegas.begin(), omegas.end());
-        groupedDecayTrees.push_back(rhos);
+        if (rho_rho or omega_omega) {
+            DecayTreeVector rhos = yap::filter(decayTrees, yap::to(rho));
+            if (omega_omega) {
+                DecayTreeVector omegas = yap::filter(decayTrees, yap::to(omega));
+                rhos.insert(rhos.end(), omegas.begin(), omegas.end());
+            }
+            groupedDecayTrees.push_back(rhos);
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         // f_0_pipi
-        groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_0)));
+        if (f_0_pipi) {
+            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_0)));
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
-        // f_2_pipi
-        groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_2)));
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+        // f_2_pipi
+        if (f_2_pipi) {
+            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_2)));
+
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         // sigma_pipi
-        groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(sigma)));
+        if (sigma_pipi) {
+            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(sigma)));
 
-        for(auto dt : groupedDecayTrees.back())  {
-            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-            if(iter != decayTrees.end())
-                decayTrees.erase(iter);
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
         }
 
         if (flat_4pi)
@@ -615,15 +650,16 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
 
-
-        // scaling to match FOCUS
-        LOG(INFO) << "\nnew scales to match FOCUS model";
-        std::vector<double> focusFractions{43.3, 2.5, 8.3, 24.5, 2.4, 4.9, 8.2};
-        std::vector<double> currentScales{1.0, scale_a_rho_pi_D, scale_a_sigma_pi, scale_rho_rho, scale_f_0_pipi, scale_f_2_pipi, scale_sigma_pipi};
-        double fix = sqrt(focusFractions[0] / ff[0].value()); // a_rho_pi_S
-        //assert(ff.size() == focusFractions.size() and ff.size() == currentScales.size());
-        for (size_t i = 1; i < ff.size(); ++i) {
-            LOG(INFO) << currentScales[i] * sqrt(focusFractions[i] / ff[i].value()) / fix;
+        if (a_rho_pi_S and a_rho_pi_D and a_sigma_pi and rho_rho and f_0_pipi and f_2_pipi and sigma_pipi) {
+            // scaling to match FOCUS
+            LOG(INFO) << "\nnew scales to match FOCUS model";
+            std::vector<double> focusFractions{43.3, 2.5, 8.3, 24.5, 2.4, 4.9, 8.2};
+            std::vector<double> currentScales{1.0, scale_a_rho_pi_D, scale_a_sigma_pi, scale_rho_rho, scale_f_0_pipi, scale_f_2_pipi, scale_sigma_pipi};
+            double fix = sqrt(focusFractions[0] / ff[0].value()); // a_rho_pi_S
+            //assert(ff.size() == focusFractions.size() and ff.size() == currentScales.size());
+            for (size_t i = 1; i < ff.size(); ++i) {
+                LOG(INFO) << currentScales[i] * sqrt(focusFractions[i] / ff[i].value()) / fix;
+            }
         }
 
     }

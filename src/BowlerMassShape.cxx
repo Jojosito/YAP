@@ -39,6 +39,20 @@
 namespace yap {
 
 //-------------------------
+BowlerMassShape::BowlerMassShape(double mass, double width) :
+    BreitWigner(mass, width),
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.375)),
+    CalculatedForMass_(0.), CalculatedForWidth_(0.)
+{ }
+
+//-------------------------
+BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
+    BreitWigner(pde),
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.375)),
+    CalculatedForMass_(0.), CalculatedForWidth_(0.)
+{ }
+
+//-------------------------
 void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
 {
     if (MassDependentWidth_.empty() or
@@ -105,6 +119,8 @@ void BowlerMassShape::calculateMassDependentWidth() const
     a_1->addStrongDecay(rho,   piPlus);
     // S wave
     *free_amplitude(*a_1, to(rho), l_equals(0)) = 1;
+    // P wave
+    *free_amplitude(*a_1, to(rho), l_equals(1)) = 0.;
     // D wave
     *free_amplitude(*a_1, to(rho), l_equals(2)) = std::polar(scale_a_rho_pi_D * 0.241, rad(82.));
 
@@ -184,7 +200,8 @@ double BowlerMassShape::massDependentWidth(double m2) const
     // K*K threshold
     double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
     if (mKK2 > 0)
-        w += 0.375 * sqrt(mKK2); // hardcoded and roughly taken from FOCUS
+        //w += 0.375 * sqrt(mKK2); // hardcoded and roughly taken from FOCUS
+        w += KsKCoupling_->value() * sqrt(mKK2);
 
     return w;
 }
