@@ -113,6 +113,9 @@ public:
     /// \todo Implement move assignment.
     Model& operator=(Model&&) = delete;
 
+    /// Virtual destructor = default
+    virtual ~Model() = default;
+    
     /// Calculate model for each data point in the data partition
     /// \param D DataPartition to calculate over
     /// \todo This need not be a member function!
@@ -204,6 +207,9 @@ public:
 
     /// add an initial state
     void addInitialState(std::shared_ptr<DecayingParticle> p);
+
+    /// add an initial state
+    void addInitialState(DecayingParticle& p);
 
     /// set four momenta of data point
     /// \param P vector of FourVectors of final-state momenta
@@ -309,6 +315,10 @@ const double intensity(const ModelComponent& c, const DataPoint& d);
 
 /// \return intensity for a data point evaluated over isp_map
 const double intensity(const std::vector<ModelComponent>& C, const DataPoint& d);
+
+/// \return intensity for a data point evaluated over isp_map of model
+inline const double intensity(const Model& M, const DataPoint& d)
+{ return intensity(M.components(), d); }
 
 /// \return The sum of the logs of squared amplitudes evaluated over the data partition
 /// \param M Model to evaluate

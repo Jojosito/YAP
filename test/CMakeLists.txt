@@ -15,20 +15,40 @@ ExternalProject_Add(
 set_target_properties(catch PROPERTIES EXCLUDE_FROM_ALL TRUE)
 ExternalProject_Get_Property(catch source_dir)
 
-include_directories(${YAP_SOURCE_DIR}/include ${source_dir}/include ${YAP_SOURCE_DIR}/tools)
+include_directories(
+  ${YAP_SOURCE_DIR}/include
+  ${source_dir}/include
+  ${YAP_SOURCE_DIR}/tools
+  ${YAP_SOURCE_DIR}/data
+  )
+
 set(YAP_TEST_SOURCES
+  test_AmplitudeBasis.cxx
+  test_Attributes.cxx
   test_BasisTransformations.cxx
+  test_CalculationStatus.cxx
   test_ClebschGordan.cxx
   test_CompensatedSum.cxx
+  test_DataSet.cxx
+  test_deduce_parities.cxx
+  test_FourMomenta.cxx
   test_FourMomentaCalculation.cxx
+  test_Filter.cxx
+  test_FreeAmplitude.cxx
   test_helicityFrame.cxx
   test_HelicityAngles.cxx
   test_HelicityAngles_boostRotate.cxx
   test_integration.cxx
+  test_MathUtilities.cxx
   test_Matrix.cxx
+  test_Model.cxx
+  test_Parameter.cxx
+  test_ParticleCombination.cxx
+  test_ParticleTable.cxx
+  test_Spin.cxx
   test_swapDalitzAxes.cxx
   test_swapFinalStates.cxx
-#  test_UnitSpinAmplitudeHelicity.cxx
+  test_VariableStatus.cxx
   test_Vector.cxx
   test_WignerD.cxx
   yap_test.cxx

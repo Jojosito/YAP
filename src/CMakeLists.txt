@@ -5,7 +5,7 @@ include_directories(${INCLUDE_DIRECTORIES})
 
 set(YAP_SOURCES
 	AmplitudeComponent.cxx
-  	Attributes.cxx
+	Attributes.cxx
 	BlattWeisskopf.cxx
 	BowlerMassShape.cxx
 	BreitWigner.cxx
@@ -46,7 +46,7 @@ set(YAP_SOURCES
 	SpinAmplitudeCache.cxx
 	StaticDataAccessor.cxx
 	StatusManager.cxx
- 	UnitSpinAmplitude.cxx
+	UnitSpinAmplitude.cxx
 	WignerD.cxx
 	ZemachFormalism.cxx
 )

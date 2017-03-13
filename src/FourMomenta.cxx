@@ -22,7 +22,6 @@ namespace yap {
 //-------------------------
 FourMomenta::FourMomenta(Model& m) :
     StaticDataAccessor(m, equal_by_orderless_content),
-    TotalIndex_(-1),
     P_(FourVectorCachedValue::create(*this)),
     M_(RealCachedValue::create(*this))
 {
@@ -49,10 +48,6 @@ void FourMomenta::addParticleCombination(const ParticleCombination& pc)
     StaticDataAccessor::addParticleCombination(pc);
     auto index = symmetrizationIndex(pc.shared_from_this());
 
-    // check for ISP
-    if (TotalIndex_ < 0 and pc.indices().size() == model()->finalStateParticles().size())
-        TotalIndex_ = index;
-
     /// check for FSP
     if (is_final_state_particle_combination(pc)) {
         if (pc.indices()[0] + 1 > FSPIndices_.size())
@@ -67,25 +62,12 @@ bool FourMomenta::consistent() const
 {
     bool C = StaticDataAccessor::consistent();
 
-    if (TotalIndex_ < 0) {
-        FLOG(ERROR) << "ISP symmetrization index has not been recorded.";
-        C &= false;
-    }
-
     if (FSPIndices_.size() != model()->finalStateParticles().size() or std::any_of(FSPIndices_.begin(), FSPIndices_.end(), [](int i) {return i < 0;})) {
         FLOG(ERROR) << "FSP symmetrization indices not all recorded";
         C &= false;
     }
 
     return C;
-}
-
-//-------------------------
-const FourVector<double> FourMomenta::totalMomentum(const DataPoint& d) const
-{
-    if (TotalIndex_ < 0)
-        throw exceptions::Exception("Initial-state particle unknown", "FourMomenta::totalMomentum");
-    return P_->value(d, TotalIndex_);
 }
 
 //-------------------------
@@ -151,7 +133,7 @@ std::string mp_string(unsigned n, unsigned m_p, std::shared_ptr<const ParticleCo
         os << " (nominally " << M << " GeV/c^2)";
     else
         os << "            " << std::setw(m_p) << " "                << "         ";
-    os << "\tp = " << p << " GeV";
+    os << "\tp = " << to_string(p) << " GeV";
     return os.str();
 }
 
@@ -333,7 +315,7 @@ std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, con
                 // else Y_i = (P_2 * P_i - P_2 * P_i) / Y_2
                 P[i][2] = (P[2][2] == 0) ? 0 : (P[2][0] * P[i][0] - pp[2][i] - P[2][3] * P[i][3]) / P[2][2];
 
-                if (i < 4) {
+                // if (i < 4) {
 
                     // enforce P^2 = m^2
                     P[i][1] = P[i][0] * sqrt(1 - pp[i][i] / pow(P[i][0], 2) - pow(P[i][2] / P[i][0], 2) - pow(P[i][3] / P[i][0], 2));
@@ -341,8 +323,7 @@ std::vector<FourVector<double> > calculate_four_momenta(double initial_mass, con
                     if (!std::isfinite(P[i][1]))
                         return std::vector<FourVector<double> >();
 
-                } else
-                    throw exceptions::Exception("not yet supporting 5 or more particles", "calculate_four_momenta");
+                    // }
             }
         }
     }

@@ -22,15 +22,16 @@ TEST_CASE( "WignerD" )
     //yap::plainLogs(el::Level::Debug);
 
     // choose arbitrary angles to test with
-    double alpha = 0.4 * yap::pi<double>();
-    double beta = 0.6 * yap::pi<double>();
-    double gamma = 0.5 * yap::pi<double>();
+    double alpha = 0.4 * yap::pi();
+    double beta = 0.6 * yap::pi();
+    double gamma = 0.5 * yap::pi();
 
     SECTION( "Caching" ) {
         // cache J = 0, 1/2, 1 (out of order)
         REQUIRE_NOTHROW( yap::dMatrix::cache(0) );
         REQUIRE_NOTHROW( yap::dMatrix::cache(2) );
         REQUIRE_NOTHROW( yap::dMatrix::cache(1) );
+        REQUIRE_NOTHROW( yap::dMatrix::cacheSize() );
     }
 
     SECTION( "J = 0") {
@@ -58,12 +59,12 @@ TEST_CASE( "WignerD" )
     SECTION( "J = 1/2") {
         SECTION( "d matrix") {
             // check invalid args
-            REQUIRE_THROWS_AS( yap::dFunction(1, 2, 0, beta), yap::exceptions::Exception );
-            REQUIRE_THROWS_AS( yap::dFunction(1, 0, 2, beta), yap::exceptions::Exception );
+            REQUIRE_THROWS_AS( yap::dFunction(1, 2, 1, beta), yap::exceptions::Exception );
+            REQUIRE_THROWS_AS( yap::dFunction(1, 1, 2, beta), yap::exceptions::Exception );
 
             // check val when M or N exceeds J
-            REQUIRE( yap::dFunction(1, 3, 0, beta) == 0 );
-            REQUIRE( yap::dFunction(1, 0, 3, beta) == 0 );
+            REQUIRE( yap::dFunction(1, 3, 1, beta) == 0 );
+            REQUIRE( yap::dFunction(1, 1, 3, beta) == 0 );
 
             // check vals
             REQUIRE( yap::dFunction(1, +1, +1, beta) == Approx(+cos(beta / 2)) );

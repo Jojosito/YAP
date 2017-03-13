@@ -62,7 +62,7 @@ public:
     virtual void calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const = 0;
     
     /// Check consistency of object
-    virtual bool consistent() const;
+    virtual bool consistent() const override;
 
     /// get raw pointer to owner
     DecayingParticle* owner() const
@@ -86,8 +86,7 @@ protected:
 
     /// Give MassShape chance to perform operations based on the
     /// addition of a DecayChannel to its owner
-    virtual void addDecayChannel(std::shared_ptr<DecayChannel> c)
-    {}
+    virtual void addDecayChannel(std::shared_ptr<DecayChannel> c) {}
 
     /// Access owner's DecayTree's
     DecayTreeVector& ownersDecayTrees();

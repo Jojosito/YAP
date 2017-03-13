@@ -98,11 +98,11 @@ const double sum_of_logs_of_intensities(const Model& M, DataPartition& D, double
     if (ped == 0)
         return std::accumulate(D.begin(), D.end(), CompensatedSum<double>(0.),
                                [&](CompensatedSum<double>& l, const DataPoint& d)
-                               {return l += log(intensity(M.components(), d));});
+                               {return l += log(intensity(M, d));});
     // else
     return std::accumulate(D.begin(), D.end(), CompensatedSum<double>(0.),
                            [&](CompensatedSum<double>& l, const DataPoint& d)
-                           {return l += (log(intensity(M.components(), d)) - ped);});
+                           {return l += (log(intensity(M, d)) - ped);});
 }
 
 //-------------------------
@@ -220,21 +220,28 @@ void Model::setFinalStateMomenta(DataPoint& d, const std::vector<FourVector<doub
 //-------------------------
 void Model::addInitialState(std::shared_ptr<DecayingParticle> p)
 {
-    if (locked())
-        throw exceptions::Exception("Model is locked and cannot be modified.", "Model::addInitialState");
-
     if (!p)
         throw exceptions::Exception("Initial-state particle empty", "Model::addInitialState");
+    addInitialState(*p);
+}
 
-    if (p->model() != this)
+//-------------------------
+void Model::addInitialState(DecayingParticle& p)
+{
+    if (locked())
+        throw exceptions::Exception("Model is locked and cannot be modified.", "Model::addInitialState");
+    
+    if (p.model() != this)
         throw exceptions::Exception("Initial-state particle does not belong to this model", "Model::addInitialState");
 
+    auto ptr = std::static_pointer_cast<DecayingParticle>(p.shared_from_this());
+    
     // if already present, do nothing
-    if (std::find(InitialStates_.begin(), InitialStates_.end(), p) != InitialStates_.end())
+    if (std::find(InitialStates_.begin(), InitialStates_.end(), ptr) != InitialStates_.end())
         return;
     
     // add to InitialStates_
-    InitialStates_.push_back(p);
+    InitialStates_.push_back(ptr);
 }
 
 //-------------------------
@@ -296,14 +303,17 @@ void Model::lock()
 
     // for each isp
     for (auto& isp : InitialStates_) {
+
         // register it
         isp->registerWithModel();
-        // add it's particle combinations
+
+        // add its particle combinations
         for (auto& pc : isp->particleCombinations())
             addParticleCombination(*pc);
+
         // and create components
         for (auto dtv : group(isp->decayTrees(), by_m<>()))
-            Components_.emplace_back(dtv, &*isp);
+            Components_.emplace_back(dtv);
     }
     
     // call prune() for all initial states
