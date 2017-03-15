@@ -31,13 +31,13 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.15;
+    const double BDT_cut = 0.1;
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 400000; // number of Data points we want
+    const unsigned nData = 1000000; // max number of Data points we want
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
@@ -67,18 +67,19 @@ int main()
     // real data, pre-filtered
     {
         TChain t("t");
-        t.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.root").c_str());
-        t.AddFriend("t", (dir + "DataSkim_analysis_TMVA_weights.root").c_str());
+        t.Add((dir + "DataSkim_analysis_bdt_gt_0.025.root").c_str());
+        t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
     }
     { // MC data, pre-filtered
         TChain t_mcmc("t");
-        t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.root").c_str());
-        t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0_TMVA_weights.root").c_str());
+        t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
+        t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025_TMVA_weights.root").c_str());
         LOG(INFO) << "Load integration (MC) data";
-        load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+        //load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+        load_data_4pi(m.integralData(), t_mcmc, nData, 0, K0_cut, false); // phsp cut was already applied
     }
 
     // partition integral data
