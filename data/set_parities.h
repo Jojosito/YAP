@@ -21,13 +21,13 @@
 #ifndef yap_set_parities_h
 #define yap_set_parities_h
 
-#include "ParticleTable.h"
-#include "QuantumNumbers.h"
+#include <ParticleTable.h>
+#include <QuantumNumbers.h>
 
 /// \function set_parities
 /// set parities for selected mesons.
 /// THIS IS NOT COMPLETE
-void set_parities(ParticleTable& pdl) {
+inline void set_parities(yap::ParticleTable& pdl) {
 
     // light unflavored mesons
     pdl["pi+"].quantumNumbers().setP(-1);
