@@ -10,6 +10,8 @@
 #include "../bat_fit.h"
 #include "../fit_fitFraction.h"
 #include "../tools.h"
+#include "../../../data/set_parities.h"
+#include "../../../data/deduce_parities.h"
 
 #include "d4pi_scales.h"
 
@@ -78,8 +80,9 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
     // set branch addresses
     EVENT* E = nullptr;
     t.SetBranchAddress("E", &E);
-    t.SetBranchStatus("T", 0);
-    t.SetBranchStatus("BDT", 0);
+    t.SetBranchStatus("*", 0);
+    t.SetBranchStatus("mom_uc_pi*", 1);
+    t.SetBranchStatus("mom_pi*", 1);
 
     if (N <= 0) // attempt to load all data
         N = eventList->GetN();
@@ -105,13 +108,13 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
             continue;
         }
 
-        // K0 cut
+        // K0 cut with UNconstrained 4 momenta
         if (K0_cut > 0) {
             masses.clear();
-            masses.push_back((E->mom_piPlus1 + E->mom_piMinus1).M());
-            masses.push_back((E->mom_piPlus1 + E->mom_piMinus2).M());
-            masses.push_back((E->mom_piPlus2 + E->mom_piMinus1).M());
-            masses.push_back((E->mom_piPlus2 + E->mom_piMinus2).M());
+            masses.push_back((E->mom_uc_piPlus1 + E->mom_uc_piMinus1).M());
+            masses.push_back((E->mom_uc_piPlus1 + E->mom_uc_piMinus2).M());
+            masses.push_back((E->mom_uc_piPlus2 + E->mom_uc_piMinus1).M());
+            masses.push_back((E->mom_uc_piPlus2 + E->mom_uc_piMinus2).M());
 
             bool cut(false);
             for (auto m : masses)
@@ -126,7 +129,7 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
             }
         }
 
-        // Fill 4-momenta
+        // Fill CONSTRAINED 4-momenta
         P.clear();
         P.push_back(convert(E->mom_piPlus1));
         P.push_back(convert(E->mom_piMinus1));
@@ -163,6 +166,8 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
 inline std::unique_ptr<Model> d4pi()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    deduce_meson_parities(T);
+    set_parities(T);
 
     // final state particles
     auto piPlus  = FinalStateParticle::create(T[211]);
@@ -178,11 +183,11 @@ inline std::unique_ptr<Model> d4pi()
     auto D = DecayingParticle::create(T["D0"], r);
     
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<BreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // omega
-    auto omega = DecayingParticle::create(T["omega"], radialSize, std::make_shared<BreitWigner>(T["omega"]));
+    auto omega = DecayingParticle::create(T["omega"], r, std::make_shared<BreitWigner>(T["omega"]));
     omega->addStrongDecay({piPlus, piMinus});
 
     
@@ -191,13 +196,12 @@ inline std::unique_ptr<Model> d4pi()
     sigma->addStrongDecay(piPlus, piMinus);
     
     // a_1
-    auto a_1 = a1_bowler ? DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BowlerMassShape>(T["a_1+"])) :
-                           DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<BreitWigner>(T["a_1+"]));
+    auto a_1 = a1_bowler ? DecayingParticle::create(T["a_1+"], r, std::make_shared<BowlerMassShape>(T["a_1+"])) :
+                           DecayingParticle::create(T["a_1+"], r, std::make_shared<BreitWigner>(T["a_1+"]));
     if (a1_bowler)
         std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
 
     if (a_rho_pi_S or a_rho_pi_D) {
-        //a_1->addStrongDecay(rho,   piPlus);
         a_1->addWeakDecay(rho,   piPlus);
         if (omega_omega)
             a_1->addStrongDecay(omega,   piPlus);
@@ -294,6 +298,8 @@ inline std::unique_ptr<Model> d4pi()
 
         // no P wave
         assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
+        *free_amplitude(*a_1, to(rho), l_equals(1)) = 0.;
+        free_amplitude(*a_1, to(rho), l_equals(1))->variableStatus() = VariableStatus::fixed;
 
         // D wave
         if (a_rho_pi_D) {
@@ -324,13 +330,13 @@ inline std::unique_ptr<Model> d4pi()
 
     // BACKGROUND
     if (bg_flat_4pi) {
-        auto flat_4pi = DecayingParticle::create("flat_4pi", QuantumNumbers(0, 0), radialSize);
+        auto flat_4pi = DecayingParticle::create("flat_4pi", QuantumNumbers(0, 0), r);
         flat_4pi->addWeakDecay(pipiFlat, pipiFlat);
         M->addInitialState(flat_4pi);
     }
 
     if (bg_rho_2pi) {
-        auto rho_2pi = DecayingParticle::create("rho_2pi", QuantumNumbers(0, 0), radialSize);
+        auto rho_2pi = DecayingParticle::create("rho_2pi", QuantumNumbers(0, 0), r);
         rho_2pi->addWeakDecay(rho, pipiFlat);
         M->addInitialState(rho_2pi);
     }
