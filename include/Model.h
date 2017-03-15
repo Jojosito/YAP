@@ -59,7 +59,7 @@ class ModelComponent
 {
 public:
     /// Constructor
-    ModelComponent(const DecayTreeVector& dtv, DecayingParticle* p, double adm = 1.);
+    ModelComponent(const DecayTreeVector& dtv, DecayingParticle& p, double adm = 1.);
 
     /// \return DecayTrees (const)
     const DecayTreeVector& decayTrees() const
