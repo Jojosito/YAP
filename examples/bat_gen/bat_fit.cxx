@@ -44,13 +44,16 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     // create mass axes
     axes() = model()->massAxes(pcs);
 
+    unsigned iVar(0);
+
     // loop over all free amplitudes
     for (const auto& fa : free_amplitudes(*model())) {
         // ignore fixed free amplitudes
         if (fa->variableStatus() == yap::VariableStatus::fixed)
             continue;
 
-        auto fa_name = to_string(*fa->decayChannel())
+        auto fa_name = std::to_string(iVar++) + " "
+            + to_string(*fa->decayChannel())
             + " L = " + std::to_string(fa->spinAmplitude()->L())
             + " S = " + yap::spin_to_string(fa->spinAmplitude()->twoS());
 
@@ -76,7 +79,9 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
         // ignore fixed free amplitudes
         if (comp.admixture()->variableStatus() == yap::VariableStatus::fixed)
             continue;
-        auto adm_name = "admixture_" + comp.particle()->name() + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
+        auto adm_name = std::to_string(iVar++) + " "
+                + "admixture_" + comp.particle()->name()
+                + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
         AddParameter(adm_name, 0, 10.);
 
@@ -92,7 +97,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
         for (const auto& dt : mci.Integral.decayTrees()) {
             DecayTrees_.push_back(dt);
 
-            std::string str = "fit_frac(" + to_string(*dt) + ")";
+            std::string str = std::to_string(iVar++) + " ""fit_frac(" + to_string(*dt) + ")";
             std::replace(str.begin(), str.end(), '-', 'm'); // - will be omitted by BATs "safe name", and when decay channels only differ in some spin projections (-1 vs 1), the safe name would be identical
             std::replace(str.begin(), str.end(), '\n', ';'); // make into one line
             std::replace(str.begin(), str.end(), '\t', ' ');
