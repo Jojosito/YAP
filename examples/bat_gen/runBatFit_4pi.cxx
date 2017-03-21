@@ -6,6 +6,7 @@
 // ***************************************************************
 
 #include "bat_fit.h"
+#include "bat_gen.h"
 #include "models/d4pi.h"
 #include "tools.h"
 
@@ -31,13 +32,13 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.1;
+    const double BDT_cut = 0.15;
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 1000000; // max number of Data points we want
+    const unsigned nData = 100000; // max number of Data points we want
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
@@ -78,8 +79,8 @@ int main()
         t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
         t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025_TMVA_weights.root").c_str());
         LOG(INFO) << "Load integration (MC) data";
-        //load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
-        load_data_4pi(m.integralData(), t_mcmc, nData, 0, K0_cut, false); // phsp cut was already applied
+        load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+        //load_data_4pi(m.integralData(), t_mcmc, nData, 0, K0_cut, false); // phsp cut was already applied
     }
 
     // partition integral data
@@ -143,6 +144,56 @@ int main()
     // // close log file
     BCLog::OutSummary("Exiting");
     BCLog::CloseLog();
+
+
+    // generate with fitted amplitudes
+    if (true) {
+        LOG(INFO) << "Generate data with fitted amplitudes";
+
+        m.fitData().clear();
+        m.integralData().clear();
+        auto model = std::unique_ptr<yap::Model>(nullptr);
+        model.swap(m.model());
+
+        const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+        bat_gen m_gen("D4pi_fitted_params", std::move(model), D0_mass);
+
+        // open log file
+        BCLog::OpenLog("output/" + m_gen.GetSafeName() + "_log.txt", BCLog::detail, BCLog::detail);
+
+        // set precision
+        m_gen.SetPrecision(BCEngineMCMC::kMedium);
+        m_gen.SetNChains(8);
+        m_gen.SetNIterationsPreRunMax(1e6);
+        m_gen.SetMinimumEfficiency(0.15);
+        m_gen.SetMaximumEfficiency(0.35);
+        m_gen.SetInitialPositionAttemptLimit(1e5);
+
+        m_gen.SetNIterationsRun(static_cast<int>(nData*25 / m_gen.GetNChains()));
+
+        m_gen.WriteMarkovChain("output/" + m_gen.GetSafeName() + "_mcmc.root", "RECREATE", true, false);
+
+        // start timing:
+        auto start = std::chrono::steady_clock::now();
+
+        // run MCMC, marginalizing posterior
+        m_gen.MarginalizeAll(BCIntegrate::kMargMetropolis);
+
+        // end timing
+        auto end = std::chrono::steady_clock::now();
+
+        // timing:
+        auto diff = end - start;
+        auto ms = std::chrono::duration<double, std::micro>(diff).count();
+        auto nevents = (m_gen.GetNIterationsPreRun() + m_gen.GetNIterationsRun()) * m_gen.GetNChains();
+        BCLog::OutSummary(std::string("Seconds = ") + std::to_string(ms / 1.e6) + " for " + std::to_string(nevents) + " iterations, " + std::to_string(m_gen.likelihoodCalls()) + " calls");
+        BCLog::OutSummary(std::to_string(ms / nevents) + " microsec / iteration");
+        BCLog::OutSummary(std::to_string(ms / m_gen.likelihoodCalls()) + " microsec / call");
+
+        // close log file
+        BCLog::OutSummary("Exiting");
+        BCLog::CloseLog();
+    }
 
     return 0;
 }
