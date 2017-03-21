@@ -1,6 +1,8 @@
 #include "BowlerMassShape.h"
 
 #include "../../examples/bat_gen/models/d4pi_scales.h"
+#include "../../data/set_parities.h"
+#include "../../data/deduce_parities.h"
 
 #include "Attributes.h"
 #include "BreitWigner.h"
@@ -87,7 +89,9 @@ void BowlerMassShape::calculateMassDependentWidth() const
 
 
     // \todo: not hardcode
-    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    static auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    deduce_meson_parities(T);
+    set_parities(T);
 
     // final state particles
     auto piPlus  = FinalStateParticle::create(T[211]);
@@ -97,32 +101,32 @@ void BowlerMassShape::calculateMassDependentWidth() const
     M->setFinalState(piPlus, piMinus, piPlus);
 
     // use common radial size for all resonances
-    double radialSize = 3.; // [GeV^-1]
+    double r = 1.2; // [GeV^-1]
 
     // initial state particle
-    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize);
+    auto a_1 = DecayingParticle::create(T["a_1+"], r);
 
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<BreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // sigma / f_0(500)
-    auto sigma = DecayingParticle::create(T["f_0(500)"], radialSize, std::make_shared<BreitWigner>(T["f_0(500)"]));
+    auto sigma = DecayingParticle::create(T["f_0(500)"], r, std::make_shared<BreitWigner>(T["f_0(500)"]));
     sigma->addStrongDecay(piPlus, piMinus);
 
-
-    // a_1 -> sigma pi
-    a_1->addStrongDecay(sigma, piPlus);
-    *free_amplitude(*a_1, to(sigma)) = std::polar(scale_a_sigma_pi * 0.439, rad(193.));
 
     // a_1 -> rho pi
     a_1->addStrongDecay(rho,   piPlus);
     // S wave
     *free_amplitude(*a_1, to(rho), l_equals(0)) = 1;
     // P wave
-    *free_amplitude(*a_1, to(rho), l_equals(1)) = 0.;
+    assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
     // D wave
-    *free_amplitude(*a_1, to(rho), l_equals(2)) = std::polar(scale_a_rho_pi_D * 0.241, rad(82.));
+    *free_amplitude(*a_1, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+
+    // a_1 -> sigma pi
+    a_1->addStrongDecay(sigma, piPlus);
+    *free_amplitude(*a_1, to(sigma)) = amp_a_sigma_pi;
 
     M->lock();
 
@@ -131,25 +135,30 @@ void BowlerMassShape::calculateMassDependentWidth() const
     const unsigned n_threads = 4;
     const unsigned nBins = 150;
 
+    // get FSP mass ranges
     const double m_pi = T["pi+"].mass();
     const double low_m = 3.*m_pi;
     const double hi_m = 1.01 * (T["D0"].mass() - m_pi);
 
     ImportanceSamplerGenerator impSampGen(*M, n_threads);
 
-      // Get normalizing width
-    // get FSP mass ranges
+    // Get normalizing width
     const double a1_mass = mass()->value(); // nominal mass
     double norm_width = dalitz_phasespace_volume(a1_mass, M->finalStateParticles())
                         * impSampGen(a1_mass, n_integrationPoints)
                         / pow(a1_mass, 3. / 2);
 
-    if (isnan(norm_width) or norm_width == 0)
-        LOG(ERROR) << "norm_width invalid";
-    DEBUG("norm_width = " << norm_width);
+    assert(not isnan(norm_width) and norm_width > 0.);
+    assert(width()->value() > 0.);
 
+    DEBUG("norm_width = " << norm_width);
     DEBUG("m2; width");
     for (unsigned i = 0; i <= nBins; ++i) {
+        // first bin is 0
+        if (i == 0) {
+            MassDependentWidth_[low_m*low_m] = 0.;
+            continue;
+        }
 
         static const double scaling = 1.5; // gives higher density of samples at lower m2, where the width is changing more rapidly
 
@@ -157,24 +166,21 @@ void BowlerMassShape::calculateMassDependentWidth() const
         const double mass = sqrt(m2);
 
         const double phsp = dalitz_phasespace_volume(mass, M->finalStateParticles());
+        assert(phsp > 0.);
+
         const double density = impSampGen(mass, n_integrationPoints);
+        assert(density > 0.);
 
         double w = phsp * density / pow(mass, 3./2) * width()->value() / norm_width;
-        if (std::isnan(w))
-            w = 0;
-        w = std::max(0., w);
+        assert(w > 0.);
 
         DEBUG(m2 << "; " << w);
-
-        if (i > 0)
-            assert(w > 0);
 
         MassDependentWidth_[m2] = w;
     }
 
     CalculatedForMass_  = mass() ->value();
     CalculatedForWidth_ = width()->value();
-
 }
 
 //-------------------------

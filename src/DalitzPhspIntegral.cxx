@@ -55,12 +55,13 @@ double dalitz_phasespace_volume(double isp_mass, const FinalStateParticleVector&
         result = prefactor *DEIntegrator<DalitzIntegrand>::Integrate(f, lowerBound, upperBound, absErr, evaluations, errorEstimate);
         assert (result <= volume_upper_bound);
 
-        DEBUG("Dalitz phasespace volume = " << result << "; calculated with " << evaluations << "evaluations");
+        DEBUG("Dalitz phasespace volume = " << result << "; calculated with " << evaluations << " evaluations");
 
-        if (errorEstimate/result <= relErr)
+        if (result == 0. or errorEstimate/result <= relErr)
             break;
 
         absErr = 0.8 * std::min(result * relErr, absErr); // decrease absErr
+        DEBUG("Decrease absErr to " << absErr);
     }
 
     return result;
