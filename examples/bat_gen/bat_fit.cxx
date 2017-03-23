@@ -241,6 +241,8 @@ void bat_fit::setParameters(const std::vector<double>& p)
     DEBUG("Admixtures_.size() = " << Admixtures_.size());
     DEBUG("Parameters_.size() = " << Parameters_.size());
 
+    assert(p.size() >= 2 * FreeAmplitudes_.size() + Admixtures_.size() + Parameters_.size());
+
     for (size_t i = 0; i < FreeAmplitudes_.size(); ++i)
         *FreeAmplitudes_[i] = std::complex<double>(p[i * 2], p[i * 2 + 1]);
 
@@ -276,10 +278,21 @@ void bat_fit::integrate()
 // ---------------------------------------------------------
 double bat_fit::LogLikelihood(const std::vector<double>& p)
 {
+    /*for (auto par : p)
+        std::cout<<par<<"\t";
+    std::cout << "\n";*/
+
     setParameters(p);
     double L = sum_of_log_intensity(*model(), FitPartitions_, log(integral(Integral_).value()));
     model()->setParameterFlagsToUnchanged();
     increaseLikelihoodCalls();
+
+    static double initL(L);
+    static double maxL(L);
+    maxL = std::max(maxL, L);
+    std::cout << "\rLikelihood = " << L << "; \tmax = " << maxL
+            << "; \tinitial = " << initL << "                           ";
+
     return L;
 }
 

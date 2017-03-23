@@ -19,6 +19,7 @@
 
 #include "logging.h"
 
+#include <assert.h>
 #include <future>
 #include <vector>
 
@@ -262,26 +263,25 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV)
 ImportanceSamplerGenerator::ImportanceSamplerGenerator(const Model& m, unsigned n_threads, unsigned seed) :
         N_threads_(n_threads), M_(&m)
 {
-    for (unsigned i = 1; i <= N_threads_; ++i)
-        Rnd_.push_back(std::mt19937(i * seed));
+    for (unsigned i = 0; i < N_threads_; ++i) {
+        Rnd_.push_back(std::mt19937(seed));
+        Rnd_[i].discard(i * 1e7); // need to scramble, otherwise we get weird artefacts
+    }
 }
 
 //-------------------------
 double ImportanceSamplerGenerator::operator()(double isp_mass, unsigned n_integrationPoints, unsigned n_batchSize)
 {
-    // mass range
+    // mass^2 range
     auto m2r = yap::squared(mass_range(isp_mass, M_->massAxes(), M_->finalStateParticles()));
 
     // generators
     using Generator = std::function<std::vector<yap::FourVector<double> >()>;
-    std::vector<Generator> generators(4);
+    std::vector<Generator> generators(N_threads_);
 
     for (unsigned i = 0; i < N_threads_; ++i) {
-
         generators[i] = std::bind(yap::phsp<std::mt19937>, std::cref(*M_), isp_mass, M_->massAxes(), m2r,
                                   Rnd_[i], std::numeric_limits<unsigned>::max());
-
-        //LOG(INFO) << "random number for thread " << i << ": " << Rnd_[i]();
     }
 
     // Model integral
@@ -290,14 +290,15 @@ double ImportanceSamplerGenerator::operator()(double isp_mass, unsigned n_integr
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
     auto J = select_changed(Integral_);
 
+    assert(J[0]->model() == M_);
+
     // reset those to be recalculated
     for (auto& j : J)
         Integrator::reset(*j);
 
-    if (N_threads_ <= 1) {
+    if (N_threads_ <= 1)
         calculate_subset(J, generators[0], n_integrationPoints, n_batchSize);
-    } else {
-
+    else {
         // create copies for running with in each partition
         std::vector<std::unique_ptr<DecayTreeVectorIntegral> > m_deleter; // RAII
         m_deleter.reserve(N_threads_ * J.size());

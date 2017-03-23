@@ -347,6 +347,10 @@ void Model::lock()
     for (const auto& da : DataAccessors_)
         da->setIndex(++index);
 
+    // lock dataAccessors
+    for (const auto& da : DataAccessors_)
+        da->lock();
+
     Locked_ = true;
 }
 

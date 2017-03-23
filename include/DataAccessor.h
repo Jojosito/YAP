@@ -110,6 +110,10 @@ protected:
 
 private:
 
+    // called from model when locking. Can be overrided in deriving classes
+    virtual void lock()
+    { }
+
     /// Increase storage
     /// \param n number of elements to increase by
     void increaseSize(unsigned n)

@@ -16,6 +16,7 @@
 #include "bat_gen.h"
 #include "models/d3pi.h"
 #include "models/d3pi_phsp.h"
+#include "models/d4pi.h"
 #include "models/dkkpi.h"
 #include "models/D_K0pi0pi0.h"
 #include "tools.h"
@@ -29,13 +30,17 @@ int main()
 {
     plainLogs(el::Level::Info);
 
+    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+
+
     vector<bat_gen*> test_models = {
         // new bat_gen("D3PI_PHSP", d3pi_phsp(yap_model<ZemachFormalism>()), 1.86961),
-        new bat_gen("D3PI", d3pi(yap_model<ZemachFormalism>()), 1.86961),
-        new bat_gen("DKSPIPI_Zemach", D_K0pi0pi0(yap_model<ZemachFormalism>()), 1.8648400),
+        // new bat_gen("D3PI", d3pi(yap_model<ZemachFormalism>()), 1.86961),
+        // new bat_gen("DKSPIPI_Zemach", D_K0pi0pi0(yap_model<ZemachFormalism>()), 1.8648400),
         // new bat_gen("DKSPIPI_Helicity", D_K0pi0pi0(yap_model<HelicityFormalism>()), 1.86961)
         // new bat_gen("DKKPI", dkkpi(yap_model<ZemachFormalism>()), 1.86961),
-        new bat_gen("DKKPI", dkkpi(yap_model<HelicityFormalism>()), 1.86961)
+        // new bat_gen("DKKPI", dkkpi(yap_model<HelicityFormalism>()), 1.86961)
+        new bat_gen("D4pi", d4pi(), D0_mass)
     };
 
     for (bat_gen* m : test_models) {
@@ -46,11 +51,11 @@ int main()
         // set precision
         m->SetPrecision(BCEngineMCMC::kMedium);
         m->SetNChains(4);
-        m->SetMinimumEfficiency(0.95);
-        m->SetMaximumEfficiency(0.99);
+        m->SetMinimumEfficiency(0.15);
+        m->SetMaximumEfficiency(0.35);
         m->SetInitialPositionAttemptLimit(1e5);
 
-        m->SetNIterationsRun(static_cast<int>(1e5 / m->GetNChains()));
+        m->SetNIterationsRun(static_cast<int>(1e8 / m->GetNChains()));
 
         m->WriteMarkovChain("output/" + m->GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 

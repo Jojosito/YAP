@@ -87,7 +87,7 @@ public:
 class ImportanceSamplerGenerator : private ImportanceSampler
 {
 public:
-    ImportanceSamplerGenerator(const Model& m, unsigned n_threads = 1, unsigned seed = 52350863);
+    ImportanceSamplerGenerator(const Model& m, unsigned n_threads = 1, unsigned seed = 5235863);
 
     // generate and return integral
     double operator()(double isp_mass, unsigned n_integrationPoints = 1e4, unsigned n_batchSize = 1e4);

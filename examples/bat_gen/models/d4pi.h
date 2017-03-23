@@ -102,11 +102,8 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
     for (long i=0; i<eventList->GetN(); ++i) {
         unsigned long long n = eventListArray[i];
 
-        DEBUG("try to load entry " << n << " (entries loaded so far: " << n_loaded << ")");
-        if (t.GetEntry(n) < 1) {
-            LOG(INFO) << "could not load entry " << n;
+        if (t.GetEntry(n) < 1)
             continue;
-        }
 
         // K0 cut with UNconstrained 4 momenta
         if (K0_cut > 0) {
@@ -123,10 +120,8 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
                     break;
                 }
 
-            if (cut) {
-                DEBUG("  K0 cut");
+            if (cut)
                 continue;
-            }
         }
 
         // Fill CONSTRAINED 4-momenta
@@ -137,7 +132,6 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
         P.push_back(convert(E->mom_piMinus2));
 
         data.push_back(P);
-        DEBUG("  Loaded");
 
         if (++n_loaded >= N)
             break;
@@ -189,7 +183,8 @@ inline std::unique_ptr<Model> d4pi()
     auto a_1 = a1_bowler ? DecayingParticle::create(T["a_1+"], r, std::make_shared<BowlerMassShape>(T["a_1+"])) :
                            DecayingParticle::create(T["a_1+"], r, std::make_shared<BreitWigner>(T["a_1+"]));
     if (a1_bowler)
-        std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
+        //std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
+        std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.430);
 
     // rho
     auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
@@ -335,11 +330,11 @@ inline std::unique_ptr<Model> d4pi()
     LOG(INFO) << "D Decay trees:";
     LOG(INFO) << to_string(D->decayTrees());
 
-    LOG(INFO);
-    LOG(INFO) << "Free amplitudes: ";
+    LOG(INFO) << "\nFree amplitudes: ";
     for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed()))
         LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
-            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")";
+            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
+            << "  \t" << fa.get();
 
     // loop over admixtures
     for (auto& comp : M->components()) {
@@ -412,7 +407,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 //-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
 {
-    LOG(INFO) << "Fit fractions for single decay trees:";
+    LOG(INFO) << "\nFit fractions for single decay trees:";
     double sum(0);
     for (const auto& mci : m.modelIntegral().integrals()) {
         auto ff = fit_fractions(mci.Integral);
@@ -423,7 +418,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
     }
     LOG(INFO) << "Sum = " << sum*100 << " %";
 
-    LOG(INFO) << "Fit fractions for grouped decay trees:";
+    LOG(INFO) << "\nFit fractions for grouped decay trees:";
     sum = 0;
     for (const auto& mci : m.modelIntegral().integrals()) {
 

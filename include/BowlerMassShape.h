@@ -23,6 +23,7 @@
 
 #include "fwd/DataPartition.h"
 #include "fwd/DataPoint.h"
+#include "fwd/FreeAmplitude.h"
 #include "fwd/Parameter.h"
 #include "fwd/ParticleCombination.h"
 #include "fwd/ParticleTable.h"
@@ -70,9 +71,17 @@ public:
 
 private:
 
+    virtual void lock() override;
+
     void calculateMassDependentWidth() const;
 
     double massDependentWidth(double m2) const;
+
+    void makeModel();
+
+    bool amplitudeChanged() const;
+
+    std::unique_ptr<Model> Model_;
 
     /// K*K coupling
     std::shared_ptr<PositiveRealParameter> KsKCoupling_;
@@ -83,6 +92,13 @@ private:
     mutable double CalculatedForMass_;
     mutable double CalculatedForWidth_;
 
+    std::shared_ptr<FreeAmplitude> amp_a1_rho_S_;
+    std::shared_ptr<FreeAmplitude> amp_a1_rho_D_;
+    std::shared_ptr<FreeAmplitude> amp_a1_sigma_;
+
+    std::shared_ptr<FreeAmplitude> amp_model_a1_rho_S_;
+    std::shared_ptr<FreeAmplitude> amp_model_a1_rho_D_;
+    std::shared_ptr<FreeAmplitude> amp_model_a1_sigma_;
 };
 
 }

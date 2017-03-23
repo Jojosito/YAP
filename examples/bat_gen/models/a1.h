@@ -8,6 +8,8 @@
 #define __BAT__A1__H
 
 #include "d4pi_scales.h"
+#include "../../../data/set_parities.h"
+#include "../../../data/deduce_parities.h"
 
 #include "../bat_fit.h"
 #include "../tools.h"
@@ -40,6 +42,7 @@
 #include <BAT/BCLog.h>
 #include <BAT/BCParameterSet.h>
 
+#include <assert.h>
 #include <complex>
 #include <memory>
 
@@ -49,6 +52,8 @@ using namespace yap;
 inline std::unique_ptr<Model> a1()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    deduce_meson_parities(T);
+    set_parities(T);
 
     // final state particles
     auto piPlus  = FinalStateParticle::create(T[211]);
@@ -58,39 +63,51 @@ inline std::unique_ptr<Model> a1()
     M->setFinalState(piPlus, piMinus, piPlus);
 
     // use common radial size for all resonances
-    double radialSize = 3.; // [GeV^-1]
+    double r = 1.2; // [GeV^-1]
 
     // initial state particle
-    auto a_1 = DecayingParticle::create(T["a_1+"], radialSize);
+    auto a_1 = DecayingParticle::create(T["a_1+"], r);
     
     //
     // resonant particles
     //
     
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], radialSize, std::make_shared<BreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // omega
-    //auto omega = DecayingParticle::create(T["omega"], radialSize, std::make_shared<BreitWigner>(T["omega"]));
+    //auto omega = DecayingParticle::create(T["omega"], r, std::make_shared<BreitWigner>(T["omega"]));
     //omega->addStrongDecay({piPlus, piMinus});
     
     // sigma / f_0(500)
-    auto sigma = DecayingParticle::create(T["f_0(500)"], radialSize, std::make_shared<BreitWigner>(T["f_0(500)"]));
+    auto sigma = DecayingParticle::create(T["f_0(500)"], r, std::make_shared<BreitWigner>(T["f_0(500)"]));
     sigma->addStrongDecay(piPlus, piMinus);
     
-
-    // a_1 -> sigma pi 
-    a_1->addStrongDecay(sigma, piPlus);
-    *free_amplitude(*a_1, to(sigma)) = std::polar(scale_a_sigma_pi * 0.439, rad(193.));
-
     // a_1 -> rho pi
     a_1->addStrongDecay(rho,   piPlus);
     // S wave
-    *free_amplitude(*a_1, to(rho), l_equals(0)) = 1;
-    // D wave
-    *free_amplitude(*a_1, to(rho), l_equals(2)) = std::polar(scale_a_rho_pi_D * 0.241, rad(82.));
+    if (a_rho_pi_S)
+        *free_amplitude(*a_1, to(rho), l_equals(0)) = 1;
+    else
+        *free_amplitude(*a_1, to(rho), l_equals(0)) = 0;
 
+    // P wave
+    assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
+
+    // D wave
+    if (a_rho_pi_D)
+        *free_amplitude(*a_1, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+    else
+        *free_amplitude(*a_1, to(rho), l_equals(2)) = 0.;
+
+    // a_1 -> sigma pi
+    if (a_sigma_pi) {
+        a_1->addStrongDecay(sigma, piPlus);
+        *free_amplitude(*a_1, to(sigma)) = amp_a_sigma_pi;
+    }
+
+    M->lock();
 
     /*LOG(INFO) << "a_1 decay trees:";
     LOG(INFO) << to_string(a_1->decayTrees());

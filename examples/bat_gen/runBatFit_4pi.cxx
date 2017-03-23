@@ -38,7 +38,8 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 100000; // max number of Data points we want
+    const unsigned nData = 500; // max number of Data points we want
+    const unsigned nThreads = 4;
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
@@ -72,7 +73,7 @@ int main()
         t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
-        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
+        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     }
     { // MC data, pre-filtered
         TChain t_mcmc("t");
@@ -84,7 +85,7 @@ int main()
     }
 
     // partition integral data
-    m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), 4);
+    m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), nThreads);
 
 
     // open log file
@@ -93,7 +94,7 @@ int main()
     // set precision
     m.SetPrecision(BCEngineMCMC::kMedium);
     m.SetNIterationsPreRunMax(1e5);
-    m.SetNChains(4);
+    m.SetNChains(nThreads); //
     // m.SetMinimumEfficiency(0.85);
     // m.SetMaximumEfficiency(0.99);
 
@@ -107,18 +108,30 @@ int main()
     if (mcmc)
         m.MarginalizeAll(BCIntegrate::kMargMetropolis);
     else {
+        LOG(INFO) << "MCMCUserInitialize";
         m.MCMCUserInitialize();
+        LOG(INFO) << "FindMode";
         m.FindMode();
     }
 
     // end timing
     const auto end = std::chrono::steady_clock::now();
 
-    LOG(INFO) << "Find global mode";
-    auto globalMode = m.FindMode(m.GetBestFitParameters());
+    auto bestFitPars = m.GetBestFitParameters();
+    LOG(INFO) << "Best fit parameters:";
+    for (auto par : bestFitPars)
+        LOG(INFO) << "\t" << par;
 
-    const double llGlobMode = m.LogLikelihood(globalMode);
-    LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
+    LOG(INFO) << "\nFind global mode";
+    auto globalMode = m.FindMode(bestFitPars);
+
+    double llGlobMode = std::numeric_limits<double>::min();
+    if (globalMode.empty())
+        LOG(ERROR) << "global mode is empty";
+    else
+        llGlobMode = m.LogLikelihood(globalMode);
+
+    LOG(INFO) << "\nLogLikelihood of global mode = " << llGlobMode;
 
     // delete data
     m.fitData().clear();
@@ -131,7 +144,7 @@ int main()
 
     d4pi_printFitFractions(m);
 
-    LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
+    //LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
 
     // timing:
     const auto diff = end - start;
@@ -150,10 +163,13 @@ int main()
     if (true) {
         LOG(INFO) << "Generate data with fitted amplitudes";
 
-        m.fitData().clear();
-        m.integralData().clear();
         auto model = std::unique_ptr<yap::Model>(nullptr);
         model.swap(m.model());
+
+        LOG(INFO) << "\nAmplitudes used for YAP generation: ";
+        for (const auto& fa : free_amplitudes(*model))
+            LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
+                << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")";
 
         const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
         bat_gen m_gen("D4pi_fitted_params", std::move(model), D0_mass);
@@ -163,7 +179,7 @@ int main()
 
         // set precision
         m_gen.SetPrecision(BCEngineMCMC::kMedium);
-        m_gen.SetNChains(8);
+        m_gen.SetNChains(4);
         m_gen.SetNIterationsPreRunMax(1e6);
         m_gen.SetMinimumEfficiency(0.15);
         m_gen.SetMaximumEfficiency(0.35);

@@ -61,7 +61,7 @@ int main()
     // generate integration data
     std::mt19937 g(0);
 
-    std::generate_n(std::back_inserter(m->integralData()), 100000,
+    std::generate_n(std::back_inserter(m->integralData()), 1000000,
             std::bind(yap::phsp<std::mt19937>, std::cref(*m->model()), D_mass, m->axes(), m2r, g, std::numeric_limits<unsigned>::max()));
     m->integralPartitions() = yap::DataPartitionBlock::create(m->integralData(), 6);
     LOG(INFO) << "Created " << m->integralData().size() << " data points (" << (m->integralData().bytes() * 1.e-6) << " MB)";

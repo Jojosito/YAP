@@ -40,12 +40,10 @@ int main()
 
     const unsigned nBins = 150;
     const double low_m = 3.*m_pi;
-    //const double hi_m =  m_D0 - m_pi;
-    const double hi_m = sqrt(3.1);
+    const double hi_m =  m_D0 - m_pi;
+    //const double hi_m = sqrt(3.1);
     const double a1_mass = T["a_1+"].mass();
-    const double a1_width = 0.560;
-
-    TH1D h("3piIntegral", "3piIntegral", nBins, low_m*low_m, hi_m*hi_m);
+    const double a1_width = 0.430;
 
     TGraph g_phsp;
     TGraph g_density;
@@ -54,6 +52,7 @@ int main()
     TGraph g_a1_re;
     TGraph g_a1_im;
     TGraph g_a1_norm;
+    TGraph g_KK;
 
     const unsigned n_threads = 4;
 
@@ -65,9 +64,10 @@ int main()
 
 
     // Get normalizing width
-    double norm_width = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles())
-                        * impSampGen(a1_mass, n_integrationPoints)
-                        / pow(a1_mass, 3. / 2);
+    const double phsp = dalitz_phasespace_volume(a1_mass, m.model()->finalStateParticles());
+    double norm_width = phsp
+                        * impSampGen(a1_mass, phsp * n_integrationPoints)
+                        / pow(a1_mass, 3);
 
     if (isnan(norm_width) or norm_width == 0)
         LOG(ERROR) << "norm_width invalid";
@@ -75,25 +75,31 @@ int main()
 
     for (unsigned i = 1; i <= nBins; ++i) {
 
-        double m2 = h.GetXaxis()->GetBinCenter(i);
+        static const double scaling = 1.5; // gives higher density of samples at lower m2, where the width is changing more rapidly
+        const double m2 = low_m*low_m + (hi_m*hi_m - low_m*low_m) * pow(i, scaling)/pow(nBins-1, scaling);
+
         double mass = sqrt(m2);
 
         const double phsp = dalitz_phasespace_volume(mass, m.model()->finalStateParticles());
-        const double density = impSampGen(mass, n_integrationPoints);
+        const double density = impSampGen(mass, phsp * n_integrationPoints);
+
         const double value = phsp * density;
         if (not isnan(value)) {
-            h.SetBinContent(i, value);
             g_phsp.SetPoint(g_int.GetN(), m2, phsp);
             g_density.SetPoint(g_int.GetN(), m2, density);
             g_int.SetPoint(g_int.GetN(), m2, value);
 
-            double w = value / pow(mass, 3./2) * a1_width / norm_width;
+            double w = value / pow(mass, 3) * a1_width / norm_width;
 
 
             // K*K threshold
             double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
-            if (mKK2 > 0)
-                w += 0.4 * sqrt(mKK2);
+            if (mKK2 > 0) {
+                //w += 0.4 * sqrt(mKK2);
+                g_KK.SetPoint(g_KK.GetN(), m2, sqrt(mKK2));
+            }
+            else
+                g_KK.SetPoint(g_KK.GetN(), m2, 0.);
 
             //w = a1_width;
             g_w.SetPoint(g_w.GetN(), m2, w);
@@ -108,12 +114,9 @@ int main()
         LOG(INFO) << "Integral(" << mass << " GeV) = " << value;
     }
 
-    h.Draw();
-    g_int.Draw("same");
 
     TFile file("a_1_3pi_integral.root", "RECREATE");
     file.cd();
-    h.Write();
     file.WriteTObject(&g_phsp, "g_phsp_volume_vs_m2");
     file.WriteTObject(&g_density, "g_density_vs_m2");
     file.WriteTObject(&g_int, "g_integral_vs_m2");
@@ -121,6 +124,8 @@ int main()
     file.WriteTObject(&g_a1_re, "g_a1_re_vs_m2");
     file.WriteTObject(&g_a1_im, "g_a1_im_vs_m2");
     file.WriteTObject(&g_a1_norm, "g_a1_norm_vs_m2");
+    file.WriteTObject(&g_KK, "g_KK_vs_m2");
+
 
     file.Close();
 
