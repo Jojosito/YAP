@@ -26,9 +26,12 @@
 #include <chrono>
 #include <random>
 
+#include <fenv.h>
+
 int main()
 {
     yap::plainLogs(el::Level::Global);
+    feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
 
     std::string model_name = "D4PI_data";;
 
@@ -38,8 +41,11 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 500; // max number of Data points we want
+    const unsigned nData = 100000; // max number of Data points we want
     const unsigned nThreads = 4;
+
+    /// todo reintegrate when a1 lineshape changes!!!!!
+
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");

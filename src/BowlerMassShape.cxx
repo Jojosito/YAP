@@ -44,16 +44,29 @@ namespace yap {
 //-------------------------
 BowlerMassShape::BowlerMassShape(double mass, double width) :
     BreitWigner(mass, width),
-    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
-    CalculatedForMass_(0.), CalculatedForWidth_(0.)
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
 {}
 
 //-------------------------
 BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
     BreitWigner(pde),
-    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
-    CalculatedForMass_(0.), CalculatedForWidth_(0.)
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
 {}
+
+//-------------------------
+void BowlerMassShape::updateCalculationStatus(StatusManager& D) const
+{
+    BreitWigner::updateCalculationStatus(D);
+    if (amp_model_a1_rho_S_->variableStatus() == VariableStatus::changed or
+        amp_model_a1_rho_D_->variableStatus() == VariableStatus::changed or
+        amp_model_a1_sigma_->variableStatus() == VariableStatus::changed)
+        D.set(*T(), CalculationStatus::uncalculated);
+
+    // also set amplitudes for next iteration
+    amp_a1_rho_S_->setValue(amp_model_a1_rho_S_->value());
+    amp_a1_rho_D_->setValue(amp_model_a1_rho_D_->value());
+    amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
+}
 
 //-------------------------
 void BowlerMassShape::lock()
@@ -103,69 +116,14 @@ void BowlerMassShape::lock()
     amp_model_a1_sigma_ = free_amplitude(*model_a_1, to(model_sigma));
 
     Model_.swap(M);
+
+    fillCache();
 }
 
 //-------------------------
-bool BowlerMassShape::amplitudeChanged() const
+void BowlerMassShape::fillCache()
 {
-    if (amp_model_a1_rho_S_->variableStatus() == VariableStatus::changed or
-            amp_model_a1_rho_D_->variableStatus() == VariableStatus::changed or
-            amp_model_a1_sigma_->variableStatus() == VariableStatus::changed)
-        return true;
-
-    return false;
-}
-
-//-------------------------
-void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
-{
-    if (MassDependentWidth_.empty() or
-        mass() ->value() != CalculatedForMass_ or
-        width()->value() != CalculatedForWidth_  or
-        amplitudeChanged()) {
-
-        calculateMassDependentWidth();
-    }
-
-    // if no calculation necessary, exit
-    if (D.status(*T(), si) != CalculationStatus::uncalculated)
-        return;
-
-    for (auto& d : D) {
-        auto m2 = model()->fourMomenta()->m2(d, pc);
-        auto M = mass()->value();
-        // T := 1 / (M^2 - m^2 - i * M * Gamma)
-        T()->setValue(1. / (M*M - m2 - 1_i * M * massDependentWidth(m2)),
-                d, si, D);
-    }
-
-    D.status(*T(), si) = CalculationStatus::calculated;
-}
-
-//-------------------------
-void BowlerMassShape::calculateMassDependentWidth() const
-{
-    std::lock_guard<std::mutex> guard(CacheMutex_);
-
-    if (not MassDependentWidth_.empty() and
-        mass() ->value() == CalculatedForMass_ and
-        width()->value() == CalculatedForWidth_ and
-        amp_a1_rho_S_->value() == amp_model_a1_rho_S_->value() and
-        amp_a1_rho_D_->value() == amp_model_a1_rho_D_->value() and
-        amp_a1_sigma_->value() == amp_model_a1_sigma_->value())
-        return;
-
-    LOG(INFO) << "BowlerMassShape::calculateMassDependentWidth() - recalculate";
-
-    amp_a1_rho_S_->setValue(amp_model_a1_rho_S_->value());
-    amp_a1_rho_D_->setValue(amp_model_a1_rho_D_->value());
-    amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
-
-    LOG(INFO) << amp_a1_rho_D_->value();
-    LOG(INFO) << amp_a1_sigma_->value();
-
-    //-------------------------
-    static const unsigned n_integrationPoints = 1e4;
+    static const unsigned n_integrationPoints = 2e4;
     static const unsigned n_threads = 4;//std::max(1u, std::thread::hardware_concurrency());
     static const unsigned nBins = 150;
     // get FSP mass ranges
@@ -175,71 +133,76 @@ void BowlerMassShape::calculateMassDependentWidth() const
     static const double hi_m = 1.01 * (T["D0"].mass() - m_pi);
     static ImportanceSamplerGenerator impSampGen(*Model_, n_threads);
 
-    // Get normalizing width
-    const double a1_mass = mass()->value(); // nominal mass
-    const double phsp = dalitz_phasespace_volume(a1_mass, Model_->finalStateParticles());
-    assert(phsp > 0.);
-    const double density = impSampGen(a1_mass, phsp * n_integrationPoints);
-    assert(density > 0.);
-
-    double norm_width = phsp * density / pow(a1_mass, 3);
-    assert(not isnan(norm_width) and norm_width > 0.);
-
-    DEBUG("norm_width = " << norm_width);
-
-    assert(width()->value() > 0.);
-
-    DEBUG("m2; width");
     for (unsigned i = 0; i <= nBins; ++i) {
-        // first bin is 0
-        if (i == 0) {
-            MassDependentWidth_[low_m*low_m] = 0.;
-            continue;
-        }
         static const double scaling = 1.5; // gives higher density of samples at lower m2, where the width is changing more rapidly
 
         const double m2 = low_m*low_m + (hi_m*hi_m - low_m*low_m) * pow(i, scaling)/pow(nBins-1, scaling);
         const double mass = sqrt(m2);
 
-        const double phsp = dalitz_phasespace_volume(mass, Model_->finalStateParticles());
-        assert(phsp > 0.);
+        double phsp = dalitz_phasespace_volume(mass, Model_->finalStateParticles());
+        if (i==0)
+            phsp = 0;
+        else
+            assert(phsp > 0.);
 
-        const double density = impSampGen(mass, phsp * n_integrationPoints);
-        assert(density > 0.);
-
-        double w = phsp * density / pow(mass, 3) * width()->value() / norm_width;
-        assert(w > 0.);
-
-        DEBUG(m2 << "; " << w);
-
-        MassDependentWidth_[m2] = w;
+        Cache_[m2].Phsp_ = phsp;
+        Cache_[m2].MI_ = impSampGen.modelIntegral(mass, phsp * n_integrationPoints);
     }
-
-    CalculatedForMass_  = mass() ->value();
-    CalculatedForWidth_ = width()->value();
 }
 
 //-------------------------
-double BowlerMassShape::massDependentWidth(double m2) const
+void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
 {
-    if (MassDependentWidth_.empty())
+    // if no calculation necessary, exit
+    if (D.status(*T(), si) != CalculationStatus::uncalculated)
+        return;
+
+    for (auto& d : D) {
+        auto m2 = model()->fourMomenta()->m2(d, pc);
+        auto M = mass()->value();
+        // T := 1 / (M^2 - m^2 - i * M * Gamma)
+        T()->setValue(1. / (M*M - m2 - 1_i * M * massDependentWidth(D, m2)),
+                d, si, D);
+    }
+
+    D.status(*T(), si) = CalculationStatus::calculated;
+}
+
+//-------------------------
+double BowlerMassShape::massDependentWidth(DataPartition& D, double m2) const
+{
+    if (Cache_.empty())
         throw exceptions::Exception("Cache is empty", "BowlerMassShape::massDependentWidth");
 
-    // linear interpolation
-    auto next = MassDependentWidth_.upper_bound(m2);
-    assert(next->first >= m2);
-    if (next == MassDependentWidth_.begin())
-        return next->second;
+    // make sure amplitudes have been set correctly
+    assert(amp_a1_rho_D_->value() ==  amp_model_a1_rho_D_->value());
 
+    // norm_width
+    auto next = Cache_.upper_bound(pow(mass()->value(), 2));
     auto prev = next;
-    --prev;
-    double range = next->first - prev->first;
-    double dist = m2 - prev->first;
-    double rel = dist/range;
+    if (next != Cache_.begin())
+        --prev;
+    double rel = (pow(mass()->value(), 2) - prev->first)/(next->first - prev->first);
 
-    double w = rel * prev->second + (1. - rel) * next->second;
+    double phsp = (1. - rel) * prev->second.Phsp_ + rel * next->second.Phsp_;
+    double density = (1. - rel) * integral(prev->second.MI_).value() + rel * integral(next->second.MI_).value();
+    const double norm_width = phsp * density / pow(mass()->value(), 3);
+    assert(norm_width > 0.);
+
+    // linear interpolation
+    next = Cache_.upper_bound(m2);
+    prev = next;
+    if (next != Cache_.begin())
+        --prev;
+    rel = (m2 - prev->first)/(next->first - prev->first);
+
+    phsp = (1. - rel) * prev->second.Phsp_ + rel * next->second.Phsp_;
+    density = (1. - rel) * integral(prev->second.MI_).value() + rel * integral(next->second.MI_).value();
+
+    double w = phsp * density / pow(m2, 3./2.) * width()->value() / norm_width;
 
     // K*K threshold
+    // \todo dont hardcode masses
     double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
     if (mKK2 > 0)
         w += KsKCoupling_->value() * sqrt(mKK2);

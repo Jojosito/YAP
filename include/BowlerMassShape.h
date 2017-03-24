@@ -30,8 +30,9 @@
 #include "fwd/StatusManager.h"
 
 #include "BreitWigner.h"
-#include "Flatte.h"
 #include "DecayTreeVectorIntegral.h"
+#include "Flatte.h"
+#include "ModelIntegral.h"
 
 #include <complex>
 #include <memory>
@@ -63,6 +64,9 @@ public:
 
     using BreitWigner::calculate;
     
+    /// update the calculationStatus for a DataPartition
+    virtual void updateCalculationStatus(StatusManager& D) const override;
+
     /// Calculate dynamic amplitude T for particular particle combination and store in each DataPoint in DataPartition
     /// \param D DataPartition to calculate on
     /// \param pc ParticleCombination to calculate for
@@ -71,26 +75,25 @@ public:
 
 private:
 
+    struct cachedIntegral {
+        ModelIntegral MI_;
+        double Phsp_;
+    };
+
     virtual void lock() override;
 
-    void calculateMassDependentWidth() const;
+    virtual void fillCache();
 
-    double massDependentWidth(double m2) const;
-
-    void makeModel();
-
-    bool amplitudeChanged() const;
-
-    std::unique_ptr<Model> Model_;
+    double massDependentWidth(DataPartition& D, double m2) const;
 
     /// K*K coupling
     std::shared_ptr<PositiveRealParameter> KsKCoupling_;
 
+    // the a_1 model
+    std::unique_ptr<Model> Model_;
+
     /// mass dependend width (vs m2)
-    mutable std::map<double, double> MassDependentWidth_;
-    mutable std::mutex CacheMutex_;
-    mutable double CalculatedForMass_;
-    mutable double CalculatedForWidth_;
+    mutable std::map<double, cachedIntegral> Cache_;
 
     std::shared_ptr<FreeAmplitude> amp_a1_rho_S_;
     std::shared_ptr<FreeAmplitude> amp_a1_rho_D_;

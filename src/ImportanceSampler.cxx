@@ -264,13 +264,19 @@ ImportanceSamplerGenerator::ImportanceSamplerGenerator(const Model& m, unsigned 
         N_threads_(n_threads), M_(&m)
 {
     for (unsigned i = 0; i < N_threads_; ++i) {
-        Rnd_.push_back(std::mt19937(seed));
-        Rnd_[i].discard(i * 1e7); // need to scramble, otherwise we get weird artefacts
+        Rnd_.push_back(std::mt19937(i * seed));
+        Rnd_[i].discard(800000); // warm up
     }
 }
 
 //-------------------------
 double ImportanceSamplerGenerator::operator()(double isp_mass, unsigned n_integrationPoints, unsigned n_batchSize)
+{
+    return integral(modelIntegral(isp_mass, n_integrationPoints, n_batchSize)).value();
+}
+
+//-------------------------
+ModelIntegral ImportanceSamplerGenerator::modelIntegral(double isp_mass, unsigned n_integrationPoints, unsigned n_batchSize)
 {
     // mass^2 range
     auto m2r = yap::squared(mass_range(isp_mass, M_->massAxes(), M_->finalStateParticles()));
@@ -334,7 +340,7 @@ double ImportanceSamplerGenerator::operator()(double isp_mass, unsigned n_integr
                 *J[j] += (*m[i][j] *= f[i]);
     }
 
-    return integral(Integral_).value();
+    return Integral_;
 }
 
 }

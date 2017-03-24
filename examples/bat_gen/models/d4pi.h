@@ -267,8 +267,9 @@ inline std::unique_ptr<Model> d4pi()
 
         assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
 
-        if (a_rho_pi_D)
+        if (a_rho_pi_D) {
             *free_amplitude(*a_1, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+        }
         else {
             *free_amplitude(*a_1, to(rho), l_equals(2)) = 0.;
             free_amplitude(*a_1, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
@@ -277,8 +278,9 @@ inline std::unique_ptr<Model> d4pi()
         if (omega_omega) {
             a_1->addStrongDecay(omega, piPlus);
 
-            if (a_rho_pi_S)
+            if (a_rho_pi_S) {
                 *free_amplitude(*a_1, to(omega), l_equals(0)) = amp_a_omega_pi_S;
+            }
             else {
                 *free_amplitude(*a_1, to(omega), l_equals(0)) = 0.;
                 free_amplitude(*a_1, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;

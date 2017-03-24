@@ -95,7 +95,7 @@ int main()
             // K*K threshold
             double mKK2 = m2 - pow(8.9166000e-01 + 4.9367700e-01, 2);
             if (mKK2 > 0) {
-                //w += 0.4 * sqrt(mKK2);
+                //w += 0.06 * sqrt(mKK2);
                 g_KK.SetPoint(g_KK.GetN(), m2, sqrt(mKK2));
             }
             else

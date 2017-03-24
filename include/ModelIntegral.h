@@ -59,6 +59,9 @@ class ModelIntegral
 {
 public:
 
+    // default constructor
+    ModelIntegral() {}
+
     /// constructor
     /// \param model Model to integrate
     ModelIntegral(const Model& model);
