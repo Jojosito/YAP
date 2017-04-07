@@ -1,6 +1,5 @@
 #include "ImportanceSampler.h"
 
-#include "AmplitudeBasis.h"
 #include "CalculationStatus.h"
 #include "DataPartition.h"
 #include "DataSet.h"
