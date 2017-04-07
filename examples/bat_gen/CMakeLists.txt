@@ -21,7 +21,8 @@ set(PROGRAMS
     runBatFit
     runBatFit_4pi
     runBatFitFitFractions
-    runFitFractions)
+    runFitFractions
+    runWeighEvents)
 
 # Add the program to the `make example` dependencies
 set(examples_depends ${examples_depends} ${PROGRAMS} PARENT_SCOPE)
