@@ -43,6 +43,10 @@ double dalitz_phasespace_volume(double isp_mass, const FinalStateParticleVector&
     DalitzIntegrand f(isp_mass, fsps);
     double lowerBound = pow(fsps[0]->mass() + fsps[1]->mass(), 2); // (m_a + m_b)^2
     double upperBound = pow(isp_mass - fsps[2]->mass(), 2); // (M - m_c)^2
+
+    if (lowerBound >= upperBound)
+        return 0.;
+
     const double volume_upper_bound = prefactor * pow(upperBound - lowerBound, 2);
 
     double absErr = relErr * 0.5 * volume_upper_bound;
