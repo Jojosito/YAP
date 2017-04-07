@@ -197,6 +197,9 @@ public:
     /// Calculate the angle between two vectors
     friend const T angle(const Vector<T, N>& A, const Vector<T, N>& B)
     {
+        if (abs(A) == (T)0 or abs(B) == (T)0)
+            return (T)0;
+
         T arg = A * B / abs(A) / abs(B);
 
         // correct for arg just outside boundary (by numerical precision)

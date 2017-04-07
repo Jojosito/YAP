@@ -29,7 +29,7 @@ int main()
 {
     yap::plainLogs(el::Level::Info);
 
-    const unsigned n_integrationPoints = 1e4;
+    const unsigned n_integrationPoints = 1e5;
 
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
 
@@ -81,7 +81,8 @@ int main()
         double mass = sqrt(m2);
 
         const double phsp = dalitz_phasespace_volume(mass, m.model()->finalStateParticles());
-        const double density = impSampGen(mass, phsp * n_integrationPoints);
+        const int nPoints = std::max(unsigned(100), unsigned(phsp * n_integrationPoints));
+        const double density = impSampGen(mass, nPoints, nPoints / 2 + 1);
 
         const double value = phsp * density;
         if (not isnan(value)) {

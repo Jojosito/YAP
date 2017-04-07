@@ -123,7 +123,8 @@ void BowlerMassShape::lock()
 //-------------------------
 void BowlerMassShape::fillCache()
 {
-    static const unsigned n_integrationPoints = 2e4;
+    LOG(INFO) << "Fill Bowler cache ...";
+    static const unsigned n_integrationPoints = 1e5;
     static const unsigned n_threads = 4;//std::max(1u, std::thread::hardware_concurrency());
     static const unsigned nBins = 150;
     // get FSP mass ranges
@@ -145,9 +146,11 @@ void BowlerMassShape::fillCache()
         else
             assert(phsp > 0.);
 
+        const int nPoints = std::max(unsigned(100), unsigned(phsp * n_integrationPoints));
         Cache_[m2].Phsp_ = phsp;
-        Cache_[m2].MI_ = impSampGen.modelIntegral(mass, phsp * n_integrationPoints);
+        Cache_[m2].MI_ = impSampGen.modelIntegral(mass, nPoints, nPoints / 2 + 1);
     }
+    LOG(INFO) << "Done.";
 }
 
 //-------------------------
@@ -197,7 +200,7 @@ double BowlerMassShape::massDependentWidth(DataPartition& D, double m2) const
     rel = (m2 - prev->first)/(next->first - prev->first);
 
     phsp = (1. - rel) * prev->second.Phsp_ + rel * next->second.Phsp_;
-    density = (1. - rel) * integral(prev->second.MI_).value() + rel * integral(next->second.MI_).value();
+    density = (phsp > 0.) ? (1. - rel) * integral(prev->second.MI_).value() + rel * integral(next->second.MI_).value() : 0.;
 
     double w = phsp * density / pow(m2, 3./2.) * width()->value() / norm_width;
 

@@ -31,7 +31,8 @@
 int main()
 {
     yap::plainLogs(el::Level::Global);
-    feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
+    //feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
+    //feenableexcept (FE_INVALID|FE_OVERFLOW);
 
     std::string model_name = "D4PI_data";;
 
@@ -41,7 +42,7 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 100000; // max number of Data points we want
+    const unsigned nData = 500000; // max number of Data points we want
     const unsigned nThreads = 4;
 
     /// todo reintegrate when a1 lineshape changes!!!!!
@@ -187,11 +188,11 @@ int main()
         m_gen.SetPrecision(BCEngineMCMC::kMedium);
         m_gen.SetNChains(4);
         m_gen.SetNIterationsPreRunMax(1e6);
-        m_gen.SetMinimumEfficiency(0.15);
-        m_gen.SetMaximumEfficiency(0.35);
+        m_gen.SetMinimumEfficiency(0.03);
+        m_gen.SetMaximumEfficiency(0.10);
         m_gen.SetInitialPositionAttemptLimit(1e5);
 
-        m_gen.SetNIterationsRun(static_cast<int>(nData*25 / m_gen.GetNChains()));
+        m_gen.SetNIterationsRun(static_cast<int>(1e8 / m_gen.GetNChains()));
 
         m_gen.WriteMarkovChain("output/" + m_gen.GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 
