@@ -93,7 +93,7 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
 
     int n_loaded = 0;
 
-    std::vector<yap::FourVector<double>> P;
+    std::vector<yap::FourVector<double>> P; // pi+ pi- pi+ pi-
     std::vector<double> masses;
 
     // get K0 mass
@@ -126,9 +126,11 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
 
         // Fill CONSTRAINED 4-momenta
         P.clear();
+        // \todo ATTENTION: I had a bug in my analysis,
+        // which means piPlus2 and piMinus1 (constrained) are swapped
         P.push_back(convert(E->mom_piPlus1));
-        P.push_back(convert(E->mom_piMinus1));
-        P.push_back(convert(E->mom_piPlus2));
+        P.push_back(convert(E->mom_piPlus2)); // actually mom_piMinus1
+        P.push_back(convert(E->mom_piMinus1));// actually mom_piPlus2
         P.push_back(convert(E->mom_piMinus2));
 
         data.push_back(P);
