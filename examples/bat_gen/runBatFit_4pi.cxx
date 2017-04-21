@@ -42,17 +42,15 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 500000; // max number of Data points we want
+    const unsigned nData = 400000; // max number of Data points we want
     const unsigned nThreads = 4;
-
-    /// todo reintegrate when a1 lineshape changes!!!!!
 
 
     //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
 
-    /*
     // real data
+    /*
     {
         TChain t("t");
         t.Add((dir + "DataSkim_0?_analysis.root").c_str());
@@ -76,8 +74,14 @@ int main()
     // real data, pre-filtered
     {
         TChain t("t");
-        t.Add((dir + "DataSkim_analysis_bdt_gt_0.025.root").c_str());
-        t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
+        if (BDT_cut >= 0) {
+            t.Add((dir + "DataSkim_analysis_bdt_gt_0.025.root").c_str());
+            t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
+        }
+        else { // BG
+            t.Add((dir + "DataSkim_analysis_bdt_lt_-0.2.root").c_str());
+            t.AddFriend("t", (dir + "DataSkim_analysis_bdt_lt_-0.2_TMVA_weights.root").c_str());
+        }
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
@@ -90,6 +94,26 @@ int main()
         load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
         //load_data_4pi(m.integralData(), t_mcmc, nData, 0, K0_cut, false); // phsp cut was already applied
     }
+
+
+    // MC generated data
+    /*dir = "/home/ne53mad/YAPfork/buildRelease/output/";
+    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+    {
+        TChain t("D4pi_rho_pi_S_flatBG_mcmc");
+        t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
+        //TChain t("D4pi_rho_pi_S_rho2piBG_mcmc");
+        //t.Add((dir + "D4pi_rho_pi_S_rho2piBG_mcmc.root").c_str());
+        LOG(INFO) << "Load data";
+        load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, 100);
+        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
+    }
+    { // MC data, pre-filtered
+        TChain t_mcmc("D4pi_phsp_mcmc");
+        t_mcmc.Add((dir + "D4pi_phsp_mcmc.root").c_str());
+        LOG(INFO) << "Load integration (MC) data";
+        load_data(m.integralData(), *m.model(), m.axes(), D0_mass, t_mcmc, nData, 100);
+    }*/
 
     // partition integral data
     m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), nThreads);
@@ -188,8 +212,8 @@ int main()
         m_gen.SetPrecision(BCEngineMCMC::kMedium);
         m_gen.SetNChains(4);
         m_gen.SetNIterationsPreRunMax(1e6);
-        m_gen.SetMinimumEfficiency(0.03);
-        m_gen.SetMaximumEfficiency(0.10);
+        m_gen.SetMinimumEfficiency(0.7);
+        m_gen.SetMaximumEfficiency(0.9);
         m_gen.SetInitialPositionAttemptLimit(1e5);
 
         m_gen.SetNIterationsRun(static_cast<int>(1e8 / m_gen.GetNChains()));
