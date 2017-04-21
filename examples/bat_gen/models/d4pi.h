@@ -159,6 +159,35 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
 }
 
 //-------------------------
+inline std::unique_ptr<Model> d4pi_phsp()
+{
+    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+
+    // final state particles
+    auto piPlus  = FinalStateParticle::create(T[211]);
+    auto piMinus = FinalStateParticle::create(T[-211]);
+
+    auto M = std::make_unique<yap::Model>(std::make_unique<yap::HelicityFormalism>());
+    M->setFinalState(piPlus, piMinus, piPlus, piMinus);
+
+    // use common radial size for all resonances
+    double r = 1.2; // [GeV^-1]
+
+    // initial state particle
+    auto D = DecayingParticle::create(T["D0"], r);
+
+    // pi+ pi- flat
+    auto pipiFlat = DecayingParticle::create("pipiFlat", QuantumNumbers(0, 0), r);
+    pipiFlat->addStrongDecay(piPlus, piMinus);
+
+    D->addWeakDecay(pipiFlat, pipiFlat);
+
+    M->lock();
+
+    return M;
+}
+
+//-------------------------
 inline std::unique_ptr<Model> d4pi()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
@@ -182,11 +211,14 @@ inline std::unique_ptr<Model> d4pi()
     // resonances
     //
     // a_1
-    auto a_1 = a1_bowler ? DecayingParticle::create(T["a_1+"], r, std::make_shared<BowlerMassShape>(T["a_1+"])) :
-                           DecayingParticle::create(T["a_1+"], r, std::make_shared<BreitWigner>(T["a_1+"]));
-    if (a1_bowler)
-        //std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.560);
-        std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->setValue(0.430);
+    auto a_1_shape = a1_bowler ? std::make_shared<BowlerMassShape>(T["a_1+"]) : std::make_shared<BreitWigner>(T["a_1+"]);
+    if (a1_bowler) {
+        //a_1_shape->width()->setValue(0.560);
+        a_1_shape->width()->setValue(0.430);
+    }
+
+    auto a_1_plus  = DecayingParticle::create(T["a_1+"], r, a_1_shape);
+    auto a_1_minus = DecayingParticle::create(T["a_1-"], r, a_1_shape);
 
     // rho
     auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
@@ -256,57 +288,89 @@ inline std::unique_ptr<Model> d4pi()
 
     // a_1
     if (a_rho_pi_S or a_rho_pi_D) {
-        a_1->addStrongDecay(rho, piPlus);
+        a_1_plus->addStrongDecay(rho, piPlus);
+        a_1_minus->addStrongDecay(rho, piMinus);
 
         if (a_rho_pi_S) {
-            *free_amplitude(*a_1, to(rho), l_equals(0)) = 1.; // reference amplitude
-            free_amplitude(*a_1, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+            *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 1.; // reference amplitude
+            free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+
+            *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = 1.;
         }
         else {
-            *free_amplitude(*a_1, to(rho), l_equals(0)) = 0.;
-            free_amplitude(*a_1, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+            *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 0.;
+            free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+
+            *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = 0.;
+            free_amplitude(*a_1_minus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
         }
 
-        assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
+        assert(free_amplitudes(*a_1_plus, to(rho), l_equals(1)).empty());
+        assert(free_amplitudes(*a_1_minus, to(rho), l_equals(1)).empty());
 
         if (a_rho_pi_D) {
-            *free_amplitude(*a_1, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+            *free_amplitude(*a_1_plus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+
+            *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
         }
         else {
-            *free_amplitude(*a_1, to(rho), l_equals(2)) = 0.;
-            free_amplitude(*a_1, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
+            *free_amplitude(*a_1_plus, to(rho), l_equals(2)) = 0.;
+            free_amplitude(*a_1_plus, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
+
+            *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = 0.;
+            free_amplitude(*a_1_minus, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
         }
 
         if (omega_omega) {
-            a_1->addStrongDecay(omega, piPlus);
+            a_1_plus->addStrongDecay(omega, piPlus);
+            a_1_minus->addStrongDecay(omega, piPlus);
 
             if (a_rho_pi_S) {
-                *free_amplitude(*a_1, to(omega), l_equals(0)) = amp_a_omega_pi_S;
+                *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
+
+                *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
             }
             else {
-                *free_amplitude(*a_1, to(omega), l_equals(0)) = 0.;
-                free_amplitude(*a_1, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;
+                *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = 0.;
+                free_amplitude(*a_1_plus, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;
+
+                *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = 0.;
+                free_amplitude(*a_1_minus, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;
             }
 
-            assert(free_amplitudes(*a_1, to(omega), l_equals(1)).empty());
+            assert(free_amplitudes(*a_1_plus, to(omega), l_equals(1)).empty());
+            assert(free_amplitudes(*a_1_minus, to(omega), l_equals(1)).empty());
 
-            if (a_rho_pi_D)
-                *free_amplitude(*a_1, to(omega), l_equals(2)) = amp_a_rho_pi_D;
+            if (a_rho_pi_D) {
+                *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
+
+                *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
+            }
             else {
-                *free_amplitude(*a_1, to(omega), l_equals(2)) = 0.;
-                free_amplitude(*a_1, to(omega), l_equals(2))->variableStatus() = VariableStatus::fixed;
+                *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = 0.;
+                free_amplitude(*a_1_plus, to(omega), l_equals(2))->variableStatus() = VariableStatus::fixed;
+
+                *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = 0.;
+                free_amplitude(*a_1_minus, to(omega), l_equals(2))->variableStatus() = VariableStatus::fixed;
             }
         }
     }
     if (a_sigma_pi) {
-        a_1->addStrongDecay(sigma, piPlus);
-        *free_amplitude(*a_1, to(sigma)) = amp_a_sigma_pi;
+        a_1_plus->addStrongDecay(sigma, piPlus);
+        *free_amplitude(*a_1_plus, to(sigma)) = amp_a_sigma_pi;
+
+        a_1_minus->addStrongDecay(sigma, piMinus);
+        *free_amplitude(*a_1_minus, to(sigma)) = amp_a_sigma_pi;
     }
     
-    if (not free_amplitudes(*a_1).empty()) {
-        D->addWeakDecay(a_1, piMinus);
-        *free_amplitude(*D, to(a_1)) = 1.;
-        free_amplitude(*D, to(a_1))->variableStatus() = VariableStatus::fixed;
+    if (not free_amplitudes(*a_1_plus).empty()) {
+        D->addWeakDecay(a_1_plus, piMinus);
+        *free_amplitude(*D, to(a_1_plus)) = 1.;
+        free_amplitude(*D, to(a_1_plus))->variableStatus() = VariableStatus::fixed;
+
+        D->addWeakDecay(a_1_minus, piPlus);
+        *free_amplitude(*D, to(a_1_minus)) = 1.;
+        free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
     }
 
     
@@ -342,9 +406,6 @@ inline std::unique_ptr<Model> d4pi()
 
     // loop over admixtures
     for (auto& comp : M->components()) {
-        LOG(INFO) << "admixture " << comp.particle()->name()
-                << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
-                << "; variableStatus = " << to_string(comp.admixture()->variableStatus());
         if (comp.particle() == &*D) {
             comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
             assert( comp.admixture()->variableStatus() == yap::VariableStatus::fixed );
@@ -352,6 +413,11 @@ inline std::unique_ptr<Model> d4pi()
         }
         else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed)
             *comp.admixture() = 0.1;
+
+        LOG(INFO) << "admixture " << comp.particle()->name()
+                << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
+                << "; variableStatus = " << to_string(comp.admixture()->variableStatus())
+                << "; value = " << comp.admixture()->value();
     }
 
     return M;
@@ -395,7 +461,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 
 
     // free a_1 width
-    auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
+    //auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
     //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
     //m.GetParameters().Back().SetPriorConstant();
 
@@ -416,8 +482,13 @@ inline void d4pi_printFitFractions(bat_fit& m)
     for (const auto& mci : m.modelIntegral().integrals()) {
         auto ff = fit_fractions(mci.Integral);
         for (size_t i = 0; i < ff.size(); ++i) {
-            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << ff[i].value()*100. << " %";
-            sum += ff[i].value();
+            double fit_frac = mci.Admixture->value() * ff[i].value();
+            if (std::isnan(fit_frac)) {
+                fit_frac = mci.Admixture->value();
+                LOG(WARNING) << "fit_frac is nan. Take admixture as fit_frac";
+            }
+            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << fit_frac*100. << " %";
+            sum += fit_frac;
         }
     }
     LOG(INFO) << "Sum = " << sum*100 << " %";
@@ -430,7 +501,8 @@ inline void d4pi_printFitFractions(bat_fit& m)
         auto rho   = rho_rho     ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0"))) : nullptr;
         auto omega = omega_omega ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega"))) : nullptr;
         auto sigma = (a_sigma_pi or sigma_pipi) ?  std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)"))) : nullptr;
-        auto a_1   = (a_rho_pi_S or a_rho_pi_D or a_sigma_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
+        auto a_1_plus   = (a_rho_pi_S or a_rho_pi_D or a_sigma_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
+        auto a_1_minus  = (a_rho_pi_S or a_rho_pi_D or a_sigma_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
         auto f_0   = f_0_pipi   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0"))) : nullptr;
         auto f_2   = f_2_pipi   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_2"))) : nullptr;
         auto pipiFlat = flat_4pi ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pipiFlat"))) : nullptr;
@@ -441,7 +513,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
         // a_rho_pi_S
         if (a_rho_pi_S) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
                     blub.end());
@@ -456,7 +528,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
         // a_rho_pi_D
         if (a_rho_pi_D) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
                     blub.end());
@@ -471,7 +543,52 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
         // a_sigma_pi
         if (a_sigma_pi) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1));
+            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
+
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
+        }
+
+        // a_rho_pi_S
+        if (a_rho_pi_S) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
+
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
+        }
+
+        // a_rho_pi_D
+        if (a_rho_pi_D) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
+            blub.erase(std::remove_if(blub.begin(), blub.end(),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
+                    blub.end());
+            groupedDecayTrees.push_back(blub);
+
+            for(auto dt : groupedDecayTrees.back())  {
+                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                if(iter != decayTrees.end())
+                    decayTrees.erase(iter);
+            }
+        }
+
+        // a_sigma_pi
+        if (a_sigma_pi) {
+            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
                     blub.end());

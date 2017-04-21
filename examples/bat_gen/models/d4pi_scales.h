@@ -11,17 +11,19 @@ const bool a_rho_pi_S  = true;
 const bool a_rho_pi_D  = true;
 const bool a_sigma_pi  = true;
 const bool rho_rho     = true;
-const bool omega_omega = true;
 const bool f_0_pipi    = true;
 const bool f_2_pipi    = true;
 const bool sigma_pipi  = true;
+
+const bool omega_omega = false;
+
 
 const bool flat_4pi    = true;
 
 const bool a1_bowler   = true;
 
-const bool bg_flat_4pi = false;
-const bool bg_rho_2pi  = false;
+const bool bg_flat_4pi = false; // DOES NOT WORK IN FIT. Admixture goes to max
+const bool bg_rho_2pi  = true;
 
 // scaling to reproduce (approximately) the fit fractions of the FOCUS model
 const double scale_a_rho_pi_D  = a1_bowler ? 10.5088  : 9.83252 ;
