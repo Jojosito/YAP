@@ -36,22 +36,21 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.15;
+    const double BDT_cut = 0.2; // negative for BG fit
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 400000; // max number of Data points we want
+    const unsigned nData = 100000; // max number of Data points we want
     const unsigned nThreads = 4;
 
 
-    //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
     std::string dir("/home/ne53mad/CopiedFromKEK/");
 
     // real data
-    /*
-    {
+    //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
+    /*{
         TChain t("t");
         t.Add((dir + "DataSkim_0?_analysis.root").c_str());
         t.AddFriend("t", (dir + "DataSkim_analysis_TMVA_weights.root").c_str());
@@ -79,20 +78,27 @@ int main()
             t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
         }
         else { // BG
-            t.Add((dir + "DataSkim_analysis_bdt_lt_-0.2.root").c_str());
-            t.AddFriend("t", (dir + "DataSkim_analysis_bdt_lt_-0.2_TMVA_weights.root").c_str());
+            if (BDT_cut > -0.2) {
+                t.Add((dir + "DataSkim_analysis_bdt_lt_-0.1.root").c_str());
+                t.AddFriend("t", (dir + "DataSkim_analysis_bdt_lt_-0.1_TMVA_weights.root").c_str());
+            }
+            else {
+                t.Add((dir + "DataSkim_analysis_bdt_lt_-0.2.root").c_str());
+                t.AddFriend("t", (dir + "DataSkim_analysis_bdt_lt_-0.2_TMVA_weights.root").c_str());
+            }
         }
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     }
     { // MC data, pre-filtered
+        dir = "/home/ne53mad/CopiedFromKEK/";
         TChain t_mcmc("t");
         t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
         t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025_TMVA_weights.root").c_str());
         LOG(INFO) << "Load integration (MC) data";
-        load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
-        //load_data_4pi(m.integralData(), t_mcmc, nData, 0, K0_cut, false); // phsp cut was already applied
+        //load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+        load_data_4pi(m.integralData(), t_mcmc, nData, 0.1, K0_cut, false); // phsp cut was already applied
     }
 
 
@@ -104,6 +110,9 @@ int main()
         t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
         //TChain t("D4pi_rho_pi_S_rho2piBG_mcmc");
         //t.Add((dir + "D4pi_rho_pi_S_rho2piBG_mcmc.root").c_str());
+        //TChain t("D4pi_flat4pi_rho2piBG_mcmc");
+        //t.Add((dir + "D4pi_flat4pi_rho2piBG_mcmc.root").c_str());
+
         LOG(INFO) << "Load data";
         load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, 100);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
@@ -129,20 +138,23 @@ int main()
     // m.SetMinimumEfficiency(0.85);
     // m.SetMaximumEfficiency(0.99);
 
+
     m.SetNIterationsRun(static_cast<int>(1e5 / m.GetNChains()));
+
+    LOG(INFO) << "Initialization scheme: " << m.GetInitialPositionScheme();
 
     // start timing:
     const auto start = std::chrono::steady_clock::now();
 
     // run MCMC, marginalizing posterior
-    bool mcmc = false;
+    bool mcmc = true;
     if (mcmc)
         m.MarginalizeAll(BCIntegrate::kMargMetropolis);
     else {
         LOG(INFO) << "MCMCUserInitialize";
         m.MCMCUserInitialize();
         LOG(INFO) << "FindMode";
-        m.FindMode();
+        m.FindMode(m.getInitialPositions());
     }
 
     // end timing

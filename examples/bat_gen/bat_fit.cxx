@@ -58,15 +58,16 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             + " S = " + yap::spin_to_string(fa->spinAmplitude()->twoS());
 
         // add real parameter
-        AddParameter("real(" + fa_name + ")", -2 * abs(fa->value()), 2 * abs(fa->value()));
+        double range = std::max(1., 3. * abs(fa->value()));
+        AddParameter("real(" + fa_name + ")", -range, range);
         // add imag parameter
-        AddParameter("imag(" + fa_name + ")", -2 * abs(fa->value()), 2 * abs(fa->value()));
+        AddParameter("imag(" + fa_name + ")", -range, range);
 
-        AbsPriors_.push_back(std::make_unique<ConstantPrior>(0, 2 * abs(fa->value())));
+        AbsPriors_.push_back(std::make_unique<ConstantPrior>(0, range));
         ArgPriors_.push_back(std::make_unique<ConstantPrior>(-180, 180));
 
         // add amplitude observable
-        AddObservable("amp(" + fa_name + ")", 0, 2 * abs(fa->value()));
+        AddObservable("amp(" + fa_name + ")", 0, range);
         // add phase observable
         AddObservable("arg(" + fa_name + ")", -180, 180);
 
@@ -110,6 +111,23 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     FirstParameter_ = GetParameters().Size();
     assert(FirstParameter_ = 2*FreeAmplitudes_.size() + Admixtures_.size());
     FirstObservable_ = GetObservables().Size();
+}
+
+//-------------------------
+std::vector<double> bat_fit::getInitialPositions() const
+{
+    std::vector<double> initialPositions;
+
+    for (auto& fa : FreeAmplitudes_) {
+        initialPositions.push_back(real(fa->value()));
+        initialPositions.push_back(imag(fa->value()));
+    }
+
+    for (auto& a : Admixtures_) {
+        initialPositions.push_back(a->value());
+    }
+
+    return initialPositions;
 }
 
 //-------------------------
@@ -278,12 +296,15 @@ void bat_fit::integrate()
 // ---------------------------------------------------------
 double bat_fit::LogLikelihood(const std::vector<double>& p)
 {
-    /*for (auto par : p)
-        std::cout<<par<<"\t";
-    std::cout << "\n";*/
-
     setParameters(p);
-    double L = sum_of_log_intensity(*model(), FitPartitions_, log(integral(Integral_).value()));
+
+    auto integral_value = integral(Integral_).value();
+    for (auto par : p)
+        std::cout<<par<<"\t";
+    std::cout << "\n";
+    LOG(INFO) << "bat_fit::LogLikelihood; integral value = " << integral_value;
+
+    double L = sum_of_log_intensity(*model(), FitPartitions_, log(integral_value));
     model()->setParameterFlagsToUnchanged();
     increaseLikelihoodCalls();
 
@@ -299,6 +320,7 @@ double bat_fit::LogLikelihood(const std::vector<double>& p)
 //-------------------------
 double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
 {
+    //LOG(INFO) << "bat_fit::LogAPrioriProbability";
     double logP = 0;
     for (size_t i = 0; i < FreeAmplitudes_.size(); ++i) {
         if (GetParameter(i * 2).Fixed() or GetParameter(i * 2 + 1).Fixed())
@@ -360,6 +382,7 @@ size_t bat_fit::findFreeAmplitude(std::shared_ptr<yap::FreeAmplitude> A) const
 //-------------------------
 void bat_fit::setPriors(std::shared_ptr<yap::FreeAmplitude> fa, BCPrior* amp_prior, BCPrior* arg_prior)
 {
+    //LOG(INFO) << "bat_fit::setPriors";
     if (!amp_prior)
         throw yap::exceptions::Exception("amp_prior is null", "bat_fit::setPrior");
     if (!arg_prior)

@@ -40,7 +40,8 @@ int main()
         // new bat_gen("DKSPIPI_Helicity", D_K0pi0pi0(yap_model<HelicityFormalism>()), 1.86961)
         // new bat_gen("DKKPI", dkkpi(yap_model<ZemachFormalism>()), 1.86961),
         // new bat_gen("DKKPI", dkkpi(yap_model<HelicityFormalism>()), 1.86961)
-        new bat_gen("D4pi", d4pi(), D0_mass)
+        new bat_gen("D4pi_flat4pi_rho2piBG", d4pi(), D0_mass)
+        //new bat_gen("D4pi_phsp", d4pi_phsp(), D0_mass)
     };
 
     for (bat_gen* m : test_models) {
@@ -49,13 +50,14 @@ int main()
         BCLog::OpenLog("output/" + m->GetSafeName() + "_log.txt", BCLog::detail, BCLog::detail);
 
         // set precision
+        //m->SetPrecision(BCEngineMCMC::kVeryHigh);
         m->SetPrecision(BCEngineMCMC::kMedium);
-        m->SetNChains(4);
-        m->SetMinimumEfficiency(0.15);
-        m->SetMaximumEfficiency(0.35);
+        //m->SetNChains(4);
+        m->SetMinimumEfficiency(0.7);
+        m->SetMaximumEfficiency(0.9);
         m->SetInitialPositionAttemptLimit(1e5);
 
-        m->SetNIterationsRun(static_cast<int>(1e8 / m->GetNChains()));
+        m->SetNIterationsRun(static_cast<int>(1e7 / m->GetNChains()));
 
         m->WriteMarkovChain("output/" + m->GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 

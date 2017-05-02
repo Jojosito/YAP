@@ -17,13 +17,18 @@ const bool sigma_pipi  = true;
 
 const bool omega_omega = false;
 
+const bool sigma_f_0_1370 = true;
 
-const bool flat_4pi    = true;
+const bool flat_4pi    = false;
+
 
 const bool a1_bowler   = true;
 
-const bool bg_flat_4pi = false; // DOES NOT WORK IN FIT. Admixture goes to max
-const bool bg_rho_2pi  = true;
+const bool bg_flat_4pi = true;
+const bool bg_rho      = false;  // < 2% in data
+const bool bg_a1       = false; // seems not to be in data
+
+const bool bg_only     = false; // fix D admixture to 0
 
 // scaling to reproduce (approximately) the fit fractions of the FOCUS model
 const double scale_a_rho_pi_D  = a1_bowler ? 10.5088  : 9.83252 ;
@@ -32,6 +37,7 @@ const double scale_rho_rho     = a1_bowler ? 0.72479  : 0.732132;
 const double scale_f_0_pipi    = a1_bowler ? 0.374681 : 0.377872;
 const double scale_f_2_pipi    = a1_bowler ? 9.25244  : 9.36535 ;
 const double scale_sigma_pipi  = a1_bowler ? 0.205471 : 0.2074  ;
+
 
 // scaled FOCUS amplitudes
 const double omega_rel_amp = -1.e-5;
@@ -50,7 +56,8 @@ yap::amplitude_basis::canonical<double> amp_omega_omega(yap::amplitude_basis::tr
 const std::complex<double> amp_f_0_pipi     = std::polar(scale_f_0_pipi * 0.233, yap::rad(261.));
 const std::complex<double> amp_f_2_pipi     = std::polar(scale_f_2_pipi * 0.338, yap::rad(317.));
 const std::complex<double> amp_sigma_pipi   = std::polar(scale_sigma_pipi * 0.432, yap::rad(254.));
-const std::complex<double> amp_pipiFlat     = std::polar(0.566, yap::rad(-44.9));
+const std::complex<double> amp_pipiFlat     = std::polar(0., yap::rad(0.));
+const std::complex<double> amp_sigma_f_0_1370 = std::complex<double>(0.28, 0.69);
 
 /* Scaled FOCUS amplitudes
 D0 --> f_0, pi+, pi-, L = 0, S = 0       (mag, phase) = (0.0742105,   -99°)         (real, imag) = (-0.0116091, -0.0732968)
@@ -84,23 +91,23 @@ const std::complex<double> amp_pipiFlat     = std::polar(, yap::rad());
 */
 
 // YAP fitted amplitudes
-/*
-const std::complex<double> amp_a_rho_pi_D   = std::polar(3.18388, yap::rad(82));
-const std::complex<double> amp_a_omega_pi_S = std::polar(0.01, yap::rad(180));
-const std::complex<double> amp_a_omega_pi_D = std::polar(3.18388, yap::rad(82));
-const std::complex<double> amp_a_sigma_pi   = std::polar(0.474726, yap::rad(-167));
+/*const std::complex<double> amp_a_rho_pi_D   = std::complex<double>(8.354, 9.88);
+const std::complex<double> amp_a_omega_pi_S = std::complex<double>(0, 0);
+const std::complex<double> amp_a_omega_pi_D = std::complex<double>(0, 0);
+const std::complex<double> amp_a_sigma_pi   = std::complex<double>(-0.3513, -0.4588);
 yap::amplitude_basis::canonical<double> amp_rho_rho(
-        std::polar(0.27357 , yap::rad(162.965)),   // S
-        std::polar(0.287792, yap::rad(6.38147)),   // P
-        std::polar(0.236966, yap::rad(163    )) ); // D
+        std::complex<double>(0.8497, 2.261),   // S
+        std::complex<double>(0.008597, 0.07375),   // P
+        std::complex<double>(-2.917, 2.266) ); // D
 yap::amplitude_basis::canonical<double> amp_omega_omega(
-        std::polar(0.0027357 , yap::rad(-17.0348)),   // S
-        std::polar(0.00236966, yap::rad(-17     )),   // P
-        std::polar(0.00287792, yap::rad(-173.619)) ); // D
-const std::complex<double> amp_f_0_pipi     = std::polar(0.0742105  , yap::rad(-99 ));
-const std::complex<double> amp_f_2_pipi     = std::polar(2.66812    , yap::rad(-43 ));
-const std::complex<double> amp_sigma_pipi   = std::polar(0.0755192  , yap::rad(-106));
-const std::complex<double> amp_pipiFlat     = std::polar(1.11022e-16, yap::rad(-90 ));
+        std::complex<double>(0, 0),   // S
+        std::complex<double>(0, 0),   // P
+        std::complex<double>(0, 0) ); // D
+const std::complex<double> amp_f_0_pipi     = std::complex<double>(0.215, 0.2093);
+const std::complex<double> amp_f_2_pipi     = std::complex<double>(-0.7122, -6.068);
+const std::complex<double> amp_sigma_pipi   = std::complex<double>(1.09, -0.4399);
+const std::complex<double> amp_pipiFlat     = std::complex<double>(0.0, 0);
+const std::complex<double> amp_sigma_f_0_1370 = std::complex<double>(0.28, 0.69);
 */
 
 #endif

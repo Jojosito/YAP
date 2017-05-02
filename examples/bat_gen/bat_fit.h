@@ -85,6 +85,8 @@ public:
     void setNIntegrationPoints(unsigned N, unsigned n, unsigned t = 1)
     { NIntegrationPoints_ = N; NIntegrationPointsBatchSize_ = n; NIntegrationThreads_ = t; }
 
+    std::vector<double> getInitialPositions() const;
+
     /// \typedef Generator
     /// function for generating new points for integration
     using Generator = std::function<std::vector<yap::FourVector<double> >()>;
