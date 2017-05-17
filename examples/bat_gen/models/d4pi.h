@@ -24,6 +24,7 @@
 #include <DecayTree.h>
 #include <FinalStateParticle.h>
 #include <Flatte.h>
+#include <FourMomenta.h>
 #include <FreeAmplitude.h>
 #include <HelicityFormalism.h>
 #include <logging.h>
@@ -49,6 +50,7 @@
 #include <TDirectory.h>
 #include <TEventList.h>
 #include <TTree.h>
+#include <TKDTreeBinning.h>
 
 #include <assert.h>
 #include <complex>
@@ -101,6 +103,7 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
 
     // get K0 mass
     const double K0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["K0"].mass();
+    LOG(INFO) << "K0 mass = " << K0_mass;
 
     for (long i=0; i<eventList->GetN(); ++i) {
         unsigned long long n = eventListArray[i];
@@ -306,9 +309,12 @@ inline std::unique_ptr<Model> d4pi()
 
         if (a_rho_pi_S) {
             *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 1.; // reference amplitude
-            free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+            //free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
 
-            *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = 1.;
+            if (a1_shared)
+                free_amplitude(*a_1_minus, to(rho), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(0)));
+            else
+                *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = 1.;
         }
         else {
             *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 0.;
@@ -324,7 +330,10 @@ inline std::unique_ptr<Model> d4pi()
         if (a_rho_pi_D) {
             *free_amplitude(*a_1_plus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
 
-            *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+            if (a1_shared)
+                free_amplitude(*a_1_minus, to(rho), l_equals(2))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(2)));
+            else
+                *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
         }
         else {
             *free_amplitude(*a_1_plus, to(rho), l_equals(2)) = 0.;
@@ -341,7 +350,10 @@ inline std::unique_ptr<Model> d4pi()
             if (a_rho_pi_S) {
                 *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
 
-                *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
+                if (a1_shared)
+                    free_amplitude(*a_1_minus, to(omega), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(omega), l_equals(0)));
+                else
+                    *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
             }
             else {
                 *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = 0.;
@@ -357,7 +369,10 @@ inline std::unique_ptr<Model> d4pi()
             if (a_rho_pi_D) {
                 *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
 
-                *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
+                if (a1_shared)
+                    free_amplitude(*a_1_minus, to(omega), l_equals(2))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(omega), l_equals(2)));
+                else
+                    *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
             }
             else {
                 *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = 0.;
@@ -373,7 +388,11 @@ inline std::unique_ptr<Model> d4pi()
         *free_amplitude(*a_1_plus, to(sigma)) = amp_a_sigma_pi;
 
         a_1_minus->addStrongDecay(sigma, piMinus);
-        *free_amplitude(*a_1_minus, to(sigma)) = amp_a_sigma_pi;
+
+        if (a1_shared)
+            free_amplitude(*a_1_minus, to(sigma))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(sigma)));
+        else
+            *free_amplitude(*a_1_minus, to(sigma)) = amp_a_sigma_pi;
     }
     
     if (not free_amplitudes(*a_1_plus).empty()) {
@@ -397,10 +416,10 @@ inline std::unique_ptr<Model> d4pi()
     }
 
     if (bg_rho) {
-        //auto rho_2pi = DecayingParticle::create("rho_2pi", QuantumNumbers(0, 0), r);
-        //rho_2pi->addWeakDecay(rho, pipi);
-        //M->addInitialState(rho_2pi);
-        M->addInitialState(rho);
+        auto rho_2pi = DecayingParticle::create("rho_2pi", QuantumNumbers(0, 0), r);
+        rho_2pi->addWeakDecay(rho, pipi);
+        M->addInitialState(rho_2pi);
+        //M->addInitialState(rho);
     }
 
     if (bg_a1) {
@@ -421,7 +440,8 @@ inline std::unique_ptr<Model> d4pi()
     for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed()))
         LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
             << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
-            << "  \t" << fa.get();
+            << "  \t" << fa.get()
+            << "  \t" << fa->freeAmplitude().get();
 
     // loop over admixtures
     for (auto& comp : M->components()) {
@@ -433,7 +453,7 @@ inline std::unique_ptr<Model> d4pi()
             LOG(INFO) << "fixed D0 admixture";
         }
         else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed)
-            *comp.admixture() = 0.0;
+            *comp.admixture() = 3.0;
 
         LOG(INFO) << "admixture " << comp.particle()->name()
                 << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
@@ -498,16 +518,19 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 //-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
 {
+    // sum of integrals
+    double sumIntegrals(0);
+    for (const auto& mci : m.modelIntegral().integrals()) {
+        sumIntegrals += mci.Admixture->value() * integral(mci.Integral).value();
+    }
+    LOG(INFO) << "\nsum of integrals = " << sumIntegrals;
+
     LOG(INFO) << "\nFit fractions for single decay trees:";
     double sum(0);
     for (const auto& mci : m.modelIntegral().integrals()) {
         auto ff = fit_fractions(mci.Integral);
         for (size_t i = 0; i < ff.size(); ++i) {
-            double fit_frac = mci.Admixture->value() / m.model()->sumOfAdmixtures() * ff[i].value();
-            if (std::isnan(fit_frac)) {
-                fit_frac = mci.Admixture->value() / m.model()->sumOfAdmixtures();
-                LOG(WARNING) << "fit_frac is nan. Take admixture as fit_frac";
-            }
+            double fit_frac = mci.Admixture->value()  * integral(mci.Integral).value() / sumIntegrals * ff[i].value();
             LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << fit_frac*100. << " %";
             sum += fit_frac;
         }
@@ -690,12 +713,20 @@ inline void d4pi_printFitFractions(bat_fit& m)
             groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(piPlus, piMinus, piPlus, piMinus)));
 
 
+        if (groupedDecayTrees.empty())
+            return;
+
         auto ff = fit_fractions(mci.Integral, groupedDecayTrees);
         for (size_t i = 0; i < ff.size(); ++i) {
 
+            if (groupedDecayTrees[i].empty())
+                continue;
+            if (!groupedDecayTrees[i][0])
+                continue;
+
             LOG(INFO) << "" ;
-            LOG(INFO) << yap::daughter_name()(groupedDecayTrees[i][0])
-                      << "   L = " << yap::orbital_angular_momentum()(groupedDecayTrees[i][0])
+            LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
+                      << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
                       << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
             for (const auto& fa : groupedDecayTrees[i])
                 LOG(INFO) << yap::to_string(*fa);
@@ -728,6 +759,238 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }*/
 
     }
+}
+
+//-------------------------
+inline double chi2_adaptiveBinning(bat_fit& batFit, unsigned EvtsPerBin = 30)
+{
+    auto massAxes = batFit.model()->massAxes({{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}});
+
+    unsigned dataDim = 5;
+    unsigned dataSize_meas = batFit.fitData().size();
+    std::vector<double> data_meas; // stride=1 for the points and = N (the dataSize) for the dimension
+    data_meas.reserve(dataDim * dataSize_meas);
+
+    // fill data_meas
+    for (auto& indices : massAxes) { // must first loop over mass axes
+        for (auto& dp : batFit.fitData()) { // then over data points
+            FourVector<double> s;
+            for (auto fsp : indices->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            data_meas.push_back(s*s);
+        }
+    }
+
+    // adaptive binning
+    TKDTreeBinning kdBins(dataSize_meas, dataDim, &data_meas[0], dataSize_meas/EvtsPerBin);
+
+    /*std::cout << "bin contents (measured):\n";
+    for (unsigned i = 0; i < kdBins.GetNBins(); ++i) {
+        std::cout << kdBins.GetBinContent(i) << "  ";
+    }
+    std::cout << "\n";*/
+
+
+    // bin integralData
+    std::vector<double> histo_exp(kdBins.GetNBins(), 0.);
+    std::vector<unsigned> histo_exp_N(kdBins.GetNBins(), 0.);
+    std::vector<double> ss(5, 0.); // invariant mass squares
+
+    for (auto& dp : batFit.integralData()) {
+        for (unsigned i = 0; i < massAxes.size(); ++i) {
+            FourVector<double> s;
+            for (auto fsp : massAxes[i]->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            ss[i] = s*s;
+        }
+
+        // fill bin with intensity
+        histo_exp.at(kdBins.FindBin(&ss[0])) += intensity(*batFit.model(), dp);
+        histo_exp_N.at(kdBins.FindBin(&ss[0])) += 1;
+    }
+
+    /*std::cout << "bin contents (expected):\n";
+    for (unsigned i = 0; i < histo_exp_N.size(); ++i) {
+        std::cout << histo_exp_N.at(i) << "  ";
+    }
+    std::cout << "\n";
+
+    std::cout << "bin contents (expected) * intensity:\n";
+    for (unsigned i = 0; i < histo_exp.size(); ++i) {
+        std::cout << histo_exp.at(i) << "  ";
+    }
+    std::cout << "\n";*/
+
+
+    // calculate chi^2
+    double n_exp = std::accumulate(histo_exp.begin(), histo_exp.end(), 0.0);
+
+    double norm_exp = dataSize_meas/n_exp;
+
+    double chi2(0.);
+    double NDF = -double(batFit.GetNFreeParameters());
+
+    for (unsigned i = 0; i < histo_exp.size(); ++i) {
+        // at least this much events
+        if (histo_exp_N.at(i) < 5.) {
+            //std::cout<< "x  ";
+            continue;
+        }
+
+        double NbExp = histo_exp.at(i) * norm_exp;
+        double Nb = kdBins.GetBinContent(i);
+
+        double chi2inc = pow(Nb - NbExp, 2) / NbExp;
+        //std::cout<< chi2inc << "  ";
+        chi2 += chi2inc;
+        NDF += 1.;
+    }
+    std::cout << "\n";
+
+    std::cout << "total chi2 with adaptive binning = " << chi2 << "\n";
+    std::cout << "NDF = " << NDF << "\n";
+    std::cout << "reduced chi2 = " << chi2/NDF << "\n";
+
+    return chi2;
+
+}
+
+//-------------------------
+inline double chi2(bat_fit& batFit, std::vector<double> sbinUpperBounds = {0.237108, 0.549527, 0.734061})
+{
+    unsigned nBins = sbinUpperBounds.size() + 1;
+
+    //batFit.model()->calculate(batFit.integralData());
+    //batFit.model()->calculate(batFit.fitData());
+
+    auto massAxes = batFit.model()->massAxes({{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}});
+    //auto massAxes = batFit.model()->massAxes();
+
+    std::vector<double> ss(5, 0.); // invariant mass squares
+    std::vector<unsigned> pointCoords(5, 0); // in 5D space
+
+    std::vector<unsigned> histo_exp_N(pow(nBins, 5), 0.); // predicted, number of events in bins
+    std::vector<double> histo_exp(pow(nBins, 5), 0.); // predicted
+    std::vector<double> histo_meas(pow(nBins, 5), 0.); // measured
+
+    // phsp data -> predicted events
+    for (auto& dp : batFit.integralData()) {
+        for (unsigned i = 0; i < massAxes.size(); ++i) {
+            FourVector<double> s;
+            for (auto fsp : massAxes[i]->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            ss[i] = s*s;
+        }
+
+        // determine bin number
+        unsigned iCoord(0);
+        for (auto& c : ss) {
+          for (unsigned i = 0; i < sbinUpperBounds.size(); ++i) {
+            if (c < sbinUpperBounds.at(i)) {
+              pointCoords.at(iCoord) = i;
+              break;
+            }
+            pointCoords.at(iCoord) = sbinUpperBounds.size();
+          }
+          ++iCoord;
+        }
+
+        unsigned iBin(0);
+        for (unsigned i=0; i<pointCoords.size(); ++i) {
+          iBin += pointCoords.at(i) * pow(nBins, i);
+        }
+
+        // fill bin with intensity
+        histo_exp.at(iBin) += intensity(*batFit.model(), dp);
+        histo_exp_N.at(iBin) += 1;
+    }
+
+
+    /*std::cout << "histo_exp\n";
+    for (auto c : histo_exp) {
+      std::cout<< c << "  ";
+    }
+    std::cout << "\n";*/
+
+
+    // data -> measured events
+    for (auto& dp : batFit.fitData()) {
+        for (unsigned i = 0; i < massAxes.size(); ++i) {
+            FourVector<double> s;
+            for (auto fsp : massAxes[i]->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            ss[i] = s*s;
+        }
+
+        // determine bin number
+        unsigned iCoord(0);
+        for (auto& c : ss) {
+          for (unsigned i = 0; i < sbinUpperBounds.size(); ++i) {
+            if (c < sbinUpperBounds.at(i)) {
+              pointCoords.at(iCoord) = i;
+              break;
+            }
+            pointCoords.at(iCoord) = sbinUpperBounds.size();
+          }
+          ++iCoord;
+        }
+
+        unsigned iBin(0);
+        for (unsigned i=0; i<pointCoords.size(); ++i) {
+          iBin += pointCoords.at(i) * pow(nBins, i);
+        }
+
+        // fill bin with 1
+        histo_meas.at(iBin) += 1;
+    }
+
+
+    /*std::cout << "histo_meas\n";
+    for (auto c : histo_meas) {
+      std::cout<< c << "  ";
+    }
+    std::cout << "\n";
+
+
+    std::cout << "chi2 increments\n";*/
+
+    // calculate chi^2
+    double n_exp = std::accumulate(histo_exp.begin(), histo_exp.end(), 0.0);
+    double n_meas = std::accumulate(histo_meas.begin(), histo_meas.end(), 0.0);
+
+    double norm_exp = n_meas/n_exp;
+
+    double chi2(0.);
+    double NDF = -double(batFit.GetNFreeParameters());
+
+    // see arXiv:1611.09253v2 [hep-ex], Eq. 6
+    for (unsigned i = 0; i < histo_exp.size(); ++i) {
+        double NbExp = histo_exp.at(i) * norm_exp;
+
+        // at least this much events
+        if (histo_exp_N.at(i) < 5.) {
+            //std::cout<< "x  ";
+            continue;
+        }
+
+        double Nb = histo_meas.at(i);
+
+        double chi2inc = pow(Nb - NbExp, 2) / NbExp;
+        //std::cout<< chi2inc << "  ";
+        chi2 += chi2inc;
+        NDF += 1.;
+    }
+    std::cout << "\n";
+
+    std::cout << "total chi2 = " << chi2 << "\n";
+    std::cout << "NDF = " << NDF << "\n";
+    std::cout << "reduced chi2 = " << chi2/NDF << "\n";
+
+    return chi2;
 }
 
 #endif
