@@ -15,7 +15,7 @@ namespace yap {
 //-------------------------
 FreeAmplitude::FreeAmplitude(std::shared_ptr<DecayChannel> dc, std::shared_ptr<SpinAmplitude> sa,
                              std::complex<double> a) :
-    ComplexParameter(a),
+    FreeAmplitude_(std::make_shared<ComplexParameter>(a)),
     DecayChannel_(dc),
     SpinAmplitude_(sa)
 {
@@ -47,7 +47,7 @@ std::string to_string(const FreeAmplitude& fa)
     return to_string(*fa.decayChannel())
         + ", L = " + std::to_string(fa.spinAmplitude()->L())
         + ", S = " + spin_to_string(fa.spinAmplitude()->twoS())
-        + (fa.variableStatus() == VariableStatus::fixed ? " [" + to_string(fa.variableStatus())+ "]" : "");
+        + (fa.freeAmplitude()->variableStatus() == VariableStatus::fixed ? " [" + to_string(fa.freeAmplitude()->variableStatus())+ "]" : "");
 }
 
 }

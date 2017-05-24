@@ -22,11 +22,15 @@ const bool sigma_f_0_1370 = true;
 const bool flat_4pi    = false;
 
 
-const bool a1_bowler   = true;
-
 const bool bg_flat_4pi = true;
-const bool bg_rho      = false;  // < 2% in data
-const bool bg_a1       = false; // seems not to be in data
+const bool bg_rho      = true;  // ~10% of BG
+const bool bg_a1       = false; // <1% of BG
+
+const bool a1_bowler   = true;
+const bool a1_shared   = true;  // share a1+ and a1- free amplitudes
+
+const bool a1_plus     = true;
+const bool a1_minus    = true;
 
 const bool bg_only     = false; // fix D admixture to 0
 

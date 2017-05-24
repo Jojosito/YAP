@@ -22,9 +22,11 @@
 #include "SpinAmplitudeCache.h"
 #include "VariableStatus.h"
 
+
 /// \todo Find better place for this
 INITIALIZE_EASYLOGGINGPP
 
+#include <assert.h>
 #include <future>
 
 namespace yap {
@@ -75,7 +77,9 @@ void Model::calculate(DataPartition& D) const
 //-------------------------
 const double intensity(const ModelComponent& c, const DataPoint& d)
 {
-    return c.admixture()->value() * intensity(c.decayTrees(), d);
+    auto intens = intensity(c.decayTrees(), d);
+    //LOG(INFO) << "admixture = " << c.admixture()->value() << " * intensity = " << intens;
+    return c.admixture()->value() * intens;
 }
 
 //-------------------------
@@ -357,6 +361,15 @@ void Model::lock()
 }
 
 //-------------------------
+double Model::sumOfAdmixtures() const
+{
+    double sum(0);
+    for (auto& c : Components_)
+        sum += c.admixture()->value();
+    return sum;
+}
+
+//-------------------------
 const MassAxes Model::massAxes(std::vector<std::vector<unsigned> > pcs) const
 {
     // if no axes requested, build default:
@@ -442,6 +455,13 @@ DataSet Model::createDataSet(size_t n)
 }
 
 //-------------------------
+void Model::setParameterFlagsToUnchanged()
+{
+    for (auto& d : RecalculableDataAccessors_)
+        d->setParameterFlagsToUnchanged();
+}
+
+//-------------------------
 FreeAmplitudeSet free_amplitudes(const Model& M)
 {
     FreeAmplitudeSet S;
@@ -464,10 +484,15 @@ ParticleSet particles(const Model& M)
 }
 
 //-------------------------
-void Model::setParameterFlagsToUnchanged()
+int charge(const Model& M, const std::shared_ptr<const ParticleCombination>& pc)
 {
-    for (auto& d : RecalculableDataAccessors_)
-        d->setParameterFlagsToUnchanged();
+    int c(0);
+    auto fsps = M.finalStateParticles();
+
+    for (auto i : pc->indices())
+        c+= fsps[i]->quantumNumbers().Q();
+
+    return c;
 }
 
 }

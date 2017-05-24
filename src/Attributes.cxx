@@ -125,9 +125,15 @@ const bool is_fixed::operator()(const ParameterBase& p) const
 const bool is_fixed::operator()(const DecayTree& dt) const
 {
     for (const auto& fa : free_amplitudes(dt))
-        if (!operator()(fa))
+        if (!operator()(fa->freeAmplitude()))
             return false;
     return true;
+}
+
+//-------------------------
+const bool is_fixed::operator()(const FreeAmplitude& fa) const
+{
+    return fa.freeAmplitude()->variableStatus() == VariableStatus::fixed;
 }
 
 //-------------------------
@@ -140,9 +146,15 @@ const bool is_not_fixed::operator()(const ParameterBase& p) const
 const bool is_not_fixed::operator()(const DecayTree& dt) const
 {
     for (const auto& fa : free_amplitudes(dt))
-        if (operator()(fa))
+        if (operator()(fa->freeAmplitude()))
             return true;
     return false;
+}
+
+//-------------------------
+const bool is_not_fixed::operator()(const FreeAmplitude& fa) const
+{
+    return fa.freeAmplitude()->variableStatus() != VariableStatus::fixed;
 }
 
 //-------------------------
@@ -244,14 +256,6 @@ std::shared_ptr<const DecayingParticle> parent_particle::operator()(const BlattW
     if (!bw.decayingParticle())
         return nullptr;
     return std::static_pointer_cast<const DecayingParticle>(bw.decayingParticle()->shared_from_this());
-}
-
-//-------------------------
-std::shared_ptr<const DecayingParticle> parent_particle::operator()(const MassShape& m) const
-{
-    if (!m.owner())
-        return nullptr;
-    return std::static_pointer_cast<DecayingParticle>(m.owner()->shared_from_this());
 }
 
 //-------------------------

@@ -86,8 +86,21 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
     // calculate boost from data frame into pc rest frame
     const auto boost = lorentzTransformation(-(boosts * P));
 
+    // preferably choose daughter with same charge as parent
+    unsigned daughterId(0);
+    if (pc->parent()) {
+        int c = charge(*Model_, pc->parent());
+        for (auto& daughter : pc->daughters()) {
+            if (charge(*Model_, daughter) == c)
+                break;
+            ++daughterId;
+        }
+        if (daughterId == pc->daughters().size())
+            daughterId = 0;
+    }
+
     // boost daughter momentum from data frame into pc rest frame
-    const auto p = boost * boosts * Model_->fourMomenta()->p(d, pc->daughters()[0]);
+    const auto p = boost * boosts * Model_->fourMomenta()->p(d, pc->daughters()[daughterId]);
 
     auto hel_angles = angles<double>(vect<double>(p), cP);
 

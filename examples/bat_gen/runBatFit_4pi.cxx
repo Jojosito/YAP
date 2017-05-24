@@ -36,13 +36,13 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.2; // negative for BG fit
+    const double BDT_cut = 0.15; // 0.15 // negative for BG fit
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 100000; // max number of Data points we want
+    const unsigned nData = 200000; // max number of Data points we want
     const unsigned nThreads = 4;
 
 
@@ -92,13 +92,19 @@ int main()
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     }
     { // MC data, pre-filtered
+        LOG(INFO) << "Load integration (MC) data";
         dir = "/home/ne53mad/CopiedFromKEK/";
         TChain t_mcmc("t");
-        t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
-        t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025_TMVA_weights.root").c_str());
-        LOG(INFO) << "Load integration (MC) data";
-        //load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
-        load_data_4pi(m.integralData(), t_mcmc, nData, 0.1, K0_cut, false); // phsp cut was already applied
+        if (BDT_cut > 0.) {
+            t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
+            t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025_TMVA_weights.root").c_str());
+            load_data_4pi(m.integralData(), t_mcmc, nData, BDT_cut, K0_cut, false); // phsp cut was already applied
+        }
+        else {
+            t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_lt_0.0.root").c_str());
+            t_mcmc.AddFriend("t", (dir + "FourPionsSkim_analysis_phsp_bdt_lt_0.0_TMVA_weights.root").c_str());
+            load_data_4pi(m.integralData(), t_mcmc, nData, -0.1, K0_cut, false); // phsp cut was already applied
+        }
     }
 
 
@@ -106,22 +112,22 @@ int main()
     /*dir = "/home/ne53mad/YAPfork/buildRelease/output/";
     const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
     {
-        TChain t("D4pi_rho_pi_S_flatBG_mcmc");
-        t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
+        //TChain t("D4pi_rho_pi_S_flatBG_mcmc");
+        //t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
         //TChain t("D4pi_rho_pi_S_rho2piBG_mcmc");
         //t.Add((dir + "D4pi_rho_pi_S_rho2piBG_mcmc.root").c_str());
-        //TChain t("D4pi_flat4pi_rho2piBG_mcmc");
-        //t.Add((dir + "D4pi_flat4pi_rho2piBG_mcmc.root").c_str());
+        TChain t("D4pi_flat4pi_rho2piBG_mcmc");
+        t.Add((dir + "D4pi_flat4pi_rho2piBG_mcmc.root").c_str());
 
         LOG(INFO) << "Load data";
-        load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, 100);
+        load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, 10);
         m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     }
     { // MC data, pre-filtered
         TChain t_mcmc("D4pi_phsp_mcmc");
         t_mcmc.Add((dir + "D4pi_phsp_mcmc.root").c_str());
         LOG(INFO) << "Load integration (MC) data";
-        load_data(m.integralData(), *m.model(), m.axes(), D0_mass, t_mcmc, nData, 100);
+        load_data(m.integralData(), *m.model(), m.axes(), D0_mass, t_mcmc, nData, 25);
     }*/
 
     // partition integral data
@@ -135,8 +141,8 @@ int main()
     m.SetPrecision(BCEngineMCMC::kMedium);
     m.SetNIterationsPreRunMax(1e5);
     m.SetNChains(nThreads); //
-    // m.SetMinimumEfficiency(0.85);
-    // m.SetMaximumEfficiency(0.99);
+    m.SetMinimumEfficiency(0.15);
+    m.SetMaximumEfficiency(0.35);
 
 
     m.SetNIterationsRun(static_cast<int>(1e5 / m.GetNChains()));
@@ -146,16 +152,26 @@ int main()
     // start timing:
     const auto start = std::chrono::steady_clock::now();
 
+    chi2(m);
+    chi2_adaptiveBinning(m);
+
+    LOG(INFO) << "MCMCUserInitialize";
+    m.MCMCUserInitialize();
+
     // run MCMC, marginalizing posterior
-    bool mcmc = true;
-    if (mcmc)
+    bool mcmc = false;
+    if (mcmc) {
+        m.setUseJacobian(true);
         m.MarginalizeAll(BCIntegrate::kMargMetropolis);
+    }
     else {
-        LOG(INFO) << "MCMCUserInitialize";
-        m.MCMCUserInitialize();
+        m.setUseJacobian(false);
         LOG(INFO) << "FindMode";
         m.FindMode(m.getInitialPositions());
+        //for (unsigned i = 0; i<10; ++i)
+        //    m.FindMode(m.getRandomInitialPositions());
     }
+
 
     // end timing
     const auto end = std::chrono::steady_clock::now();
@@ -165,16 +181,22 @@ int main()
     for (auto par : bestFitPars)
         LOG(INFO) << "\t" << par;
 
-    LOG(INFO) << "\nFind global mode";
-    auto globalMode = m.FindMode(bestFitPars);
+    if (mcmc) {
+        LOG(INFO) << "\nFind global mode";
+        m.setUseJacobian(false);
+        auto globalMode = m.FindMode(bestFitPars);
 
-    double llGlobMode = std::numeric_limits<double>::min();
-    if (globalMode.empty())
-        LOG(ERROR) << "global mode is empty";
-    else
-        llGlobMode = m.LogLikelihood(globalMode);
+        double llGlobMode = std::numeric_limits<double>::min();
+        if (globalMode.empty())
+            LOG(ERROR) << "global mode is empty";
+        else
+            llGlobMode = m.LogLikelihood(globalMode);
 
-    LOG(INFO) << "\nLogLikelihood of global mode = " << llGlobMode;
+        LOG(INFO) << "\nLogLikelihood of global mode = " << llGlobMode;
+    }
+
+    chi2(m);
+    chi2_adaptiveBinning(m);
 
     // delete data
     m.fitData().clear();

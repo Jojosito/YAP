@@ -3,6 +3,7 @@
 #include "DecayTree.h"
 #include "Exceptions.h"
 #include "IntegralElement.h"
+#include "logging.h"
 
 #include <algorithm>
 #include <complex>
@@ -16,6 +17,9 @@ DecayTreeVectorIntegral::DecayTreeVectorIntegral(const DecayTreeVector& dtv)
       Diagonals_(DecayTrees_.size()),
       OffDiagonals_(DecayTrees_.size() - 1)
 {
+    for (size_t i = 0; i < Diagonals_.size(); ++i)
+        Diagonals_[i].value() = 1.;
+
     for (size_t i = 0; i < OffDiagonals_.size(); ++i)
         OffDiagonals_[i] = ComplexIntegralElementMatrix::value_type(DecayTrees_.size() - i - 1);
 }
@@ -29,6 +33,8 @@ const Model* DecayTreeVectorIntegral::model() const
 //-------------------------
 const RealIntegralElement DecayTreeVectorIntegral::integral(unsigned i) const
 {
+    //LOG(INFO) << "Diagonals_.at(i).value() = " << Diagonals_.at(i).value();
+    //LOG(INFO) << "norm(DecayTrees_[i]->dataIndependentAmplitude()) = " << norm(DecayTrees_[i]->dataIndependentAmplitude());
     return RealIntegralElement(Diagonals_.at(i).value() * norm(DecayTrees_[i]->dataIndependentAmplitude()));
 }
 
@@ -84,6 +90,10 @@ DecayTreeVectorIntegral& DecayTreeVectorIntegral::operator*=(double rhs)
 //-------------------------
 DecayTreeVectorIntegral& DecayTreeVectorIntegral::reset()
 {
+    //LOG(INFO) << "DecayTreeVectorIntegral::reset() for ";
+    //for (auto dt : decayTrees())
+    //    LOG(INFO) << to_string(*dt);
+
     for (auto& elt : Diagonals_)
         elt.reset();
     for (auto& row : OffDiagonals_)
@@ -155,12 +165,22 @@ const ComplexIntegralElementMatrix integrals(const DecayTreeVectorIntegral& dtvi
 //-------------------------
 const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi)
 {
+    //LOG(INFO);
+
     RealIntegralElement I(0.);
     for (unsigned i = 0; i < dtvi.diagonals().size(); ++i) {
+        //LOG(INFO) << "dtvi.integral(" << i << ") = " << to_string(dtvi.integral(i));
         I += dtvi.integral(i);
-        for (unsigned j = i + 1; j < dtvi.diagonals().size(); ++j)
+        for (unsigned j = i + 1; j < dtvi.diagonals().size(); ++j) {
+            //LOG(INFO) << "dtvi.integral(" << i << ", " << j << ") = " <<  to_string(dtvi.integral(i, j));
             I += dtvi.integral(i, j);
+        }
     }
+
+    //LOG(INFO) << "Integral for DecayTrees = " << to_string(I);
+    //for (auto dt : dtvi.decayTrees())
+    //    LOG(INFO) << to_string(*dt);
+
     return I;
 }
 

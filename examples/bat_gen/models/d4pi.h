@@ -203,6 +203,7 @@ inline std::unique_ptr<Model> d4pi()
 
     auto M = std::make_unique<yap::Model>(std::make_unique<yap::HelicityFormalism>());
     M->setFinalState(piPlus, piMinus, piPlus, piMinus);
+    //M->setFinalState(piMinus, piPlus, piMinus, piPlus);
 
     // use common radial size for all resonances
     double r = 1.2; // [GeV^-1]
@@ -397,12 +398,19 @@ inline std::unique_ptr<Model> d4pi()
     
     if (not free_amplitudes(*a_1_plus).empty()) {
         D->addWeakDecay(a_1_plus, piMinus);
-        *free_amplitude(*D, to(a_1_plus)) = 1.;
+        if (a1_plus)
+            *free_amplitude(*D, to(a_1_plus)) = 1.;
+        else
+            *free_amplitude(*D, to(a_1_plus)) = 0.;
         free_amplitude(*D, to(a_1_plus))->variableStatus() = VariableStatus::fixed;
 
         D->addWeakDecay(a_1_minus, piPlus);
-        *free_amplitude(*D, to(a_1_minus)) = 1.;
+        if (a1_minus)
+            *free_amplitude(*D, to(a_1_minus)) = 1.;
+        else
+            *free_amplitude(*D, to(a_1_minus)) = 0.;
         free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
+
     }
 
     //

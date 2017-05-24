@@ -95,7 +95,7 @@ struct spin_projection : public attribute_of<const int, DecayTree>
 
 /// Functor class to check whether argument is fixed
 /// \ingroup Attributes
-struct is_fixed : public attribute_of<const bool, ParameterBase, DecayTree>
+struct is_fixed : public attribute_of<const bool, ParameterBase, DecayTree, FreeAmplitude>
 {
     /// \note functors inherited
     using attribute_of::operator();
@@ -105,11 +105,14 @@ struct is_fixed : public attribute_of<const bool, ParameterBase, DecayTree>
 
     /// DecayTree& functor
     virtual const bool operator()(const DecayTree& dt) const override;
+
+    /// FreeAmplitude& functor
+    virtual const bool operator()(const FreeAmplitude& fa) const override;
 };
 
 /// Functor class to check whether argument is not fixed
 /// \ingroup Attributes
-struct is_not_fixed : attribute_of<const bool, ParameterBase, DecayTree>
+struct is_not_fixed : attribute_of<const bool, ParameterBase, DecayTree, FreeAmplitude>
 {
     /// \note functors inherited
     using attribute_of::operator();
@@ -119,6 +122,9 @@ struct is_not_fixed : attribute_of<const bool, ParameterBase, DecayTree>
 
     /// DecayTree& functor
     virtual const bool operator()(const DecayTree& dt) const override;
+
+    /// FreeAmplitude& functor
+    virtual const bool operator()(const FreeAmplitude& fa) const override;
 };
 
 /// Functor class to check if state is decayed to by argument
@@ -224,7 +230,6 @@ struct parent_particle : public attribute_of<std::shared_ptr<const DecayingParti
                                              FreeAmplitude,
                                              DecayChannel,
                                              BlattWeisskopf,
-                                             MassShape,
                                              ModelComponent>
 {
     /// \note functors inherited
@@ -241,9 +246,6 @@ struct parent_particle : public attribute_of<std::shared_ptr<const DecayingParti
 
     /// BlattWeisskopf& functor
     virtual std::shared_ptr<const DecayingParticle> operator()(const BlattWeisskopf& bw) const override;
-
-    /// MassShape& functor
-    virtual std::shared_ptr<const DecayingParticle> operator()(const MassShape& m) const override;
 
     /// Model::Component& functor
     virtual std::shared_ptr<const DecayingParticle> operator()(const ModelComponent& c) const override;

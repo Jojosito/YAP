@@ -47,6 +47,9 @@ public:
     /// set the range for a FreeAmplitude's abs and arg obvservables
     void setAbsArgRanges(std::shared_ptr<yap::FreeAmplitude> fa, double abs_low, double abs_high, double arg_low, double arg_high);
 
+    void setUseJacobian(bool j = true)
+    { useJacobian_ = j; }
+
     /// fix a FreeAmplitude
     void fix(std::shared_ptr<yap::FreeAmplitude> A, double amp, double phase);
 
@@ -86,6 +89,7 @@ public:
     { NIntegrationPoints_ = N; NIntegrationPointsBatchSize_ = n; NIntegrationThreads_ = t; }
 
     std::vector<double> getInitialPositions() const;
+    std::vector<double> getRandomInitialPositions() const;
 
     /// \typedef Generator
     /// function for generating new points for integration
@@ -165,6 +169,9 @@ protected:
 
     /// Calculated fit fractions (for observables)
     std::vector<yap::RealIntegralElementVector> CalculatedFitFractions_;
+
+    // set to true when sampling
+    bool useJacobian_;
 
 };
 

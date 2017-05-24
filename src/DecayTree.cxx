@@ -11,6 +11,7 @@
 #include "ParticleCombination.h"
 #include "SpinAmplitude.h"
 #include "VariableStatus.h"
+#include "logging.h"
 
 #include <iterator>
 #include <functional>
@@ -85,6 +86,7 @@ const std::complex<double> DecayTree::dataDependentAmplitude(const DataPoint& d)
 {
     std::complex<double> A = 0;
     for (const auto& pc : FreeAmplitude_->decayChannel()->particleCombinations()) {
+        //DEBUG("pc " << to_string(*pc) << "; dataDependentAmplitude = " << dataDependentAmplitude(d, pc))
         A += dataDependentAmplitude(d, pc);
     }
     return A;
@@ -110,15 +112,26 @@ const std::complex<double> DecayTree::dataDependentAmplitude(const DataPoint& d,
 //-------------------------
 const VariableStatus DecayTree::dataDependentAmplitudeStatus() const
 {
+    //LOG(INFO) << "DecayTree::dataDependentAmplitudeStatus() for dt " << to_string(*this);
     // return `changed` if any amplitude component has changed
-    for (const auto& ac : AmplitudeComponents_)
-        if (ac->status() == VariableStatus::changed)
+    for (const auto& ac : AmplitudeComponents_) {
+        //LOG(INFO) << "ac->status() " << to_string(ac->status());
+        if (ac->status() == VariableStatus::changed) {
+            //LOG(INFO) << "return VariableStatus::changed;";
             return VariableStatus::changed;
+        }
+    }
     // return `changed` if any daughter has changed
-    for (const auto& d_dt : DaughterDecayTrees_)
-        if (d_dt.second->dataDependentAmplitudeStatus() == VariableStatus::changed)
+    for (const auto& d_dt : DaughterDecayTrees_) {
+        auto status = d_dt.second->dataDependentAmplitudeStatus();
+        //LOG(INFO) << "  d_dt.second->dataDependentAmplitudeStatus() " << to_string(status);
+        if (status == VariableStatus::changed) {
+            //LOG(INFO) << "  return VariableStatus::changed;";
             return VariableStatus::changed;
+        }
+    }
     // else unchanged
+    //LOG(INFO) << "return VariableStatus::unchanged;";
     return VariableStatus::unchanged;
 }
 
@@ -203,6 +216,7 @@ unsigned depth(const DecayTree& DT)
 //-------------------------
 const bool has_changed(const std::shared_ptr<DecayTree>& dt)
 {
+    //LOG(INFO) << "has_changed " << to_string(*dt) << ": " << to_string(dt->dataDependentAmplitudeStatus());
     return dt->dataDependentAmplitudeStatus() == VariableStatus::changed;
 }
 

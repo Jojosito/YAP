@@ -5,7 +5,9 @@
 #include "Exceptions.h"
 #include "Model.h"
 #include "Parameter.h"
+#include "logging.h"
 
+#include <assert.h>
 #include <memory>
 
 namespace yap {
@@ -29,7 +31,7 @@ ModelIntegral::ModelIntegral(const Model& model)
 const RealIntegralElement integral(const ModelIntegral& MI)
 {
     return std::accumulate(MI.integrals().begin(), MI.integrals().end(), RealIntegralElement(),
-                           [](RealIntegralElement& I, const ModelComponentIntegral& mci)
+                           [&](RealIntegralElement& I, const ModelComponentIntegral& mci)
                            { return I += mci.Admixture->value() * integral(mci.Integral); });
 }
 

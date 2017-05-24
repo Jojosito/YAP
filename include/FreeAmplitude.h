@@ -31,6 +31,7 @@
 
 #include "Parameter.h"
 
+#include <assert.h>
 #include <complex>
 #include <string>
 
@@ -45,7 +46,7 @@ namespace yap {
 /// particular set of daughters (as indicated by the DecayChannel)
 /// with a particular set of angular-momentum quantum numbers as given
 /// by the SpinAmplitude and parent spin projection
-class FreeAmplitude : public ComplexParameter
+class FreeAmplitude
 {
 public:
 
@@ -55,6 +56,44 @@ public:
     /// \param a value to initialize to
     FreeAmplitude(std::shared_ptr<DecayChannel> dc, std::shared_ptr<SpinAmplitude> sa,
                   std::complex<double> a = 1);
+
+    void shareFreeAmplitude(FreeAmplitude& other)
+    {
+      FreeAmplitude_ = other.FreeAmplitude_;
+      //assert(FreeAmplitude_.get() == other.FreeAmplitude_.get()) ;
+    }
+
+    std::shared_ptr<ComplexParameter>& freeAmplitude()
+    { return FreeAmplitude_; }
+
+    const std::shared_ptr<ComplexParameter>& freeAmplitude() const
+    { return FreeAmplitude_; }
+
+
+    /// \return VariableStatus
+    VariableStatus& variableStatus()
+    { return FreeAmplitude_->variableStatus(); }
+
+    /// \return VariableStatus (const)
+    const VariableStatus variableStatus() const
+    { return FreeAmplitude_->variableStatus(); }
+
+    std::complex<double> value() const
+    { return FreeAmplitude_->value(); }
+
+    Parameter<std::complex<double>>& operator=(std::complex<double> V)
+    { return *FreeAmplitude_ = V; }
+
+    const VariableStatus setValue(const std::vector<double>& V)
+    { return FreeAmplitude_->setValue(V); }
+
+    const VariableStatus setValue(std::complex<double> V)
+    { return FreeAmplitude_->setValue(V); }
+
+
+
+
+
 
     /// \return DecayChannel_
     const std::shared_ptr<DecayChannel>& decayChannel() const
@@ -70,9 +109,9 @@ public:
     /// \return Model this FreeAmplitude belongs to (via DecayChannel)
     const Model* model() const;
 
-    using ComplexParameter::operator=;
-
 private:
+
+    std::shared_ptr<ComplexParameter> FreeAmplitude_;
 
     /// DecayChannel for which this is a free amplitude
     std::shared_ptr<DecayChannel> DecayChannel_;

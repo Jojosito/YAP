@@ -34,6 +34,8 @@
 #include "fwd/StatusManager.h"
 #include "fwd/VariableStatus.h"
 
+#include <logging.h>
+
 #include <array>
 #include <complex>
 #include <map>

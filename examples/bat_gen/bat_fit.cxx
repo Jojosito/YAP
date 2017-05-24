@@ -23,6 +23,7 @@
 #include <BAT/BCPrior.h>
 
 #include <TTree.h>
+#include <TRandom3.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -39,7 +40,8 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
       NIntegrationThreads_(1),
       Integral_(*model()),
       FirstParameter_(-1),
-      FirstObservable_(-1)
+      FirstObservable_(-1),
+      useJacobian_(false)
 {
     // create mass axes
     axes() = model()->massAxes(pcs);
@@ -51,6 +53,19 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
         // ignore fixed free amplitudes
         if (fa->variableStatus() == yap::VariableStatus::fixed)
             continue;
+
+        // do not add shared free amplitudes
+        bool cont(false);
+        for (auto& famp : FreeAmplitudes_) {
+            if (famp->freeAmplitude().get() == fa->freeAmplitude().get()) {
+                LOG(INFO) << "free amplitude already in FreeAmplitudes_";
+                cont = true;
+                break;
+            }
+        }
+        if (cont)
+            continue;
+
 
         auto fa_name = std::to_string(iVar++) + " "
             + to_string(*fa->decayChannel())
@@ -84,7 +99,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
                 + "admixture_" + comp.particle()->name()
                 + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, 10.);
+        AddParameter(adm_name, 0, 3000.);
 
         Admixtures_.push_back(comp.admixture());
     }
@@ -94,7 +109,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     //                         [](int n, const yap::IntegralMap::value_type& v)
     //                         {return n + v.second.decayTrees().size();});
     // if (N > 1) {
-    for (const auto& mci : Integral_.integrals())
+    /*for (const auto& mci : Integral_.integrals())
         for (const auto& dt : mci.Integral.decayTrees()) {
             DecayTrees_.push_back(dt);
 
@@ -105,7 +120,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
 
             AddObservable(str, 0, 1.1);
             //GetObservables().Back().SetNbins(1000);
-        }
+        }*/
     // }
 
     FirstParameter_ = GetParameters().Size();
@@ -125,6 +140,25 @@ std::vector<double> bat_fit::getInitialPositions() const
 
     for (auto& a : Admixtures_) {
         initialPositions.push_back(a->value());
+    }
+
+    return initialPositions;
+}
+
+//-------------------------
+std::vector<double> bat_fit::getRandomInitialPositions() const
+{
+    std::vector<double> initialPositions;
+
+    for (auto& fa : FreeAmplitudes_) {
+        double range = std::max(1., 2. * abs(fa->value()));
+
+        initialPositions.push_back(gRandom->Uniform(-range, range));
+        initialPositions.push_back(gRandom->Uniform(-range, range));
+    }
+
+    for (auto& a : Admixtures_) {
+        initialPositions.push_back(gRandom->Uniform(a->value()));
     }
 
     return initialPositions;
@@ -274,13 +308,13 @@ void bat_fit::setParameters(const std::vector<double>& p)
 
     // calculate fit fractions
     // if (!CalculatedFitFractions_.empty()) {
-    unsigned c = GetCurrentChain();
+    /*unsigned c = GetCurrentChain();
     size_t i = 0;
     for (const auto& mci : Integral_.integrals()) {
         auto ff = fit_fractions(mci.Integral);
         for (const auto& f : ff)
             CalculatedFitFractions_[c][i++] = f;
-    }
+    }*/
     // }
 }
 
@@ -327,8 +361,9 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
             continue;
         auto A = std::complex<double>(p[i * 2 + 0], p[i * 2 + 1]);
         logP += AbsPriors_[i]->GetLogPrior(abs(A))
-            + ArgPriors_[i]->GetLogPrior(yap::deg(arg(A)))
-            - log(abs(A));      // jacobian
+            + ArgPriors_[i]->GetLogPrior(yap::deg(arg(A)));
+        if (useJacobian_)
+            logP -= log(abs(A));      // jacobian
     }
     for (size_t i = FreeAmplitudes_.size() * 2; i < GetParameters().Size(); ++i)
         if (GetParameter(i).GetPrior())
@@ -344,9 +379,10 @@ void bat_fit::CalculateObservables(const std::vector<double>& p)
         GetObservables()[i * 2 + 0] = abs(A);
         GetObservables()[i * 2 + 1] = yap::deg(arg(A));
     }
-    unsigned c = GetCurrentChain();
+    /*unsigned c = GetCurrentChain();
     for (size_t i = 0; i < CalculatedFitFractions_[c].size(); ++i)
         GetObservables()[FreeAmplitudes_.size() * 2 + i] = CalculatedFitFractions_[c][i].value();
+        */
 }
 
 //-------------------------
@@ -424,6 +460,6 @@ void bat_fit::MCMCUserInitialize()
 {
     bat_yap_base::MCMCUserInitialize();
     // if (!CalculatedFitFractions_.empty())
-    CalculatedFitFractions_.assign(GetNChains(), yap::RealIntegralElementVector(DecayTrees_.size()));
+    //CalculatedFitFractions_.assign(GetNChains(), yap::RealIntegralElementVector(DecayTrees_.size()));
 }
 

@@ -37,6 +37,12 @@ void ImportanceSampler::calculate(std::vector<std::complex<double> >& A, const D
 //-------------------------
 void ImportanceSampler::update(const std::vector<std::complex<double> >& A, DecayTreeVectorIntegral& I, unsigned n)
 {
+    /*if (n == 0) {
+        LOG(INFO) << "ImportanceSampler::update for dt ";
+        for (auto dt : I.decayTrees())
+            LOG(INFO) << to_string(*dt);
+    }*/
+
     // increase number of points
     ++n;
 
@@ -47,6 +53,9 @@ void ImportanceSampler::update(const std::vector<std::complex<double> >& A, Deca
         // update mean
         diagonals(I)[i].value() += delta_diag / n;
         
+       // if (diagonals(I)[i].value() == 0.)
+            //LOG(INFO) << "diagonals(I)[i].value() = " << diagonals(I)[i].value();
+
         for (size_t j = i + 1; j < A.size(); ++j) {
             // calculate difference from mean
             auto delta_offdiag = conj(A[i]) * A[j] - I.offDiagonals()[i][j - i - 1].value();
@@ -71,6 +80,11 @@ unsigned ImportanceSampler::calculate_partition(std::vector<DecayTreeVectorInteg
 
     unsigned n = 0;
     for (auto& j : J) {
+
+        /*LOG(INFO) << "calculate_partition for decayTrees";
+        for (auto dt : j->decayTrees())
+            LOG(INFO) << to_string(*dt);*/
+
         n = 0;
         std::vector<std::complex<double> > A(j->decayTrees().size());
         // loop over data points
@@ -192,8 +206,15 @@ unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral
 //-------------------------
 void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D)
 {
+    LOG(INFO) << "ImportanceSampler::calculate";
+
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
     auto J = select_changed(I);
+
+    LOG(INFO) << "changed decay trees after select_changed:";
+    for (auto j : J)
+        for (auto dt : j->decayTrees())
+            LOG(INFO) << to_string(*dt);
 
     // if nothing requires recalculation, return
     if (J.empty())

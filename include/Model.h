@@ -180,6 +180,8 @@ public:
     const std::vector<ModelComponent>& components() const
     { return Components_; }
     
+    double sumOfAdmixtures() const;
+
     /// \return set of DataAccessors
     const DataAccessorSet& dataAccessors() const
     { return DataAccessors_; }
@@ -358,6 +360,9 @@ ParticleSet particles(const Model& M, Last p, UnaryPredicates ... P)
 template <typename Last, typename ... UnaryPredicates>
 ParticleSet::value_type particle(const Model& M, Last p, UnaryPredicates ... P)
 { return lone_elt(filter(particles(M), p, P...)); }
+
+/// \return the charge of pc
+int charge(const Model& M, const std::shared_ptr<const ParticleCombination>& pc);
 
 }
 

@@ -9,6 +9,7 @@
 #include <FourVector.h>
 #include <FreeAmplitude.h>
 #include <HelicityFormalism.h>
+#include <logging.h>
 #include <make_unique.h>
 #include <MassAxes.h>
 #include <Model.h>
@@ -22,7 +23,7 @@
 
 /// generate a model with 4 final state particles
 //-------------------------
-inline std::shared_ptr<yap::Model> d4pi()
+inline std::shared_ptr<yap::Model> d4pi(std::vector<int> fsps = {211, -211, 211, -211})
 {
     auto M = std::make_shared<yap::Model>(std::make_unique<yap::HelicityFormalism>());
 
@@ -33,11 +34,21 @@ inline std::shared_ptr<yap::Model> d4pi()
     auto D = yap::DecayingParticle::create(T[421], radialSize);
 
     // final state particles
+    yap::FinalStateParticleVector FSP;
+    std::transform(fsps.begin(), fsps.end(), std::back_inserter(FSP), [&T](int pdg){return yap::FinalStateParticle::create(T[pdg]);});
+
+
     auto piPlus  = yap::FinalStateParticle::create(T[211]);
     auto piMinus = yap::FinalStateParticle::create(T[-211]);
 
     // Set final-state particles
-    M->setFinalState(piPlus, piMinus, piPlus, piMinus);
+    std::vector<std::shared_ptr<yap::FinalStateParticle>> FSPs;
+    for (auto i : fsps) {
+        DEBUG(i <<  "  ");
+        FSPs.push_back(i > 0 ? piPlus : piMinus);
+    }
+
+    M->setFinalState(FSPs);
 
     // rho
     auto rho = yap::DecayingParticle::create(T[113], radialSize, std::make_shared<yap::BreitWigner>(T[113]));
@@ -55,6 +66,69 @@ inline std::shared_ptr<yap::Model> d4pi()
     // D's channels
     D->addWeakDecay(rho, rho);
     D->addWeakDecay(a_1, piMinus);
+
+    M->lock();
+    return M;
+}
+
+/// generate a model with 4 final state particles
+//-------------------------
+inline std::shared_ptr<yap::Model> d4pi_a1(bool rho_pi_S, bool rho_pi_D, bool sigma_pi, bool plusMinus)
+{
+    auto M = std::make_shared<yap::Model>(std::make_unique<yap::HelicityFormalism>());
+
+    auto T = yap::read_pdl_file((::getenv("YAPDIR") ? (std::string)::getenv("YAPDIR") + "/data" : ".") + "/evt.pdl");
+    double radialSize = 1.;
+
+    // initial state particle
+    auto D = yap::DecayingParticle::create(T[plusMinus ? 421 : -421], radialSize);
+
+    // final state particles
+    auto piPlus  = yap::FinalStateParticle::create(T[211]);
+    auto piMinus = yap::FinalStateParticle::create(T[-211]);
+
+    // Set final-state particles
+    M->setFinalState(piPlus, piMinus, piPlus, piMinus);
+
+    // rho
+    auto rho = yap::DecayingParticle::create(T[113], radialSize, std::make_shared<yap::BreitWigner>(T[113]));
+    rho->addStrongDecay(piPlus, piMinus);
+
+    // sigma / f_0(500)
+    auto sigma = yap::DecayingParticle::create(T[9000221], radialSize, std::make_shared<yap::BreitWigner>(T[9000221]));
+    sigma->addStrongDecay(piPlus, piMinus);
+
+    // a_1
+    auto a_1_plus = yap::DecayingParticle::create(T["a_1+"], radialSize, std::make_shared<yap::BreitWigner>(T["a_1+"]));
+    auto a_1_minus = yap::DecayingParticle::create(T["a_1-"], radialSize, std::make_shared<yap::BreitWigner>(T["a_1-"]));
+
+    if (rho_pi_S or rho_pi_D) {
+        a_1_plus->addStrongDecay(rho,   piPlus);
+        a_1_minus->addStrongDecay(rho,   piMinus);
+
+        if (not rho_pi_S) {
+            *free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(0)) = 0.;
+            *free_amplitude(*a_1_minus, yap::to(rho), yap::l_equals(0)) = 0.;
+        }
+
+        if (not rho_pi_D) {
+            *free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(2)) = 0.;
+            *free_amplitude(*a_1_minus, yap::to(rho), yap::l_equals(2)) = 0.;
+        }
+
+    }
+
+    if (sigma_pi) {
+        a_1_plus->addStrongDecay(sigma, piPlus);
+        a_1_minus->addStrongDecay(sigma, piMinus);
+    }
+
+    // D's channels
+    if (plusMinus)
+        D->addWeakDecay(a_1_plus, piMinus);
+    else
+        D->addWeakDecay(a_1_minus, piPlus);
+        //D->addWeakDecay(piPlus, a_1_minus);  // does not make a difference
 
     M->lock();
     return M;

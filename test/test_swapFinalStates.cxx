@@ -38,6 +38,10 @@ std::complex<double> calculate_model(double isp_mass, yap::Model& M, const yap::
     if (P.empty())
         return std::numeric_limits<double>::quiet_NaN();
 
+    for (auto& p : P)
+        DEBUG(to_string(p));
+    DEBUG("");
+
     // reset data set
     data = M.createDataSet();
     // add point

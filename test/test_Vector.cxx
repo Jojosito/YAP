@@ -88,7 +88,7 @@ TEST_CASE( "Vector" )
             REQUIRE(angle(a, -a) == yap::pi());
             REQUIRE(angle(a, b) == 0.5 * yap::pi());
             REQUIRE(angle(a, c) == 0.5 * yap::pi());
-            REQUIRE(std::isnan(angle(a, z)));
+            REQUIRE(angle(a, z) == 0.);
 
             REQUIRE( yap::theta(c, three_axes) == Approx(0.) );
             REQUIRE( yap::theta(a, three_axes) == Approx(yap::pi() / 2.) );

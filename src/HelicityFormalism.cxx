@@ -9,6 +9,8 @@
 #include "Spin.h"
 #include "WignerD.h"
 
+#include <logging.h>
+
 namespace yap {
 
 //-------------------------
@@ -59,8 +61,12 @@ const std::complex<double> HelicitySpinAmplitude::calc(int two_M, const SpinProj
     // helicity angles
     const auto& angles = model()->helicityAngles()(d, sm, pc);
 
-    return std::conj(DFunction(initialTwoJ(), two_M, two_m[0] - two_m[1], angles.phi, angles.theta, 0))
+    auto amp = std::conj(DFunction(initialTwoJ(), two_M, two_m[0] - two_m[1], angles.phi, angles.theta, 0))
            * Coefficients_.at(two_m);
+
+    //DEBUG("helicitySpinAmplitude for pc " << to_string(*pc) << " = " << amp);
+    return amp;
+
 
     /// \todo Take a look at momentum-dependent Clebsch-Gordan
     /// coefficients by J. Friedrich and S.U. Chung implemented in
