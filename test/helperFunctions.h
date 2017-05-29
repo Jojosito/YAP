@@ -106,6 +106,10 @@ inline std::shared_ptr<yap::Model> d4pi_a1(bool rho_pi_S, bool rho_pi_D, bool si
         a_1_plus->addStrongDecay(rho,   piPlus);
         a_1_minus->addStrongDecay(rho,   piMinus);
 
+        *free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(2)) = std::polar(2.41, yap::rad(82.));
+        free_amplitude(*a_1_minus, yap::to(sigma))->shareFreeAmplitude(*free_amplitude(*a_1_plus, yap::to(sigma)));
+
+
         if (not rho_pi_S) {
             *free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(0)) = 0.;
             *free_amplitude(*a_1_minus, yap::to(rho), yap::l_equals(0)) = 0.;
@@ -121,14 +125,18 @@ inline std::shared_ptr<yap::Model> d4pi_a1(bool rho_pi_S, bool rho_pi_D, bool si
     if (sigma_pi) {
         a_1_plus->addStrongDecay(sigma, piPlus);
         a_1_minus->addStrongDecay(sigma, piMinus);
+
+        *free_amplitude(*a_1_plus, yap::to(sigma)) = std::polar(0.439, yap::rad(193.));
+        free_amplitude(*a_1_minus, yap::to(sigma))->shareFreeAmplitude(*free_amplitude(*a_1_plus, yap::to(sigma)));
     }
 
     // D's channels
+    D->addWeakDecay(a_1_plus, piMinus);
+    D->addWeakDecay(a_1_minus, piPlus);
     if (plusMinus)
-        D->addWeakDecay(a_1_plus, piMinus);
+        *yap::free_amplitude(*D, yap::to(a_1_minus)) = 0.;
     else
-        D->addWeakDecay(a_1_minus, piPlus);
-        //D->addWeakDecay(piPlus, a_1_minus);  // does not make a difference
+        *yap::free_amplitude(*D, yap::to(a_1_plus)) = 0.;
 
     M->lock();
     return M;

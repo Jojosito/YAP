@@ -10,26 +10,26 @@
 const bool a_rho_pi_S  = true;
 const bool a_rho_pi_D  = true;
 const bool a_sigma_pi  = true;
-const bool rho_rho     = true;
-const bool f_0_pipi    = true;
-const bool f_2_pipi    = true;
-const bool sigma_pipi  = true;
+const bool rho_rho     = false;
+const bool f_0_pipi    = false;
+const bool f_2_pipi    = false;
+const bool sigma_pipi  = false;
 
 const bool omega_omega = false;
 
-const bool sigma_f_0_1370 = true;
+const bool sigma_f_0_1370 = false;
 
 const bool flat_4pi    = false;
 
 
-const bool bg_flat_4pi = true;
-const bool bg_rho      = true;  // ~10% of BG
+const bool bg_flat_4pi = false;
+const bool bg_rho      = false;  // ~10% of BG
 const bool bg_a1       = false; // <1% of BG
 
 const bool a1_bowler   = true;
-const bool a1_shared   = true;  // share a1+ and a1- free amplitudes
+const bool a1_shared   = false;  // share a1+ and a1- free amplitudes
 
-const bool a1_plus     = true;
+const bool a1_plus     = false;
 const bool a1_minus    = true;
 
 const bool bg_only     = false; // fix D admixture to 0

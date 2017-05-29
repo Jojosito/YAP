@@ -109,6 +109,13 @@ const RealIntegralElementVector diagonal_integrals(const DecayTreeVectorIntegral
     I.reserve(dtvi.decayTrees().size());
     for (size_t i = 0; i < dtvi.decayTrees().size(); ++i)
         I.emplace_back(dtvi.integral(i));
+
+    /*for (auto& i : I) {
+        LOG(INFO) << "diagonal Integral for DecayTrees = " << to_string(i);
+        for (auto dt : dtvi.decayTrees())
+            LOG(INFO) << to_string(*dt);
+    }*/
+
     return I;
 }
 
@@ -177,10 +184,10 @@ const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi)
         }
     }
 
-    //LOG(INFO) << "Integral for DecayTrees = " << to_string(I);
-    //for (auto dt : dtvi.decayTrees())
-    //    LOG(INFO) << to_string(*dt);
-
+    /*LOG(INFO) << "Integral for DecayTrees = " << to_string(I);
+    for (auto dt : dtvi.decayTrees())
+        LOG(INFO) << to_string(*dt);
+*/
     return I;
 }
 

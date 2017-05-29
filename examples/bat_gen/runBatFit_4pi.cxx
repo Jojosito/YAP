@@ -7,7 +7,7 @@
 
 #include "bat_fit.h"
 #include "bat_gen.h"
-#include "models/d4pi.h"
+#include "models/d4pi_fit.h"
 #include "tools.h"
 
 #include <Exceptions.h>
@@ -42,7 +42,7 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 200000; // max number of Data points we want
+    const unsigned nData = 10000; // max number of Data points we want
     const unsigned nThreads = 4;
 
 
@@ -202,12 +202,13 @@ int main()
     m.fitData().clear();
     m.integralData().clear();
 
+    d4pi_printFitFractions(m);
+
     LOG(INFO) << "Print Summary";
     m.PrintSummary();
     LOG(INFO) << "Generate plots";
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
 
-    d4pi_printFitFractions(m);
 
     //LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
 

@@ -87,6 +87,7 @@ void HelicityAngles::calculateAngles(const DataPoint& d, const StatusManager& sm
     const auto boost = lorentzTransformation(-(boosts * P));
 
     // preferably choose daughter with same charge as parent
+    // todo: base this on even/odd permutation of pc
     unsigned daughterId(0);
     if (pc->parent()) {
         int c = charge(*Model_, pc->parent());

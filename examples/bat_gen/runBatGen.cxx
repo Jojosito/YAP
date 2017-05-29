@@ -40,7 +40,7 @@ int main()
         // new bat_gen("DKSPIPI_Helicity", D_K0pi0pi0(yap_model<HelicityFormalism>()), 1.86961)
         // new bat_gen("DKKPI", dkkpi(yap_model<ZemachFormalism>()), 1.86961),
         // new bat_gen("DKKPI", dkkpi(yap_model<HelicityFormalism>()), 1.86961)
-        new bat_gen("D4pi_a1_minus_BreitWigner_sigma_pi", d4pi(), D0_mass)
+        new bat_gen("D4pi_a1_minus", d4pi(), D0_mass)
         //new bat_gen("D4pi_phsp", d4pi_phsp(), D0_mass)
     };
 
