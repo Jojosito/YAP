@@ -321,10 +321,16 @@ void bat_fit::setParameters(const std::vector<double>& p)
 //-------------------------
 void bat_fit::integrate()
 {
+
     if (IntegrationPointGenerator_)
         yap::ImportanceSampler::calculate(Integral_, IntegrationPointGenerator_, NIntegrationPoints_, NIntegrationPointsBatchSize_, NIntegrationThreads_);
-    else
+    else {
+        for (auto& p : IntegralPartitions_) {
+            model()->updateCalculationStatus(*p);
+        }
+
         yap::ImportanceSampler::calculate(Integral_, IntegralPartitions_);
+    }
 }
 
 // ---------------------------------------------------------
