@@ -45,27 +45,33 @@ namespace yap {
 BowlerMassShape::BowlerMassShape(double mass, double width) :
     BreitWigner(mass, width),
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
-{}
+{
+    addParameter(KsKCoupling_);
+}
 
 //-------------------------
 BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
     BreitWigner(pde),
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
-{}
+{
+    addParameter(KsKCoupling_);
+}
 
 //-------------------------
 void BowlerMassShape::updateCalculationStatus(StatusManager& D) const
 {
-    BreitWigner::updateCalculationStatus(D);
-    if (amp_model_a1_rho_S_->variableStatus() == VariableStatus::changed or
-        amp_model_a1_rho_D_->variableStatus() == VariableStatus::changed or
-        amp_model_a1_sigma_->variableStatus() == VariableStatus::changed)
-        D.set(*T(), CalculationStatus::uncalculated);
+    //bool changed = amp_a1_rho_D_->value() != amp_model_a1_rho_D_->value();
 
     // also set amplitudes for next iteration
     amp_a1_rho_S_->setValue(amp_model_a1_rho_S_->value());
     amp_a1_rho_D_->setValue(amp_model_a1_rho_D_->value());
     amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
+
+    /*if (changed) {
+        assert(amp_a1_rho_D_->freeAmplitude()->variableStatus() ==  VariableStatus::changed);
+        assert(status() == VariableStatus::changed);
+        LOG(INFO) << "BowlerMassShape::updateCalculationStatus changed";
+    }*/
 }
 
 //-------------------------
@@ -75,7 +81,12 @@ void BowlerMassShape::lock()
 
     // \todo: not hardcode
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
-    deduce_meson_parities(T);
+    try {
+        deduce_meson_parities(T);
+    }
+    catch (yap::exceptions::Exception& e) {
+        std::cerr << e.what();
+    }
     set_parities(T);
 
     // final state particles
@@ -104,9 +115,15 @@ void BowlerMassShape::lock()
 
     M->lock();
 
+    assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
+
     amp_a1_rho_S_ = free_amplitude(*a_1, to(rho), l_equals(0));
     amp_a1_rho_D_ = free_amplitude(*a_1, to(rho), l_equals(2));
     amp_a1_sigma_ = free_amplitude(*a_1, to(sigma));
+
+    addParameter(amp_a1_rho_S_->freeAmplitude());
+    addParameter(amp_a1_rho_D_->freeAmplitude());
+    addParameter(amp_a1_sigma_->freeAmplitude());
 
     auto model_a_1 = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("a_1+")));
     auto model_rho = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("rho0")));

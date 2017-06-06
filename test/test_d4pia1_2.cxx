@@ -64,27 +64,27 @@ TEST_CASE( "d4pia1_2" )
                         << (sigma_pi ? "sigma_pi; " : "") );
 
                 // which waves to include in the model
-                const_cast<bool&>(a_rho_pi_S)  = true;
-                const_cast<bool&>(a_rho_pi_D)  = true;
-                const_cast<bool&>(a_sigma_pi)  = true;
-                const_cast<bool&>(rho_rho   )  = false;
-                const_cast<bool&>(f_0_pipi  )  = false;
-                const_cast<bool&>(f_2_pipi  )  = false;
-                const_cast<bool&>(sigma_pipi)  = false;
+                const_cast<bool&>(a_rho_pi_S)  = rho_pi_S;
+                const_cast<bool&>(a_rho_pi_D)  = rho_pi_D;
+                const_cast<bool&>(a_sigma_pi)  = sigma_pi;
+                const_cast<bool&>(rho_rho   )  = true;
+                const_cast<bool&>(f_0_pipi  )  = true;
+                const_cast<bool&>(f_2_pipi  )  = true;
+                const_cast<bool&>(sigma_pipi)  = true;
 
                 const_cast<bool&>(omega_omega) = false;
 
-                const_cast<bool&>(sigma_f_0_1370) = false;
+                const_cast<bool&>(sigma_f_0_1370) = true;
 
                 const_cast<bool&>(flat_4pi)    = false;
 
 
-                const_cast<bool&>(bg_flat_4pi) = false;
-                const_cast<bool&>(bg_rho     ) = false;  // ~10% of BG
+                const_cast<bool&>(bg_flat_4pi) = true;
+                const_cast<bool&>(bg_rho     ) = true;  // ~10% of BG
                 const_cast<bool&>(bg_a1      ) = false; // <1% of BG
 
-                const_cast<bool&>(a1_bowler)  = true;
-                const_cast<bool&>(a1_shared)  = false;  // share a1+ and a1- free amplitudes
+                const_cast<bool&>(a1_bowler)  = (rho_pi_S or rho_pi_D) and sigma_pi;
+                const_cast<bool&>(a1_shared)  = true;  // share a1+ and a1- free amplitudes
 
                 const_cast<bool&>(a1_plus )    = true;
                 const_cast<bool&>(a1_minus)    = false;

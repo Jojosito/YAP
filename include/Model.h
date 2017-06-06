@@ -116,6 +116,12 @@ public:
     /// Virtual destructor = default
     virtual ~Model() = default;
     
+
+    /// Update calculation statuses of RecalculableDataAccessors_
+    /// \param D DataPartition
+    /// \todo This need not be a member function!
+    void updateCalculationStatus(DataPartition& D) const;
+
     /// Calculate model for each data point in the data partition
     /// \param D DataPartition to calculate over
     /// \todo This need not be a member function!

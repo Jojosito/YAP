@@ -29,7 +29,7 @@
 /**
  * Test that the amplitude remains the same after swapping the order of the final state particles
  */
-std::complex<double> calculate_model(double isp_mass, yap::Model& M, const yap::MassAxes& A, std::vector<yap::FourVector<double>> P)
+inline std::complex<double> calculate_model(double isp_mass, yap::Model& M, const yap::MassAxes& A, std::vector<yap::FourVector<double>> P)
 {
     auto data = M.createDataSet();
     // add point

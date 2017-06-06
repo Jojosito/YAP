@@ -225,14 +225,19 @@ inline void d4pi_printFitFractions(bat_fit& m)
     LOG(INFO) << "\nFit fractions for single decay trees:";
     double sum(0);
     for (const auto& mci : mi.integrals()) {
+        double sum_admixture(0);
         auto ff = fit_fractions(mci.Integral);
         for (size_t i = 0; i < ff.size(); ++i) {
             double fit_frac = mci.Admixture->value()  * integral(mci.Integral).value() / sumIntegrals * ff[i].value();
-            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << fit_frac*100. << " %; ff = " << ff[i].value();
+            LOG(INFO) << to_string(*mci.Integral.decayTrees()[i]) << "\t" << fit_frac*100. << " %; fit fraction in admixture = " << ff[i].value()*100. << " %";
             sum += fit_frac;
+            sum_admixture += ff[i].value();
         }
+        LOG(INFO) << "Sum for admixture = " << sum_admixture*100 << " %";
+        LOG(INFO) << "Deviation from 100% = " << (sum_admixture-1.)*100 << " %";
     }
     LOG(INFO) << "Sum = " << sum*100 << " %";
+    LOG(INFO) << "Deviation from 100% = " << (sum-1.)*100 << " %";
 
     LOG(INFO) << "\nFit fractions for grouped decay trees:";
     sum = 0;

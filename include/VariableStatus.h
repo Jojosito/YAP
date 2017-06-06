@@ -36,7 +36,7 @@ inline std::string to_string(const VariableStatus& s)
 {
     switch (s) {
         case VariableStatus::changed:
-            return "changed";
+            return "CHANGED";
         case VariableStatus::fixed:
             return "fixed";
         case VariableStatus::unchanged:

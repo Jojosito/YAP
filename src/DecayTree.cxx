@@ -115,7 +115,7 @@ const VariableStatus DecayTree::dataDependentAmplitudeStatus() const
     //LOG(INFO) << "DecayTree::dataDependentAmplitudeStatus() for dt " << to_string(*this);
     // return `changed` if any amplitude component has changed
     for (const auto& ac : AmplitudeComponents_) {
-        //LOG(INFO) << "ac->status() " << to_string(ac->status());
+        //LOG(INFO) << "ac->status() " << to_string(ac->status()) << "; ac address: " << ac;
         if (ac->status() == VariableStatus::changed) {
             //LOG(INFO) << "return VariableStatus::changed;";
             return VariableStatus::changed;

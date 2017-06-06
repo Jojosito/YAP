@@ -18,6 +18,9 @@
 #include <PDL.h>
 #include <PHSP.h>
 
+#include "../../data/set_parities.h"
+#include "../../data/deduce_parities.h"
+
 #include <Group.h>
 #include <Sort.h>
 
@@ -78,6 +81,14 @@ inline std::shared_ptr<yap::Model> d4pi_a1(bool rho_pi_S, bool rho_pi_D, bool si
     auto M = std::make_shared<yap::Model>(std::make_unique<yap::HelicityFormalism>());
 
     auto T = yap::read_pdl_file((::getenv("YAPDIR") ? (std::string)::getenv("YAPDIR") + "/data" : ".") + "/evt.pdl");
+    try {
+        deduce_meson_parities(T);
+    }
+    catch (yap::exceptions::Exception& e) {
+        std::cerr << e.what();
+    }
+    set_parities(T);
+
     double radialSize = 1.;
 
     // initial state particle
@@ -107,7 +118,7 @@ inline std::shared_ptr<yap::Model> d4pi_a1(bool rho_pi_S, bool rho_pi_D, bool si
         a_1_minus->addStrongDecay(rho,   piMinus);
 
         *free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(2)) = std::polar(2.41, yap::rad(82.));
-        free_amplitude(*a_1_minus, yap::to(sigma))->shareFreeAmplitude(*free_amplitude(*a_1_plus, yap::to(sigma)));
+        free_amplitude(*a_1_minus, yap::to(rho), yap::l_equals(2))->shareFreeAmplitude(*free_amplitude(*a_1_plus, yap::to(rho), yap::l_equals(2)));
 
 
         if (not rho_pi_S) {

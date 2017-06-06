@@ -206,12 +206,12 @@ unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral
 //-------------------------
 void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D)
 {
-    LOG(INFO) << "ImportanceSampler::calculate";
+    //LOG(INFO) << "ImportanceSampler::calculate";
 
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
     auto J = select_changed(I);
 
-    LOG(INFO) << "changed decay trees after select_changed:";
+    //LOG(INFO) << "changed decay trees after select_changed:";
     for (auto j : J)
         for (auto dt : j->decayTrees())
             LOG(INFO) << to_string(*dt);
@@ -241,6 +241,8 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV)
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
     auto J = select_changed(I);
 
+    //LOG(INFO) << "ImportanceSampler::calculate -- select_changed size = " << J.size();
+
     // if nothing requires recalculation, return
     if (J.empty())
         return;
@@ -267,6 +269,7 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV)
 
     // calculate data fractions:
     // also waits for threads to finish calculating
+    LOG(INFO) << "recalculate Integral";
     std::vector<double> f;
     f.reserve(n.size());
     std::transform(n.begin(), n.end(), std::back_inserter(f), std::mem_fn(&std::future<unsigned>::get));

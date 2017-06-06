@@ -77,7 +77,12 @@ inline std::unique_ptr<Model> d4pi_phsp()
 inline std::unique_ptr<Model> d4pi()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
-    deduce_meson_parities(T);
+    try {
+        deduce_meson_parities(T);
+    }
+    catch (yap::exceptions::Exception& e) {
+        std::cerr << e.what();
+    }
     set_parities(T);
 
     // final state particles
@@ -193,7 +198,7 @@ inline std::unique_ptr<Model> d4pi()
 
         if (a_rho_pi_S) {
             *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 1.; // reference amplitude
-            //free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+            free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
 
             if (a1_shared)
                 free_amplitude(*a_1_minus, to(rho), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(0)));
