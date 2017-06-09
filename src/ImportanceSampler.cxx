@@ -97,10 +97,17 @@ unsigned ImportanceSampler::calculate_partition(std::vector<DecayTreeVectorInteg
 }
 
 //-------------------------
-std::vector<DecayTreeVectorIntegral*> ImportanceSampler::select_changed(ModelIntegral& I)
+std::vector<DecayTreeVectorIntegral*> ImportanceSampler::select_changed(ModelIntegral& I, bool selectAll)
 {
     std::vector<DecayTreeVectorIntegral*> C;
     C.reserve(integrals(I).size());
+
+    if (selectAll) {
+        for (auto& mci : integrals(I))
+            C.push_back(&mci.Integral);
+
+        return C;
+    }
 
     for (auto& mci : integrals(I))
         if (std::any_of(mci.Integral.decayTrees().begin(), mci.Integral.decayTrees().end(), &has_changed))
@@ -204,12 +211,12 @@ unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral
 }
 
 //-------------------------
-void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D)
+void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force)
 {
     //LOG(INFO) << "ImportanceSampler::calculate";
 
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
-    auto J = select_changed(I);
+    auto J = select_changed(I, force);
 
     //LOG(INFO) << "changed decay trees after select_changed:";
     for (auto j : J)
@@ -230,16 +237,16 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D)
 }
 
 //-------------------------
-void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV)
+void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force)
 {
     // if only one data partition, don't thread:
     if (DPV.size() == 1) {
-        calculate(I, *DPV[0]);
+        calculate(I, *DPV[0], force);
         return;
     }
 
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
-    auto J = select_changed(I);
+    auto J = select_changed(I, force);
 
     //LOG(INFO) << "ImportanceSampler::calculate -- select_changed size = " << J.size();
 

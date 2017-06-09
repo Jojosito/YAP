@@ -116,8 +116,8 @@ int main()
         //t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
         //TChain t("D4pi_rho_pi_S_rho2piBG_mcmc");
         //t.Add((dir + "D4pi_rho_pi_S_rho2piBG_mcmc.root").c_str());
-        TChain t("D4pi_flat4pi_rho2piBG_mcmc");
-        t.Add((dir + "D4pi_flat4pi_rho2piBG_mcmc.root").c_str());
+        TChain t("D4pi_fitted_params_mcmc");
+        t.Add((dir + "fit_06_2017_fixed_a1_shape/D4pi_fitted_params_mcmc.root").c_str());
 
         LOG(INFO) << "Load data";
         load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, 10);

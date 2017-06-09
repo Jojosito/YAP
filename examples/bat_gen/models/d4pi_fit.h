@@ -193,6 +193,9 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 //-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
 {
+    unsigned nPoints = 500000;
+    LOG(INFO) << "calculate fit fractions with " << nPoints << " PHSP points";
+
     // generate integration data
     yap::DataSet data(m.model()->createDataSet());
 
@@ -205,13 +208,13 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
         std::mt19937 g(0);
         // fill data set with nPoints points
-        std::generate_n(std::back_inserter(data), 500000,
+        std::generate_n(std::back_inserter(data), nPoints,
                         std::bind(yap::phsp<std::mt19937>, std::cref(*m.model()), isp_mass, A, m2r, g, std::numeric_limits<unsigned>::max()));
     }
     auto partitions = yap::DataPartitionBlock::create(data, 4);
 
     yap::ModelIntegral mi(*m.model());
-    yap::ImportanceSampler::calculate(mi, partitions);
+    yap::ImportanceSampler::calculate(mi, partitions, true);
 
     // sum of integrals
     double sumIntegrals(0);

@@ -186,8 +186,8 @@ const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi)
 
     /*LOG(INFO) << "Integral for DecayTrees = " << to_string(I);
     for (auto dt : dtvi.decayTrees())
-        LOG(INFO) << to_string(*dt);
-*/
+        LOG(INFO) << to_string(*dt);*/
+
     return I;
 }
 

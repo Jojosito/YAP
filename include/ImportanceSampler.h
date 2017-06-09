@@ -47,12 +47,12 @@ public:
     /// Update calculation of ModelIntegral
     /// \param I ModelIntegral to calculate
     /// \param DPV vector of DataPartitions to calculate with
-    static void calculate(ModelIntegral& I, DataPartitionVector& DPV);
+    static void calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force = false);
 
     /// Update calculation of ModelIntegral
     /// \param I ModelIntegral to calculate
     /// \param D DataPartition to calculate with
-    static void calculate(ModelIntegral& I, DataPartition& D);
+    static void calculate(ModelIntegral& I, DataPartition& D, bool force = false);
 
     /// \typedef Generator
     /// function for generating new points for integration
@@ -73,7 +73,7 @@ public:
     static void update(const std::vector<std::complex<double> >& A, DecayTreeVectorIntegral& I, unsigned n);
 
     /// \return integral_sub_map for all changed trees
-    static std::vector<DecayTreeVectorIntegral*> select_changed(ModelIntegral& I);
+    static std::vector<DecayTreeVectorIntegral*> select_changed(ModelIntegral& I, bool selectAll = false);
 
     /// perform calculation for one data partition
     static unsigned calculate_partition(std::vector<DecayTreeVectorIntegral*>& J, DataPartition& D);
