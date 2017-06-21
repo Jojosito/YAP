@@ -124,7 +124,8 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     // }
 
     FirstParameter_ = GetParameters().Size();
-    assert(FirstParameter_ = 2*FreeAmplitudes_.size() + Admixtures_.size());
+
+    assert(FirstParameter_ == int(2*FreeAmplitudes_.size() + Admixtures_.size()));
     FirstObservable_ = GetObservables().Size();
 }
 
@@ -140,6 +141,11 @@ std::vector<double> bat_fit::getInitialPositions() const
 
     for (auto& a : Admixtures_) {
         initialPositions.push_back(a->value());
+    }
+
+    for (auto& p : Parameters_) {
+        // \todo might be nullptr
+        initialPositions.push_back(dynamic_cast<yap::Parameter<double>*>(p.get())->value());
     }
 
     return initialPositions;
@@ -158,7 +164,11 @@ std::vector<double> bat_fit::getRandomInitialPositions() const
     }
 
     for (auto& a : Admixtures_) {
-        initialPositions.push_back(gRandom->Uniform(a->value()));
+        initialPositions.push_back(2. * gRandom->Uniform(a->value()));
+    }
+
+    for (auto& p : Parameters_) {
+        initialPositions.push_back(2. * gRandom->Uniform(dynamic_cast<yap::Parameter<double>*>(p.get())->value()));
     }
 
     return initialPositions;

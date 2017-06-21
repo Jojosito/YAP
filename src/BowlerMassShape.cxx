@@ -44,7 +44,13 @@ namespace yap {
 //-------------------------
 BowlerMassShape::BowlerMassShape(double mass, double width) :
     BreitWigner(mass, width),
-    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
+    amp_a1_rho_S_(nullptr),
+    amp_a1_rho_D_(nullptr),
+    amp_a1_sigma_(nullptr),
+    amp_model_a1_rho_S_(nullptr),
+    amp_model_a1_rho_D_(nullptr),
+    amp_model_a1_sigma_(nullptr)
 {
     addParameter(KsKCoupling_);
 }
@@ -52,7 +58,13 @@ BowlerMassShape::BowlerMassShape(double mass, double width) :
 //-------------------------
 BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
     BreitWigner(pde),
-    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06))
+    KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
+    amp_a1_rho_S_(nullptr),
+    amp_a1_rho_D_(nullptr),
+    amp_a1_sigma_(nullptr),
+    amp_model_a1_rho_S_(nullptr),
+    amp_model_a1_rho_D_(nullptr),
+    amp_model_a1_sigma_(nullptr)
 {
     addParameter(KsKCoupling_);
 }
@@ -63,9 +75,20 @@ void BowlerMassShape::updateCalculationStatus(StatusManager& D) const
     //bool changed = amp_a1_rho_D_->value() != amp_model_a1_rho_D_->value();
 
     // also set amplitudes for next iteration
-    amp_a1_rho_S_->setValue(amp_model_a1_rho_S_->value());
-    amp_a1_rho_D_->setValue(amp_model_a1_rho_D_->value());
-    amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
+    if (amp_model_a1_rho_S_)
+        amp_a1_rho_S_->setValue(amp_model_a1_rho_S_->value());
+    else
+        amp_a1_rho_S_->setValue(0.);
+
+    if (amp_model_a1_rho_D_)
+        amp_a1_rho_D_->setValue(amp_model_a1_rho_D_->value());
+    else
+        amp_a1_rho_D_->setValue(0.);
+
+    if (amp_model_a1_sigma_)
+        amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
+    else
+        amp_a1_sigma_->setValue(0.);
 
     /*if (changed) {
         assert(amp_a1_rho_D_->freeAmplitude()->variableStatus() ==  VariableStatus::changed);
@@ -126,13 +149,31 @@ void BowlerMassShape::lock()
     addParameter(amp_a1_sigma_->freeAmplitude());
 
     auto model_a_1 = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("a_1+")));
-    auto model_rho = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("rho0")));
-    auto model_sigma = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("f_0(500)")));
-    amp_model_a1_rho_S_ = free_amplitude(*model_a_1, to(model_rho), l_equals(0));
-    amp_model_a1_rho_D_ = free_amplitude(*model_a_1, to(model_rho), l_equals(2));
-    amp_model_a1_sigma_ = free_amplitude(*model_a_1, to(model_sigma));
+
+    try {
+        auto model_rho = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("rho0")));
+        if (not free_amplitudes(*model_a_1, to(model_rho), l_equals(0)).empty())
+            amp_model_a1_rho_S_ = free_amplitude(*model_a_1, to(model_rho), l_equals(0));
+        if (not free_amplitudes(*model_a_1, to(model_rho), l_equals(2)).empty())
+            amp_model_a1_rho_D_ = free_amplitude(*model_a_1, to(model_rho), l_equals(2));
+    }
+    catch (yap::exceptions::Exception& e)
+    {
+        LOG(ERROR) << "BowlerMassShape: no rho in model, cannot add rho waves";
+    }
+
+    try {
+        auto model_sigma = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("f_0(500)")));
+        if (not free_amplitudes(*model_a_1, to(model_sigma)).empty())
+            amp_model_a1_sigma_ = free_amplitude(*model_a_1, to(model_sigma));
+    }
+    catch (yap::exceptions::Exception& e)
+    {
+        LOG(ERROR) << "BowlerMassShape: no sigma in model, cannot add sigma wave";
+    }
 
     Model_.swap(M);
+    assert(Model_->finalStateParticles().size() == 3);
 
     fillCache();
 }
@@ -149,7 +190,7 @@ void BowlerMassShape::fillCache()
     static const double m_pi = T["pi+"].mass();
     static const double low_m = 3.*m_pi;
     static const double hi_m = 1.01 * (T["D0"].mass() - m_pi);
-    static ImportanceSamplerGenerator impSampGen(*Model_, n_threads);
+    ImportanceSamplerGenerator impSampGen(*Model_, n_threads);
 
     for (unsigned i = 0; i <= nBins; ++i) {
         static const double scaling = 1.5; // gives higher density of samples at lower m2, where the width is changing more rapidly
@@ -157,6 +198,7 @@ void BowlerMassShape::fillCache()
         const double m2 = low_m*low_m + (hi_m*hi_m - low_m*low_m) * pow(i, scaling)/pow(nBins-1, scaling);
         const double mass = sqrt(m2);
 
+        assert(Model_->finalStateParticles().size() == 3);
         double phsp = dalitz_phasespace_volume(mass, Model_->finalStateParticles());
         if (i==0)
             phsp = 0;
@@ -166,6 +208,7 @@ void BowlerMassShape::fillCache()
         const int nPoints = std::max(unsigned(100), unsigned(phsp * n_integrationPoints));
         Cache_[m2].Phsp_ = phsp;
         Cache_[m2].MI_ = impSampGen.modelIntegral(mass, nPoints, nPoints / 2 + 1);
+        std::cout << "." << std::flush;
     }
     LOG(INFO) << "Done.";
 }
@@ -195,7 +238,7 @@ double BowlerMassShape::massDependentWidth(DataPartition& D, double m2) const
         throw exceptions::Exception("Cache is empty", "BowlerMassShape::massDependentWidth");
 
     // make sure amplitudes have been set correctly
-    assert(amp_a1_rho_D_->value() ==  amp_model_a1_rho_D_->value());
+    //assert(amp_a1_rho_D_->value() ==  amp_model_a1_rho_D_->value());
 
     // norm_width
     auto next = Cache_.upper_bound(pow(mass()->value(), 2));

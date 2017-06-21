@@ -181,9 +181,26 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
     //m.GetParameters().Back().SetPriorConstant();
 
-    if (a1_bowler) {
-        //m.addParameter("K*K_coupling", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->coupling(), 0, 1.);
-        //m.GetParameters().Back().SetPriorConstant();
+    if (free_parameters) {
+        if (a_sigma_pi or sigma_f_0_1370) {
+            auto sigma  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
+            auto width = std::dynamic_pointer_cast<BreitWigner>(sigma->massShape())->width();
+            m.addParameter("width(f_0(500))", width, 0.5*width->value(), 1.5*width->value());
+            m.GetParameters().Back().SetPriorConstant();
+        }
+
+        if (sigma_f_0_1370) {
+            auto f_0_1370  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)")));
+            auto width = std::dynamic_pointer_cast<BreitWigner>(f_0_1370->massShape())->width();
+            m.addParameter("width(f_0(1370))", width, 0.5*width->value(), 1.5*width->value());
+            m.GetParameters().Back().SetPriorConstant();
+        }
+
+        if (a1_bowler) {
+            auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
+            m.addParameter("K*K_coupling", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->coupling(), 0, 1.);
+            m.GetParameters().Back().SetPriorConstant();
+        }
     }
 
     return m;

@@ -7,32 +7,42 @@
 #include <complex>
 
 // which waves to include in the model
-const bool a_rho_pi_S  = true;
-const bool a_rho_pi_D  = true;
-const bool a_sigma_pi  = true;
-const bool rho_rho     = true;
-const bool f_0_pipi    = true;
-const bool f_2_pipi    = true;
-const bool sigma_pipi  = true;
+bool a_rho_pi_S  = true;
+bool a_rho_pi_D  = true;
+bool a_sigma_pi  = true;
+bool rho_rho     = true;
+bool f_0_pipi    = true; // important
+bool f_2_pipi    = true;
+bool sigma_pipi  = false; // huge ff
 
-const bool omega_omega = false;
+bool omega_omega = false;
+bool a1_omega    = false;
 
-const bool sigma_f_0_1370 = true;
+// CLEO waves
+bool sigma_f_0_1370 = false; //  huge ff
+bool sigma_rho = true;
+bool f_2_f_2   = true;
 
-const bool flat_4pi    = false;
+bool pi1300_pi_pi_pi = true;
 
+// flat
+bool flat_4pi    = false;
 
-const bool bg_flat_4pi = true;
-const bool bg_rho      = true;  // ~10% of BG
-const bool bg_a1       = false; // <1% of BG
+// background
+bool bg_flat_4pi = true;
+bool bg_rho      = true;  // ~10% of BG
+bool bg_a1       = false; // <1% of BG
 
-const bool a1_bowler   = true;
-const bool a1_shared   = true;  // share a1+ and a1- free amplitudes
+// configuration
+bool a1_bowler   = true and (a_rho_pi_S or a_rho_pi_D);
+bool a1_shared   = false;  // share a1+ and a1- free amplitudes
 
-const bool a1_plus     = true;
-const bool a1_minus    = true;
+bool a1_plus     = true;
+bool a1_minus    = true;
 
-const bool bg_only     = false; // fix D admixture to 0
+bool free_parameters = true; // widths, coupling constants, ...
+
+bool bg_only     = false; // fix D admixture to 0
 
 // scaling to reproduce (approximately) the fit fractions of the FOCUS model
 const double scale_a_rho_pi_D  = a1_bowler ? 10.5088  : 9.83252 ;
@@ -62,6 +72,9 @@ const std::complex<double> amp_f_2_pipi     = std::polar(scale_f_2_pipi * 0.338,
 const std::complex<double> amp_sigma_pipi   = std::polar(scale_sigma_pipi * 0.432, yap::rad(254.));
 const std::complex<double> amp_pipiFlat     = std::polar(0., yap::rad(0.));
 const std::complex<double> amp_sigma_f_0_1370 = std::complex<double>(0.28, 0.69);
+const std::complex<double> amp_sigma_rho = std::complex<double>(0.348, -0.09);
+const std::complex<double> amp_f_2_f_2 = std::complex<double>(-0.08, -0.15);
+const std::complex<double> amp_pi1300_pi_pi_pi = std::complex<double>(-0.17, -0.37);
 
 /* Scaled FOCUS amplitudes
 D0 --> f_0, pi+, pi-, L = 0, S = 0       (mag, phase) = (0.0742105,   -99°)         (real, imag) = (-0.0116091, -0.0732968)

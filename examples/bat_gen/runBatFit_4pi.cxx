@@ -36,13 +36,14 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.15; // 0.15 // negative for BG fit
+    const double BDT_cut = 0.17; // 0.15 // negative for BG fit
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 200000; // max number of Data points we want
+    const unsigned nData = 100000; // max number of Data points we want
+    const bool chargeBlind = true;
     const unsigned nThreads = 4;
 
 
@@ -73,7 +74,11 @@ int main()
     // real data, pre-filtered
     {
         TChain t("t");
-        if (BDT_cut >= 0) {
+        if (chargeBlind) {
+            t.Add((dir + "DataSkim_analysis_chargeBlind_bdt_gt_0.025.root").c_str());
+            t.AddFriend("t", (dir + "DataSkim_analysis_chargeBlind_bdt_gt_0.025_TMVA_weights.root").c_str());
+        }
+        else if (BDT_cut >= 0) {
             t.Add((dir + "DataSkim_analysis_bdt_gt_0.025.root").c_str());
             t.AddFriend("t", (dir + "DataSkim_analysis_bdt_gt_0.025_TMVA_weights.root").c_str());
         }
@@ -167,8 +172,11 @@ int main()
     else {
         m.setUseJacobian(false);
         LOG(INFO) << "FindMode";
+
         m.FindMode(m.getInitialPositions());
-        //for (unsigned i = 0; i<10; ++i)
+
+        // keep on searching for 2 days (over the weekend)
+        //while (std::chrono::duration_cast<std::chrono::hours>(start-std::chrono::steady_clock::now()).count() < 48)
         //    m.FindMode(m.getRandomInitialPositions());
     }
 
@@ -208,6 +216,10 @@ int main()
     m.PrintSummary();
     LOG(INFO) << "Generate plots";
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
+    m.PrintParameterPlot("output/" + m.GetSafeName() + "_parameterPlots.pdf", 2, 2);
+    m.PrintCorrelationMatrix("output/" + m.GetSafeName() + "_matrix.pdf");
+    m.PrintCorrelationPlot("output/" + m.GetSafeName() + "_correlation_observables.pdf");
+    m.PrintCorrelationPlot("output/" + m.GetSafeName() + "_correlation.pdf", false);
 
 
     //LOG(INFO) << "LogLikelihood of global mode = " << llGlobMode;
@@ -251,7 +263,7 @@ int main()
         m_gen.SetMaximumEfficiency(0.9);
         m_gen.SetInitialPositionAttemptLimit(1e5);
 
-        m_gen.SetNIterationsRun(static_cast<int>(1e8 / m_gen.GetNChains()));
+        m_gen.SetNIterationsRun(static_cast<int>(1e7 / m_gen.GetNChains()));
 
         m_gen.WriteMarkovChain("output/" + m_gen.GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 

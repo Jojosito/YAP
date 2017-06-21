@@ -85,10 +85,8 @@ FreeAmplitudeSet free_amplitudes(const DecayTreeVector& DTV)
 const std::complex<double> DecayTree::dataDependentAmplitude(const DataPoint& d) const
 {
     std::complex<double> A = 0;
-    for (const auto& pc : FreeAmplitude_->decayChannel()->particleCombinations()) {
-        //DEBUG("pc " << to_string(*pc) << "; dataDependentAmplitude = " << dataDependentAmplitude(d, pc))
+    for (const auto& pc : FreeAmplitude_->decayChannel()->particleCombinations())
         A += dataDependentAmplitude(d, pc);
-    }
     return A;
 }
 
@@ -112,26 +110,18 @@ const std::complex<double> DecayTree::dataDependentAmplitude(const DataPoint& d,
 //-------------------------
 const VariableStatus DecayTree::dataDependentAmplitudeStatus() const
 {
-    //LOG(INFO) << "DecayTree::dataDependentAmplitudeStatus() for dt " << to_string(*this);
     // return `changed` if any amplitude component has changed
     for (const auto& ac : AmplitudeComponents_) {
-        //LOG(INFO) << "ac->status() " << to_string(ac->status()) << "; ac address: " << ac;
-        if (ac->status() == VariableStatus::changed) {
-            //LOG(INFO) << "return VariableStatus::changed;";
+        if (ac->status() == VariableStatus::changed)
             return VariableStatus::changed;
-        }
     }
     // return `changed` if any daughter has changed
     for (const auto& d_dt : DaughterDecayTrees_) {
         auto status = d_dt.second->dataDependentAmplitudeStatus();
-        //LOG(INFO) << "  d_dt.second->dataDependentAmplitudeStatus() " << to_string(status);
-        if (status == VariableStatus::changed) {
-            //LOG(INFO) << "  return VariableStatus::changed;";
+        if (status == VariableStatus::changed)
             return VariableStatus::changed;
-        }
     }
     // else unchanged
-    //LOG(INFO) << "return VariableStatus::unchanged;";
     return VariableStatus::unchanged;
 }
 
@@ -216,7 +206,6 @@ unsigned depth(const DecayTree& DT)
 //-------------------------
 const bool has_changed(const std::shared_ptr<DecayTree>& dt)
 {
-    //LOG(INFO) << "has_changed " << to_string(*dt) << ": " << to_string(dt->dataDependentAmplitudeStatus());
     return dt->dataDependentAmplitudeStatus() == VariableStatus::changed;
 }
 

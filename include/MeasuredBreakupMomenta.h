@@ -26,6 +26,7 @@
 #include "fwd/ParticleCombination.h"
 
 #include <cmath>
+#include <complex>
 #include <memory>
 #include <string>
 
@@ -48,11 +49,18 @@ namespace measured_breakup_momenta
     inline double q(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc, const Model& m)
     { return sqrt(q2(d, pc, m)); }
 
-    /// Calculate breakup momentum from parent and daughter masses
+    /// Calculate squared breakup momentum from parent and daughter masses
     /// \param m2_R squared mass of parent
     /// \param m_a mass of first daughter
     /// \param m_b mass of second daughter
     double q2(double m2_R, double m_a, double m_b);
+
+    /// Calculate breakup momentum from parent and daughter masses
+    /// complex version with analytic continuation below threshold as used in K-matrix formalism
+    /// \param m2_R squared mass of parent
+    /// \param m_a mass of first daughter
+    /// \param m_b mass of second daughter
+    std::complex<double> q_complex(double m2_R, double m_a, double m_b);
 }
 
 }

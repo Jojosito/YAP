@@ -106,7 +106,7 @@ inline std::unique_ptr<Model> d4pi()
     auto a_1_shape = a1_bowler ? std::make_shared<BowlerMassShape>(T["a_1+"]) : std::make_shared<BreitWigner>(T["a_1+"]);
     if (a1_bowler) {
         //a_1_shape->width()->setValue(0.560);
-        a_1_shape->width()->setValue(0.430);
+        a_1_shape->width()->setValue(0.459);
     }
 
     auto a_1_plus  = DecayingParticle::create(T["a_1+"], r, a_1_shape);
@@ -144,6 +144,17 @@ inline std::unique_ptr<Model> d4pi()
     auto pipi = DecayingParticle::create("pipi", QuantumNumbers(0, 0), r);
     pipi->addWeakDecay(piPlus, piMinus);
 
+    // pi+(1300)
+    ParticleTableEntry pdl_pi_1300_plus(100211, "pi+(1300)", QuantumNumbers(1, 0, -1, 2, 0, -1),
+            1.180, {0.297}); // mass, width
+    auto pi_1300_shape = std::make_shared<BreitWigner>(pdl_pi_1300_plus);
+    auto pi_1300_plus = DecayingParticle::create(pdl_pi_1300_plus, r, pi_1300_shape);
+
+    // pi-(1300)
+    ParticleTableEntry pdl_pi_1300_minus(100211, "pi-(1300)", QuantumNumbers(-1, 0, -1, 2, 0, -1),
+            1.180, {0.297}); // mass, width
+    auto pi_1300_minus = DecayingParticle::create(pdl_pi_1300_minus, r, pi_1300_shape);
+
     //
     // decays and amplitudes
     //
@@ -157,6 +168,12 @@ inline std::unique_ptr<Model> d4pi()
         *free_amplitude(*D, to(f_2, pipi)) = amp_f_2_pipi;
     }
 
+    if (f_2_f_2) {
+        D->addWeakDecay(f_2, f_2);
+        // todo helicity amplitudes
+        //*free_amplitude(*D, to(f_2, f_2)) = amp_f_2_f_2;
+    }
+
     if (sigma_pipi) {
         D->addWeakDecay(sigma, piPlus, piMinus);
         *free_amplitude(*D, to(sigma, piPlus, piMinus)) = amp_sigma_pipi;
@@ -165,6 +182,11 @@ inline std::unique_ptr<Model> d4pi()
     if (sigma_f_0_1370) {
         D->addWeakDecay(sigma, f_0_1370);
         *free_amplitude(*D, to(sigma, f_0_1370)) = amp_sigma_f_0_1370;
+    }
+
+    if (sigma_rho) {
+        D->addWeakDecay(sigma, rho);
+        *free_amplitude(*D, to(sigma, rho)) = amp_sigma_rho;
     }
 
     if (flat_4pi) {
@@ -232,9 +254,9 @@ inline std::unique_ptr<Model> d4pi()
             free_amplitude(*a_1_minus, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
         }
 
-        if (omega_omega) {
+        if (a1_omega) {
             a_1_plus->addStrongDecay(omega, piPlus);
-            a_1_minus->addStrongDecay(omega, piPlus);
+            a_1_minus->addStrongDecay(omega, piMinus);
 
             if (a_rho_pi_S) {
                 *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
@@ -298,8 +320,19 @@ inline std::unique_ptr<Model> d4pi()
         else
             *free_amplitude(*D, to(a_1_minus)) = 0.;
         free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
-
     }
+
+    if (pi1300_pi_pi_pi) {
+        pi_1300_plus->addStrongDecay(piPlus, piMinus, piPlus);
+        pi_1300_minus->addStrongDecay(piMinus, piPlus, piMinus);
+
+        D->addWeakDecay(pi_1300_plus, piMinus);
+        D->addWeakDecay(pi_1300_minus, piPlus);
+
+        *free_amplitude(*D, to(pi_1300_plus)) = amp_pi1300_pi_pi_pi;
+        free_amplitude(*D, to(pi_1300_minus))->shareFreeAmplitude(*free_amplitude(*D, to(pi_1300_plus)));
+    }
+
 
     //
     // background
@@ -316,6 +349,13 @@ inline std::unique_ptr<Model> d4pi()
         rho_2pi->addWeakDecay(rho, pipi);
         M->addInitialState(rho_2pi);
         //M->addInitialState(rho);
+
+        if (omega_omega) {
+            auto omega_2pi = DecayingParticle::create("omega_2pi", QuantumNumbers(0, 0), r);
+            omega_2pi->addWeakDecay(omega, pipi);
+            M->addInitialState(omega_2pi);
+        }
+
     }
 
     if (bg_a1) {
