@@ -4,8 +4,7 @@
 // bat-project is part of Bayesian Analysis Toolkit (BAT).
 // BAT can be downloaded from http://mpp.mpg.de/bat
 // ***************************************************************
-
-#include "models/a1.h"
+/*#include "models/a1.h"
 #include "tools.h"
 
 #include <DalitzPhspIntegral.h>
@@ -24,9 +23,10 @@
 #include <algorithm>
 #include <chrono>
 #include <random>
-
+*/
 int main()
 {
+/*
     yap::plainLogs(el::Level::Info);
 
     const unsigned n_integrationPoints = 1e5;
@@ -132,4 +132,5 @@ int main()
 
 
     return 0;
+    */
 }

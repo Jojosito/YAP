@@ -218,11 +218,6 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
     auto J = select_changed(I, force);
 
-    //LOG(INFO) << "changed decay trees after select_changed:";
-    for (auto j : J)
-        for (auto dt : j->decayTrees())
-            LOG(INFO) << to_string(*dt);
-
     // if nothing requires recalculation, return
     if (J.empty())
         return;

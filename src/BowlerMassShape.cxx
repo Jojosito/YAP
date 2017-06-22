@@ -28,6 +28,7 @@
 #include "Parameter.h"
 #include "ParticleCombination.h"
 #include "ParticleTable.h"
+#include "PiPiSWave.h"
 #include "PDL.h"
 
 #include "QuantumNumbers.h"
@@ -47,10 +48,10 @@ BowlerMassShape::BowlerMassShape(double mass, double width) :
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
     amp_a1_rho_S_(nullptr),
     amp_a1_rho_D_(nullptr),
-    amp_a1_sigma_(nullptr),
+    amp_a1_pipiS_(nullptr),
     amp_model_a1_rho_S_(nullptr),
     amp_model_a1_rho_D_(nullptr),
-    amp_model_a1_sigma_(nullptr)
+    amp_model_a1_pipiS_(nullptr)
 {
     addParameter(KsKCoupling_);
 }
@@ -61,10 +62,10 @@ BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
     amp_a1_rho_S_(nullptr),
     amp_a1_rho_D_(nullptr),
-    amp_a1_sigma_(nullptr),
+    amp_a1_pipiS_(nullptr),
     amp_model_a1_rho_S_(nullptr),
     amp_model_a1_rho_D_(nullptr),
-    amp_model_a1_sigma_(nullptr)
+    amp_model_a1_pipiS_(nullptr)
 {
     addParameter(KsKCoupling_);
 }
@@ -85,10 +86,10 @@ void BowlerMassShape::updateCalculationStatus(StatusManager& D) const
     else
         amp_a1_rho_D_->setValue(0.);
 
-    if (amp_model_a1_sigma_)
-        amp_a1_sigma_->setValue(amp_model_a1_sigma_->value());
+    if (amp_model_a1_pipiS_)
+        amp_a1_pipiS_->setValue(amp_model_a1_pipiS_->value());
     else
-        amp_a1_sigma_->setValue(0.);
+        amp_a1_pipiS_->setValue(0.);
 
     /*if (changed) {
         assert(amp_a1_rho_D_->freeAmplitude()->variableStatus() ==  VariableStatus::changed);
@@ -129,12 +130,12 @@ void BowlerMassShape::lock()
     auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
-    // sigma / f_0(500)
-    auto sigma = DecayingParticle::create(T["f_0(500)"], r, std::make_shared<BreitWigner>(T["f_0(500)"]));
-    sigma->addStrongDecay(piPlus, piMinus);
+    // (pi pi)S wave
+    auto pipiS = DecayingParticle::create("pipiS", QuantumNumbers(0, 0), r, std::make_shared<PiPiSWaveAuMorganPenningtonKachaev>());
+    pipiS->addWeakDecay(piPlus, piMinus);
 
     a_1->addStrongDecay(rho,   piPlus);
-    a_1->addStrongDecay(sigma, piPlus);
+    a_1->addStrongDecay(pipiS, piPlus);
 
     M->lock();
 
@@ -142,11 +143,11 @@ void BowlerMassShape::lock()
 
     amp_a1_rho_S_ = free_amplitude(*a_1, to(rho), l_equals(0));
     amp_a1_rho_D_ = free_amplitude(*a_1, to(rho), l_equals(2));
-    amp_a1_sigma_ = free_amplitude(*a_1, to(sigma));
+    amp_a1_pipiS_ = free_amplitude(*a_1, to(pipiS));
 
     addParameter(amp_a1_rho_S_->freeAmplitude());
     addParameter(amp_a1_rho_D_->freeAmplitude());
-    addParameter(amp_a1_sigma_->freeAmplitude());
+    addParameter(amp_a1_pipiS_->freeAmplitude());
 
     auto model_a_1 = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("a_1+")));
 
@@ -163,13 +164,13 @@ void BowlerMassShape::lock()
     }
 
     try {
-        auto model_sigma = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("f_0(500)")));
-        if (not free_amplitudes(*model_a_1, to(model_sigma)).empty())
-            amp_model_a1_sigma_ = free_amplitude(*model_a_1, to(model_sigma));
+        auto model_pipiS = std::static_pointer_cast<DecayingParticle>(particle(*model(), is_named("pipiS")));
+        if (not free_amplitudes(*model_a_1, to(model_pipiS)).empty())
+            amp_model_a1_pipiS_ = free_amplitude(*model_a_1, to(model_pipiS));
     }
     catch (yap::exceptions::Exception& e)
     {
-        LOG(ERROR) << "BowlerMassShape: no sigma in model, cannot add sigma wave";
+        LOG(ERROR) << "BowlerMassShape: no pipiS in model, cannot add pipiS wave";
     }
 
     Model_.swap(M);

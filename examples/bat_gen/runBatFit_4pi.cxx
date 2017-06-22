@@ -42,7 +42,7 @@ int main()
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
 
-    const unsigned nData = 100000; // max number of Data points we want
+    const unsigned nData = 10000; // max number of Data points we want
     const bool chargeBlind = true;
     const unsigned nThreads = 4;
 

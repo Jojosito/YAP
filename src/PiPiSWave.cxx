@@ -3,10 +3,13 @@
 #include <CalculationStatus.h>
 #include <DataPartition.h>
 #include <FourMomenta.h>
+#include <logging.h>
 #include <Matrix.h>
 #include <MeasuredBreakupMomenta.h>
 #include <Model.h>
 #include <PDL.h>
+
+#include <assert.h>
 
 namespace yap {
 
@@ -14,7 +17,7 @@ namespace yap {
 PiPiSWaveAuMorganPennington::PiPiSWaveAuMorganPennington() :
     a_(2, SquareMatrix<std::complex<double>, 2>(0)),
     c_(5, SquareMatrix<std::complex<double>, 2>(0)),
-    vesSheet_(0),
+    vesSheet_(false),
     CachedMassShape_(ComplexCachedValue::create(*this))
 {
     const double f[2] = {0.1968, -0.0154};  // AMP Table 1, M solution: f_1^1 and f_2^1
@@ -54,6 +57,12 @@ PiPiSWaveAuMorganPennington::PiPiSWaveAuMorganPennington() :
     kaonChargedMass_ = T["K+" ].mass();
     kaonNeutralMass_ = T["K0" ].mass();
     kaonMeanMass_    = (kaonChargedMass_ + kaonNeutralMass_) / 2.;
+
+    assert(piChargedMass_ > 0);
+    assert(piNeutralMass_ > 0);
+    assert(kaonChargedMass_ > 0);
+    assert(kaonNeutralMass_ > 0);
+    assert(kaonMeanMass_ > 0);
 }
 
 //-------------------------
@@ -86,9 +95,8 @@ void PiPiSWaveAuMorganPennington::calculate(DataPartition& D, const std::shared_
             rho[0][0] = ((2. * qPiPi) / mass + (2. * qPi0Pi0) / mass) / 2.;
             rho[1][1] = ((2. * qKK)   / mass + (2. * qK0K0)   / mass) / 2.;
         }
-        rho[0][1] = rho[1][0] = 0;
 
-        const double scale = (s / (4 * kaonMeanMass_ * kaonMeanMass_)) - 1;
+        const double scale = (s / (4. * kaonMeanMass_ * kaonMeanMass_)) - 1.;
 
         SquareMatrix<std::complex<double>, 2> M(0);
         for (unsigned int i = 0; i < 2 /*sP_.size2()*/; ++i) {
@@ -104,14 +112,18 @@ void PiPiSWaveAuMorganPennington::calculate(DataPartition& D, const std::shared_
         M[0][1] = 0;
         M[1][0] = 0;
 
-        SquareMatrix<std::complex<double>, 2> matrix = M - imag * rho;
-        auto det = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
-
-        CachedMassShape_->setValue(matrix[2][2] / det, d, si, D);
-
+        const SquareMatrix<std::complex<double>, 2> matrix = M - imag * rho;
+        const std::complex<double> det = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+        CachedMassShape_->setValue(matrix[1][1] / det, d, si, D);
     }
 
     D.status(*CachedMassShape_, si) = CalculationStatus::calculated;
+}
+
+//-------------------------
+const std::complex<double> PiPiSWaveAuMorganPennington::value(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const
+{
+    return CachedMassShape_->value(d, symmetrizationIndex(pc));
 }
 
 //-------------------------

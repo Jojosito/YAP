@@ -182,14 +182,14 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     //m.GetParameters().Back().SetPriorConstant();
 
     if (free_parameters) {
-        if (a_sigma_pi or sigma_f_0_1370) {
+        /*if (a_sigma_pi or sigma_f_0_1370) {
             auto sigma  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
             auto width = std::dynamic_pointer_cast<BreitWigner>(sigma->massShape())->width();
             m.addParameter("width(f_0(500))", width, 0.5*width->value(), 1.5*width->value());
             m.GetParameters().Back().SetPriorConstant();
-        }
+        }*/
 
-        if (sigma_f_0_1370) {
+        if (f_0_1370_pipiS) {
             auto f_0_1370  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)")));
             auto width = std::dynamic_pointer_cast<BreitWigner>(f_0_1370->massShape())->width();
             m.addParameter("width(f_0(1370))", width, 0.5*width->value(), 1.5*width->value());
@@ -268,12 +268,12 @@ inline void d4pi_printFitFractions(bat_fit& m)
         auto piMinus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi-")));
         auto rho   = rho_rho     ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0"))) : nullptr;
         auto omega = omega_omega ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega"))) : nullptr;
-        auto sigma = (a_sigma_pi or sigma_pipi) ?  std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)"))) : nullptr;
-        auto a_1_plus   = (a_rho_pi_S or a_rho_pi_D or a_sigma_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
-        auto a_1_minus  = (a_rho_pi_S or a_rho_pi_D or a_sigma_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
-        auto f_0   = f_0_pipi   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0"))) : nullptr;
-        auto f_2   = f_2_pipi   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_2"))) : nullptr;
-        auto f_0_1370 = sigma_f_0_1370 ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)"))) : nullptr;
+        auto pipiS = (a_pipiS_pi or pipiS_pipiS or rho_pipiS) ?  std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pipiS"))) : nullptr;
+        auto a_1_plus   = (a_rho_pi_S or a_rho_pi_D or a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
+        auto a_1_minus  = (a_rho_pi_S or a_rho_pi_D or a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
+        auto f_0   = f_0_pipiS   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0"))) : nullptr;
+        auto f_2   = f_2_pipiS   ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_2"))) : nullptr;
+        auto f_0_1370 = f_0_1370_pipiS ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)"))) : nullptr;
 
         auto decayTrees = mci.Integral.decayTrees();
         std::vector<yap::DecayTreeVector> groupedDecayTrees;
@@ -310,10 +310,10 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_sigma_pi
-        if (a_sigma_pi) {
+        if (a_pipiS_pi) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
                     blub.end());
             groupedDecayTrees.push_back(blub);
 
@@ -355,10 +355,10 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_sigma_pi
-        if (a_sigma_pi) {
+        if (a_pipiS_pi) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(sigma))).empty();}),
+                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
                     blub.end());
             groupedDecayTrees.push_back(blub);
 
@@ -387,7 +387,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // f_0_pipi
-        if (f_0_pipi) {
+        if (f_0_pipiS) {
             groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_0)));
 
             for(auto dt : groupedDecayTrees.back())  {
@@ -399,7 +399,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
 
         // f_2_pipi
-        if (f_2_pipi) {
+        if (f_2_pipiS) {
             groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_2)));
 
             for(auto dt : groupedDecayTrees.back())  {
@@ -409,9 +409,9 @@ inline void d4pi_printFitFractions(bat_fit& m)
             }
         }
 
-        // sigma_pipi
-        if (sigma_pipi) {
-            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(sigma)));
+        // sigma_f_0_1370
+        if (f_0_1370_pipiS) {
+            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_0_1370)));
 
             for(auto dt : groupedDecayTrees.back())  {
                 auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
@@ -420,9 +420,9 @@ inline void d4pi_printFitFractions(bat_fit& m)
             }
         }
 
-        // sigma_f_0_1370
-        if (f_0_1370) {
-            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(f_0_1370)));
+        // sigma_pipi
+        if (pipiS_pipiS) {
+            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(pipiS)));
 
             for(auto dt : groupedDecayTrees.back())  {
                 auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);

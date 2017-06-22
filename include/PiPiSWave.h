@@ -47,13 +47,22 @@ public:
     /// \param si SymmetrizationIndec to calculate for
     virtual void calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const override;
 
+    /// update the calculationStatus for a DataPartition
+    virtual void updateCalculationStatus(StatusManager& D) const override {}
+
+    /// \return value for DataPoint and ParticleCombination
+    /// \param d DataPoint
+    /// \param pc shared_ptr to ParticleCombination
+    virtual const std::complex<double> value(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const override;
+
+
 protected:
 
     SquareMatrix<std::complex<double>, 2> T_;
     std::vector<SquareMatrix<std::complex<double>, 2>> a_;
     std::vector<SquareMatrix<std::complex<double>, 2>> c_;
     Matrix<double, 1, 2> sP_;
-    int vesSheet_;
+    bool vesSheet_;
 
     double piChargedMass_;
     double piNeutralMass_;
@@ -70,6 +79,7 @@ private:
 
 class PiPiSWaveAuMorganPenningtonKachaev : public PiPiSWaveAuMorganPennington
 {
+public:
     /// Constructor
     PiPiSWaveAuMorganPenningtonKachaev();
 

@@ -34,6 +34,7 @@
 #include <Parameter.h>
 #include <ParticleCombination.h>
 #include <ParticleTable.h>
+#include <PiPiSWave.h>
 #include <PDL.h>
 #include <PHSP.h>
 #include <QuantumNumbers.h>
@@ -121,8 +122,16 @@ inline std::unique_ptr<Model> d4pi()
     omega->addStrongDecay({piPlus, piMinus});
 
     // sigma / f_0(500)
-    auto sigma = DecayingParticle::create(T["f_0(500)"], r, std::make_shared<BreitWigner>(T["f_0(500)"]));
-    sigma->addStrongDecay(piPlus, piMinus);
+    //auto sigma = DecayingParticle::create(T["f_0(500)"], r, std::make_shared<BreitWigner>(T["f_0(500)"]));
+    //sigma->addStrongDecay(piPlus, piMinus);
+
+    // (pi pi)S wave
+    auto pipiS = DecayingParticle::create("pipiS", QuantumNumbers(0, 0), r, std::make_shared<PiPiSWaveAuMorganPenningtonKachaev>());
+    pipiS->addWeakDecay(piPlus, piMinus);
+
+    auto pipi = DecayingParticle::create("pipi", QuantumNumbers(0, 0), r);
+    pipi->addWeakDecay(piPlus, piMinus);
+
 
     // f_0(980) (as Flatte)
     auto f_0_980_flatte = std::make_shared<Flatte>(T["f_0"]);
@@ -141,9 +150,6 @@ inline std::unique_ptr<Model> d4pi()
     auto f_0_1370 = DecayingParticle::create(pdl_f_0_1370, r, std::make_shared<BreitWigner>(pdl_f_0_1370));
     f_0_1370->addStrongDecay(piPlus, piMinus);
 
-    auto pipi = DecayingParticle::create("pipi", QuantumNumbers(0, 0), r);
-    pipi->addWeakDecay(piPlus, piMinus);
-
     // pi+(1300)
     ParticleTableEntry pdl_pi_1300_plus(100211, "pi+(1300)", QuantumNumbers(1, 0, -1, 2, 0, -1),
             1.180, {0.297}); // mass, width
@@ -158,14 +164,14 @@ inline std::unique_ptr<Model> d4pi()
     //
     // decays and amplitudes
     //
-    if (f_0_pipi) {
-        D->addWeakDecay(f_0_980, piPlus, piMinus);
-        *free_amplitude(*D, to(f_0_980, piPlus, piMinus)) = amp_f_0_pipi;
+    if (f_0_pipiS) {
+        D->addWeakDecay(f_0_980, pipiS);
+        *free_amplitude(*D, to(f_0_980, pipiS)) = amp_f_0_pipi;
     }
 
-    if (f_2_pipi) {
-        D->addWeakDecay(f_2, pipi);
-        *free_amplitude(*D, to(f_2, pipi)) = amp_f_2_pipi;
+    if (f_2_pipiS) {
+        D->addWeakDecay(f_2, pipiS);
+        *free_amplitude(*D, to(f_2, pipiS)) = amp_f_2_pipi;
     }
 
     if (f_2_f_2) {
@@ -174,19 +180,19 @@ inline std::unique_ptr<Model> d4pi()
         //*free_amplitude(*D, to(f_2, f_2)) = amp_f_2_f_2;
     }
 
-    if (sigma_pipi) {
-        D->addWeakDecay(sigma, piPlus, piMinus);
-        *free_amplitude(*D, to(sigma, piPlus, piMinus)) = amp_sigma_pipi;
+    if (pipiS_pipiS) {
+        D->addWeakDecay(pipiS, pipiS);
+        *free_amplitude(*D, to(pipiS, pipiS)) = amp_sigma_pipi;
     }
 
-    if (sigma_f_0_1370) {
-        D->addWeakDecay(sigma, f_0_1370);
-        *free_amplitude(*D, to(sigma, f_0_1370)) = amp_sigma_f_0_1370;
+    if (f_0_1370_pipiS) {
+        D->addWeakDecay(f_0_1370, pipiS);
+        *free_amplitude(*D, to(f_0_1370, pipiS)) = amp_sigma_f_0_1370;
     }
 
-    if (sigma_rho) {
-        D->addWeakDecay(sigma, rho);
-        *free_amplitude(*D, to(sigma, rho)) = amp_sigma_rho;
+    if (rho_pipiS) {
+        D->addWeakDecay(rho, pipiS);
+        *free_amplitude(*D, to(rho, pipiS)) = amp_sigma_rho;
     }
 
     if (flat_4pi) {
@@ -254,56 +260,17 @@ inline std::unique_ptr<Model> d4pi()
             free_amplitude(*a_1_minus, to(rho), l_equals(2))->variableStatus() = VariableStatus::fixed;
         }
 
-        if (a1_omega) {
-            a_1_plus->addStrongDecay(omega, piPlus);
-            a_1_minus->addStrongDecay(omega, piMinus);
-
-            if (a_rho_pi_S) {
-                *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
-
-                if (a1_shared)
-                    free_amplitude(*a_1_minus, to(omega), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(omega), l_equals(0)));
-                else
-                    *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = amp_a_omega_pi_S;
-            }
-            else {
-                *free_amplitude(*a_1_plus, to(omega), l_equals(0)) = 0.;
-                free_amplitude(*a_1_plus, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;
-
-                *free_amplitude(*a_1_minus, to(omega), l_equals(0)) = 0.;
-                free_amplitude(*a_1_minus, to(omega), l_equals(0))->variableStatus() = VariableStatus::fixed;
-            }
-
-            assert(free_amplitudes(*a_1_plus, to(omega), l_equals(1)).empty());
-            assert(free_amplitudes(*a_1_minus, to(omega), l_equals(1)).empty());
-
-            if (a_rho_pi_D) {
-                *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
-
-                if (a1_shared)
-                    free_amplitude(*a_1_minus, to(omega), l_equals(2))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(omega), l_equals(2)));
-                else
-                    *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = amp_a_rho_pi_D;
-            }
-            else {
-                *free_amplitude(*a_1_plus, to(omega), l_equals(2)) = 0.;
-                free_amplitude(*a_1_plus, to(omega), l_equals(2))->variableStatus() = VariableStatus::fixed;
-
-                *free_amplitude(*a_1_minus, to(omega), l_equals(2)) = 0.;
-                free_amplitude(*a_1_minus, to(omega), l_equals(2))->variableStatus() = VariableStatus::fixed;
-            }
-        }
     }
-    if (a_sigma_pi) {
-        a_1_plus->addStrongDecay(sigma, piPlus);
-        *free_amplitude(*a_1_plus, to(sigma)) = amp_a_sigma_pi;
+    if (a_pipiS_pi) {
+        a_1_plus->addStrongDecay(pipiS, piPlus);
+        *free_amplitude(*a_1_plus, to(pipiS)) = amp_a_sigma_pi;
 
-        a_1_minus->addStrongDecay(sigma, piMinus);
+        a_1_minus->addStrongDecay(pipiS, piMinus);
 
         if (a1_shared)
-            free_amplitude(*a_1_minus, to(sigma))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(sigma)));
+            free_amplitude(*a_1_minus, to(pipiS))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(pipiS)));
         else
-            *free_amplitude(*a_1_minus, to(sigma)) = amp_a_sigma_pi;
+            *free_amplitude(*a_1_minus, to(pipiS)) = amp_a_sigma_pi;
     }
     
     if (not free_amplitudes(*a_1_plus).empty()) {

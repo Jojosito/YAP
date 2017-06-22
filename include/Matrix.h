@@ -23,6 +23,7 @@
 
 #include "fwd/Matrix.h"
 
+#include "complex_to_string.h"
 #include "Exceptions.h"
 #include "MathUtilities.h"
 

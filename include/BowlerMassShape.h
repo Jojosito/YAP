@@ -97,11 +97,11 @@ private:
 
     std::shared_ptr<FreeAmplitude> amp_a1_rho_S_;
     std::shared_ptr<FreeAmplitude> amp_a1_rho_D_;
-    std::shared_ptr<FreeAmplitude> amp_a1_sigma_;
+    std::shared_ptr<FreeAmplitude> amp_a1_pipiS_;
 
     std::shared_ptr<FreeAmplitude> amp_model_a1_rho_S_;
     std::shared_ptr<FreeAmplitude> amp_model_a1_rho_D_;
-    std::shared_ptr<FreeAmplitude> amp_model_a1_sigma_;
+    std::shared_ptr<FreeAmplitude> amp_model_a1_pipiS_;
 };
 
 }
