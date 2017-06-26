@@ -73,7 +73,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             + " S = " + yap::spin_to_string(fa->spinAmplitude()->twoS());
 
         // add real parameter
-        double range = std::max(1., 3. * abs(fa->value()));
+        double range = std::max(2., 3. * abs(fa->value()));
         AddParameter("real(" + fa_name + ")", -range, range);
         // add imag parameter
         AddParameter("imag(" + fa_name + ")", -range, range);
@@ -91,6 +91,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     }
     
     // loop over admixtures
+    double adm_initial = 30.;
     for (auto& comp : model()->components()) {
         // ignore fixed free amplitudes
         if (comp.admixture()->variableStatus() == yap::VariableStatus::fixed)
@@ -99,7 +100,8 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
                 + "admixture_" + comp.particle()->name()
                 + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, 3000.);
+        AddParameter(adm_name, 0, adm_initial);
+        adm_initial /= 10.; // assume bg are added in decreasing importance
 
         Admixtures_.push_back(comp.admixture());
     }

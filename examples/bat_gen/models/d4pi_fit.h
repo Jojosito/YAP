@@ -210,7 +210,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
 //-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
 {
-    unsigned nPoints = 500000;
+    unsigned nPoints = 100000;
     LOG(INFO) << "calculate fit fractions with " << nPoints << " PHSP points";
 
     // generate integration data
@@ -258,7 +258,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
     }
     LOG(INFO) << "Sum = " << sum*100 << " %";
     LOG(INFO) << "Deviation from 100% = " << (sum-1.)*100 << " %";
-
+/*
     LOG(INFO) << "\nFit fractions for grouped decay trees:";
     sum = 0;
     for (const auto& mci : mi.integrals()) {
@@ -431,10 +431,6 @@ inline void d4pi_printFitFractions(bat_fit& m)
             }
         }
 
-        if (flat_4pi)
-            groupedDecayTrees.push_back(yap::filter(decayTrees, yap::to(piPlus, piMinus, piPlus, piMinus)));
-
-
         if (groupedDecayTrees.empty())
             return;
 
@@ -467,20 +463,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
                     << "; \t value = " << comp.admixture()->value();
         }
 
-
-        /*if (a_rho_pi_S and a_rho_pi_D and a_sigma_pi and rho_rho and f_0_pipi and f_2_pipi and sigma_pipi) {
-            // scaling to match FOCUS
-            LOG(INFO) << "\nnew scales to match FOCUS model";
-            std::vector<double> focusFractions{43.3, 2.5, 8.3, 24.5, 2.4, 4.9, 8.2};
-            std::vector<double> currentScales{1.0, scale_a_rho_pi_D, scale_a_sigma_pi, scale_rho_rho, scale_f_0_pipi, scale_f_2_pipi, scale_sigma_pipi};
-            double fix = sqrt(focusFractions[0] / ff[0].value()); // a_rho_pi_S
-            //assert(ff.size() == focusFractions.size() and ff.size() == currentScales.size());
-            for (size_t i = 1; i < ff.size(); ++i) {
-                LOG(INFO) << currentScales[i] * sqrt(focusFractions[i] / ff[i].value()) / fix;
-            }
-        }*/
-
-    }
+    }*/
 }
 
 //-------------------------

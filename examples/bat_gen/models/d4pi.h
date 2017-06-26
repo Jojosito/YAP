@@ -164,44 +164,52 @@ inline std::unique_ptr<Model> d4pi()
     //
     // decays and amplitudes
     //
-    if (f_0_pipiS) {
-        D->addWeakDecay(f_0_980, pipiS);
-        *free_amplitude(*D, to(f_0_980, pipiS)) = amp_f_0_pipi;
-    }
-
-    if (f_2_pipiS) {
-        D->addWeakDecay(f_2, pipiS);
-        *free_amplitude(*D, to(f_2, pipiS)) = amp_f_2_pipi;
-    }
-
-    if (f_2_f_2) {
-        D->addWeakDecay(f_2, f_2);
-        // todo helicity amplitudes
-        //*free_amplitude(*D, to(f_2, f_2)) = amp_f_2_f_2;
-    }
-
     if (pipiS_pipiS) {
         D->addWeakDecay(pipiS, pipiS);
-        *free_amplitude(*D, to(pipiS, pipiS)) = amp_sigma_pipi;
+        *free_amplitude(*D, to(pipiS, pipiS)) = amp_pipiS_pipiS;
     }
 
-    if (f_0_1370_pipiS) {
-        D->addWeakDecay(f_0_1370, pipiS);
-        *free_amplitude(*D, to(f_0_1370, pipiS)) = amp_sigma_f_0_1370;
+    if (pipiS_f_0) {
+        D->addWeakDecay(pipiS, f_0_980);
+        *free_amplitude(*D, to(pipiS, f_0_980)) = amp_pipiS_f_0;
     }
 
-    if (rho_pipiS) {
-        D->addWeakDecay(rho, pipiS);
-        *free_amplitude(*D, to(rho, pipiS)) = amp_sigma_rho;
+    if (pipiS_rho) {
+        D->addWeakDecay(pipiS, rho);
+        *free_amplitude(*D, to(pipiS, rho)) = amp_pipiS_rho;
     }
 
-    if (flat_4pi) {
-        D->addWeakDecay(piPlus, piMinus, piPlus, piMinus);
-        *free_amplitude(*D, to(piPlus, piMinus, piPlus, piMinus)) = amp_pipiFlat;
-
-        //D->addWeakDecay(pipi, pipi);
-        //*free_amplitude(*D, to(pipi, pipi)) = amp_pipiFlat;
+    if (pipiS_omega) {
+        D->addWeakDecay(pipiS, omega);
+        *free_amplitude(*D, to(pipiS, pipiS)) = amp_pipiS_omega;
     }
+
+    if (pipiS_f_2) {
+        D->addWeakDecay(pipiS, f_2);
+        *free_amplitude(*D, to(pipiS, f_2)) = amp_pipiS_f_2;
+    }
+
+
+    if (f_0_f_0) {
+        D->addWeakDecay(f_0_980, f_0_980);
+        *free_amplitude(*D, to(f_0_980, f_0_980)) = amp_f_0_f_0;
+    }
+
+    if (f_0_rho) {
+        D->addWeakDecay(f_0_980, rho);
+        *free_amplitude(*D, to(f_0_980, rho)) = amp_f_0_rho;
+    }
+
+    if (f_0_omega) {
+        D->addWeakDecay(f_0_980, omega);
+        *free_amplitude(*D, to(f_0_980, omega)) = amp_f_0_omega;
+    }
+
+    if (f_0_f_2) {
+        D->addWeakDecay(f_0_980, f_2);
+        *free_amplitude(*D, to(f_0_980, f_2)) = amp_f_0_f_2;
+    }
+
 
     if (rho_rho) {
         D->addWeakDecay(rho, rho);
@@ -209,15 +217,54 @@ inline std::unique_ptr<Model> d4pi()
 
         for (auto& fa : free_amplitudes(*D, to(rho, rho)))
             *fa = static_cast<std::complex<double> >(amp_rho_rho[fa->spinAmplitude()->L()]);
-
-        if (omega_omega) {
-            D->addWeakDecay(omega, omega);
-            assert(free_amplitudes(*D, to(omega, omega)).size() == 3);
-
-            for (auto& fa : free_amplitudes(*D, to(omega, omega)))
-                *fa = static_cast<std::complex<double> >(amp_omega_omega[fa->spinAmplitude()->L()]);
-        }
     }
+
+    if (rho_omega) {
+        D->addWeakDecay(rho, omega);
+        assert(free_amplitudes(*D, to(rho, omega)).size() == 3);
+
+        for (auto& fa : free_amplitudes(*D, to(rho, omega)))
+            *fa = static_cast<std::complex<double> >(amp_rho_omega[fa->spinAmplitude()->L()]);
+    }
+
+    if (rho_f_2) {
+        D->addWeakDecay(rho, f_2);
+        assert(free_amplitudes(*D, to(rho, f_2)).size() == 3);
+
+        for (auto& fa : free_amplitudes(*D, to(rho, f_2)))
+            *fa = static_cast<std::complex<double> >(amp_rho_f_2[fa->spinAmplitude()->L()]);
+    }
+
+
+    if (omega_omega) {
+        D->addWeakDecay(omega, omega);
+        assert(free_amplitudes(*D, to(omega, omega)).size() == 3);
+
+        for (auto& fa : free_amplitudes(*D, to(omega, omega)))
+            *fa = static_cast<std::complex<double> >(amp_omega_omega[fa->spinAmplitude()->L()]);
+    }
+
+    if (omega_f_2) {
+        D->addWeakDecay(omega, f_2);
+        assert(free_amplitudes(*D, to(omega, f_2)).size() == 3);
+
+        for (auto& fa : free_amplitudes(*D, to(omega, f_2)))
+            *fa = static_cast<std::complex<double> >(amp_omega_f_2[fa->spinAmplitude()->L()]);
+    }
+
+
+    if (f_2_f_2) {
+        D->addWeakDecay(f_2, f_2);
+        for (auto& fa : free_amplitudes(*D, to(f_2, f_2)))
+            *fa = static_cast<std::complex<double> >(amp_f_2_f_2[fa->spinAmplitude()->L()]);
+    }
+
+
+    if (f_0_1370_pipiS) {
+        D->addWeakDecay(f_0_1370, pipiS);
+        *free_amplitude(*D, to(f_0_1370, pipiS)) = amp_f_0_1370_pipiS;
+    }
+
 
     // a_1
     if (a_rho_pi_S or a_rho_pi_D) {
@@ -231,7 +278,7 @@ inline std::unique_ptr<Model> d4pi()
             if (a1_shared)
                 free_amplitude(*a_1_minus, to(rho), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(0)));
             else
-                *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = 1.;
+                *free_amplitude(*a_1_minus, to(rho), l_equals(0)) = amp_a_minus_rho_pi_S;
         }
         else {
             *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 0.;
@@ -250,7 +297,7 @@ inline std::unique_ptr<Model> d4pi()
             if (a1_shared)
                 free_amplitude(*a_1_minus, to(rho), l_equals(2))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(2)));
             else
-                *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = amp_a_rho_pi_D;
+                *free_amplitude(*a_1_minus, to(rho), l_equals(2)) = amp_a_minus_rho_pi_D;
         }
         else {
             *free_amplitude(*a_1_plus, to(rho), l_equals(2)) = 0.;
@@ -263,14 +310,14 @@ inline std::unique_ptr<Model> d4pi()
     }
     if (a_pipiS_pi) {
         a_1_plus->addStrongDecay(pipiS, piPlus);
-        *free_amplitude(*a_1_plus, to(pipiS)) = amp_a_sigma_pi;
+        *free_amplitude(*a_1_plus, to(pipiS)) = amp_a_pipiS_pi;
 
         a_1_minus->addStrongDecay(pipiS, piMinus);
 
         if (a1_shared)
             free_amplitude(*a_1_minus, to(pipiS))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(pipiS)));
         else
-            *free_amplitude(*a_1_minus, to(pipiS)) = amp_a_sigma_pi;
+            *free_amplitude(*a_1_minus, to(pipiS)) = amp_a_minus_pipiS_pi;
     }
     
     if (not free_amplitudes(*a_1_plus).empty()) {
@@ -304,11 +351,14 @@ inline std::unique_ptr<Model> d4pi()
     //
     // background
     //
+    std::vector<double> admixtures;
+
     if (bg_flat_4pi) {
         auto flat_4pi = DecayingParticle::create("flat_4pi", QuantumNumbers(0, 0), r);
         flat_4pi->addWeakDecay(piPlus, piMinus, piPlus, piMinus);
         //flat_4pi->addWeakDecay(pipi, pipi); // produces wrong result since integral would have to be initialized with 4 due to symmetrization
         M->addInitialState(flat_4pi);
+        admixtures.push_back(admixture_bg_flat_4pi);
     }
 
     if (bg_rho) {
@@ -316,20 +366,16 @@ inline std::unique_ptr<Model> d4pi()
         rho_2pi->addWeakDecay(rho, pipi);
         M->addInitialState(rho_2pi);
         //M->addInitialState(rho);
+        admixtures.push_back(admixture_bg_rho);
 
         if (omega_omega) {
             auto omega_2pi = DecayingParticle::create("omega_2pi", QuantumNumbers(0, 0), r);
             omega_2pi->addWeakDecay(omega, pipi);
             M->addInitialState(omega_2pi);
+            admixtures.push_back(admixture_bg_omega);
         }
 
     }
-
-    if (bg_a1) {
-        M->addInitialState(a_1_plus);
-        M->addInitialState(a_1_minus);
-    }
-
 
     //
     // finish and print summary
@@ -347,6 +393,7 @@ inline std::unique_ptr<Model> d4pi()
             << "  \t" << fa->freeAmplitude().get();
 
     // loop over admixtures
+    unsigned i_adm(0);
     for (auto& comp : M->components()) {
         if (comp.particle() == &*D) {
             if (bg_only)
@@ -355,8 +402,9 @@ inline std::unique_ptr<Model> d4pi()
             assert( comp.admixture()->variableStatus() == yap::VariableStatus::fixed );
             LOG(INFO) << "fixed D0 admixture";
         }
-        else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed)
-            *comp.admixture() = 3.0;
+        else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed) {
+            *comp.admixture() = admixtures[i_adm++];
+        }
 
         LOG(INFO) << "admixture " << comp.particle()->name()
                 << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
