@@ -2,6 +2,7 @@
 
 #include "ConstantPrior.h"
 
+#include <Attributes.h>
 #include <DataSet.h>
 #include <DecayChannel.h>
 #include <DecayingParticle.h>
@@ -20,6 +21,7 @@
 #include <SpinAmplitude.h>
 #include <VariableStatus.h>
 
+#include <BAT/BCGaussianPrior.h>
 #include <BAT/BCPrior.h>
 
 #include <TTree.h>
@@ -35,13 +37,17 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
       FitPartitions_(1, &FitData_),
       IntegralData_(model()->createDataSet()),
       IntegralPartitions_(1, &IntegralData_),
+      FitFractionData_(model()->createDataSet()),
+      FitFractionPartitions_(1, &FitFractionData_),
       NIntegrationPoints_(0),
       NIntegrationPointsBatchSize_(0),
       NIntegrationThreads_(1),
       Integral_(*model()),
+      FitFractionIntegral_(*model()),
       FirstParameter_(-1),
       FirstObservable_(-1),
-      useJacobian_(false)
+      useJacobian_(false),
+      modelSelection_(0.)
 {
     // create mass axes
     axes() = model()->massAxes(pcs);
@@ -73,7 +79,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             + " S = " + yap::spin_to_string(fa->spinAmplitude()->twoS());
 
         // add real parameter
-        double range = std::max(2., 3. * abs(fa->value()));
+        double range = 2. * abs(fa->value());
         AddParameter("real(" + fa_name + ")", -range, range);
         // add imag parameter
         AddParameter("imag(" + fa_name + ")", -range, range);
@@ -341,7 +347,8 @@ void bat_fit::integrate()
             model()->updateCalculationStatus(*p);
         }
 
-        yap::ImportanceSampler::calculate(Integral_, IntegralPartitions_);
+        if (yap::ImportanceSampler::calculate(Integral_, IntegralPartitions_) and modelSelection_ > 0.)
+            yap::ImportanceSampler::calculate(FitFractionIntegral_, FitFractionPartitions_, true);
     }
 }
 
@@ -351,6 +358,9 @@ double bat_fit::LogLikelihood(const std::vector<double>& p)
     setParameters(p);
 
     auto integral_value = integral(Integral_).value();
+
+    // print params
+    std::cout << "\n";
     for (auto par : p)
         std::cout<<par<<"\t";
     std::cout << "\n";
@@ -360,11 +370,13 @@ double bat_fit::LogLikelihood(const std::vector<double>& p)
     model()->setParameterFlagsToUnchanged();
     increaseLikelihoodCalls();
 
+    // print L
+    static unsigned nCalls(0);
     static double initL(L);
     static double maxL(L);
     maxL = std::max(maxL, L);
-    std::cout << "\rLikelihood = " << L << "; \tmax = " << maxL
-            << "; \tinitial = " << initL << "                           ";
+    LOG(INFO) << "\rLogLikelihood = " << L << "; \tmax = " << maxL
+            << "; \tinitial = " << initL << "; \t calls = " << ++nCalls;
 
     return L;
 }
@@ -383,9 +395,95 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
         if (useJacobian_)
             logP -= log(abs(A));      // jacobian
     }
+    // parameters
     for (size_t i = FreeAmplitudes_.size() * 2; i < GetParameters().Size(); ++i)
         if (GetParameter(i).GetPrior())
             logP += GetParameter(i).GetLogPrior(p[i]);
+
+    // model selection
+    if (modelSelection_ > 0.) {
+
+        // take normalized fit fractions of all components
+        /*double sumIntegrals(0);
+        // loop over admixtures
+        for (const auto& mci : FitFractionIntegral_.integrals()) {
+            sumIntegrals += mci.Admixture->value() * integral(mci.Integral).value();
+        }
+
+        double sum(0);
+        for (const auto& mci : FitFractionIntegral_.integrals()) {
+            //double sum_admixture(0);
+            auto ff = fit_fractions(mci.Integral);
+            for (size_t i = 0; i < ff.size(); ++i) {
+                double fit_frac = mci.Admixture->value()  * integral(mci.Integral).value() / sumIntegrals * ff[i].value();
+                //LOG(INFO) << "\t" << fit_frac*100. << " %; fit fraction in admixture = " << ff[i].value()*100. << " %";
+                sum += fit_frac;
+                //sum_admixture += ff[i].value();
+
+                // LASSO
+                logP -= fit_frac/modelSelection_;
+            }
+        }
+        LOG(INFO) << "sum of fit fractions = " << 100.*sum << "%";*/
+
+        // a1 rho pi S ff
+        // todo: do not hardcode
+        static auto decayTrees = FitFractionIntegral_.integrals().at(0).Integral.decayTrees();
+        static std::vector<yap::DecayTreeVector> groupedDecayTrees;
+        {
+            static BCGaussianPrior a1_prior(40., 5);
+            static std::vector<yap::DecayTreeVector> a1_groupedDecayTrees;
+            if (a1_groupedDecayTrees.empty()) {
+                auto a_1_plus = std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("a_1+")));
+                auto rho = std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("rho0")));
+                auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
+                blub.erase(std::remove_if(blub.begin(), blub.end(),
+                        [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(rho), yap::l_equals(0))).empty();}),
+                        blub.end());
+
+                a1_groupedDecayTrees.push_back(blub);
+                for (const auto& fa : a1_groupedDecayTrees[0])
+                    LOG(INFO) << yap::to_string(*fa);
+
+                for(auto& dt : a1_groupedDecayTrees.back())  {
+                    auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                    if(iter != decayTrees.end())
+                        decayTrees.erase(iter);
+                }
+
+                LOG(INFO) << "------------------------------";
+                groupedDecayTrees = group_by_free_amplitudes(decayTrees);
+            }
+            double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_groupedDecayTrees).at(0).value();
+
+            LOG(INFO) << "a_1 -> (rho pi)_S fit fraction = " << ff << "%; " << a1_prior.GetLogPrior(ff);
+
+            logP +=  a1_prior.GetLogPrior(ff);
+        }
+
+        auto logP_old = logP;
+
+        // take fit fractions of signal component
+        auto ff = fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, groupedDecayTrees);
+        double sum(0);
+        for (size_t i = 0; i < ff.size(); ++i) {
+            double fit_frac = ff[i].value();
+            sum += fit_frac;
+
+            // LASSO
+            //logP -= fit_frac/modelSelection_;
+
+            // BCM
+            logP -= log(1. + fit_frac/(modelSelection_*modelSelection_));
+        }
+        LOG(INFO) << "sum of fit fractions = " << 100.*sum << "%; delta logP = " << logP - logP_old;
+
+        //LOG(INFO) << to_string(mci.Integral);
+
+    }
+
+    LOG(INFO) << "bat_fit::LogAPrioriProbability = " << logP;
+
     return logP;
 }
 

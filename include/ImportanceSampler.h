@@ -47,12 +47,14 @@ public:
     /// Update calculation of ModelIntegral
     /// \param I ModelIntegral to calculate
     /// \param DPV vector of DataPartitions to calculate with
-    static void calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force = false);
+    /// \return if anything has been recalculated
+    static bool calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force = false);
 
     /// Update calculation of ModelIntegral
     /// \param I ModelIntegral to calculate
     /// \param D DataPartition to calculate with
-    static void calculate(ModelIntegral& I, DataPartition& D, bool force = false);
+    /// \return if anything has been recalculated
+    static bool calculate(ModelIntegral& I, DataPartition& D, bool force = false);
 
     /// \typedef Generator
     /// function for generating new points for integration

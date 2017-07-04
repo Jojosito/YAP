@@ -218,4 +218,53 @@ const DecayTreeVector select_changed(const DecayTreeVector& dtv)
     return C;
 }
 
+//-------------------------
+const std::vector<yap::DecayTreeVector> group_by_free_amplitudes(const DecayTreeVector& dtv)
+{
+    DecayTreeVector decayTrees = dtv;
+
+    std::vector<yap::DecayTreeVector> groupedDecayTrees;
+
+    while (not decayTrees.empty()) {
+        if (decayTrees.size() == 1) {
+            groupedDecayTrees.push_back({decayTrees[0]});
+            break;
+        }
+
+        auto dt = decayTrees[0];
+        DecayTreeVector group;
+        group.push_back(dt);
+        for (unsigned i = 1; i < decayTrees.size(); ++i) {
+            auto dt2 = decayTrees[i];
+            if (dt->freeAmplitude() != dt2->freeAmplitude())
+                continue;
+
+            if (dt->daughterDecayTreeVector().size() != dt2->daughterDecayTreeVector().size())
+                continue;
+
+            bool cont(false);
+            for (unsigned j = 0; j < dt->daughterDecayTreeVector().size(); ++j) {
+                if (group_by_free_amplitudes({dt->daughterDecayTreeVector()[j], dt2->daughterDecayTreeVector()[j]}).size() > 1) {
+                    cont = true;
+                    break;
+                }
+            }
+            if (cont)
+                continue;
+
+            group.push_back(dt2);
+        }
+
+        groupedDecayTrees.push_back(group);
+
+        for(auto dt : groupedDecayTrees.back())  {
+            auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+            if(iter != decayTrees.end())
+                decayTrees.erase(iter);
+        }
+    }
+
+    return groupedDecayTrees;
+}
+
 }

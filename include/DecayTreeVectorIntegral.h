@@ -144,6 +144,9 @@ const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtv
 /// \param dtvv a fit fraction will be calculated for each DecayTreeVector
 const RealIntegralElementVector fit_fractions(const DecayTreeVectorIntegral& dtvi, const std::vector<DecayTreeVector>& dtvv);
 
+/// \return matrix as string
+std::string to_string(const DecayTreeVectorIntegral& dtvi);
+
 }
 
 #endif

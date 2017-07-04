@@ -28,49 +28,17 @@ int main()
 {
     yap::plainLogs(el::Level::Info);
 
-    unsigned i_model = 2;
-
     // create model
-    std::string model_name;
-    bat_fit* m = nullptr;
-    double D_mass(0);
-
-    switch (i_model) {
-        case 0:
-            model_name = "D3PI";
-            m = new bat_fit(d3pi_fit(model_name + "_fit", yap_model<yap::ZemachFormalism>()));
-            D_mass = 1.86961; // D+
-            break;
-        case 1:
-            model_name = "DKKPI";
-            m = new bat_fit(dkkpi_fit(model_name + "_fit", yap_model<yap::HelicityFormalism>()));
-            D_mass = 1.86961; // D+
-            break;
-        case 2:
-            model_name = "D4PI";
-            m = new bat_fit(d4pi_fit("D4pi_fit"));
-            D_mass = 1.8648400; // D0
-            break;
-        default:
-            throw exceptions::Exception("no model loaded", "runFitFractions::main()");
-    }
+    bat_fit m(d4pi_fit("D4pi_fit"));
+    double D_mass = 1.8648400; // D0
 
     // get FSP mass ranges
-    auto m2r = yap::squared(mass_range(D_mass, m->axes(), m->model()->finalStateParticles()));
+    auto m2r = yap::squared(mass_range(D_mass, m.axes(), m.model()->finalStateParticles()));
 
     // generate integration data
-    std::mt19937 g(0);
+    generate_fit_fraction_data(m, 100000, 4);
 
-    std::generate_n(std::back_inserter(m->integralData()), 500000,
-            std::bind(yap::phsp<std::mt19937>, std::cref(*m->model()), D_mass, m->axes(), m2r, g, std::numeric_limits<unsigned>::max()));
-    m->integralPartitions() = yap::DataPartitionBlock::create(m->integralData(), 6);
-    LOG(INFO) << "Created " << m->integralData().size() << " data points (" << (m->integralData().bytes() * 1.e-6) << " MB)";
-    m->integrate();
-
-    d4pi_printFitFractions(*m);
-
-
-    delete m;
+    d4pi_printFitFractions(m);
 
     return 0;
 }

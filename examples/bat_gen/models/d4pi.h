@@ -181,7 +181,7 @@ inline std::unique_ptr<Model> d4pi()
 
     if (pipiS_omega) {
         D->addWeakDecay(pipiS, omega);
-        *free_amplitude(*D, to(pipiS, pipiS)) = amp_pipiS_omega;
+        *free_amplitude(*D, to(pipiS, omega)) = amp_pipiS_omega;
     }
 
     if (pipiS_f_2) {
@@ -336,15 +336,30 @@ inline std::unique_ptr<Model> d4pi()
         free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
     }
 
-    if (pi1300_pi_pi_pi) {
-        pi_1300_plus->addStrongDecay(piPlus, piMinus, piPlus);
-        pi_1300_minus->addStrongDecay(piMinus, piPlus, piMinus);
+    if (pi1300) {
+        pi_1300_plus->addStrongDecay(pipiS, piPlus);
+        pi_1300_minus->addStrongDecay(pipiS, piMinus);
+
+        pi_1300_plus->addStrongDecay(rho, piPlus);
+        pi_1300_minus->addStrongDecay(rho, piMinus);
+
+        assert(free_amplitudes(*pi_1300_plus, to(rho)).size() == 1);
+        assert(free_amplitudes(*pi_1300_minus, to(rho)).size() == 1);
+
+        *free_amplitude(*pi_1300_plus, to(pipiS)) = amp_pi1300_plus_pipiS;
+        *free_amplitude(*pi_1300_plus, to(rho)) = amp_pi1300_plus_rho;
+
+        *free_amplitude(*pi_1300_minus, to(pipiS)) = amp_pi1300_minus_pipiS;
+        *free_amplitude(*pi_1300_minus, to(rho)) = amp_pi1300_minus_rho;
 
         D->addWeakDecay(pi_1300_plus, piMinus);
         D->addWeakDecay(pi_1300_minus, piPlus);
 
-        *free_amplitude(*D, to(pi_1300_plus)) = amp_pi1300_pi_pi_pi;
-        free_amplitude(*D, to(pi_1300_minus))->shareFreeAmplitude(*free_amplitude(*D, to(pi_1300_plus)));
+        *free_amplitude(*D, to(pi_1300_plus))  = 1.;
+        free_amplitude(*D, to(pi_1300_plus))->variableStatus() = VariableStatus::fixed;
+
+        *free_amplitude(*D, to(pi_1300_minus)) = 1.;
+        free_amplitude(*D, to(pi_1300_minus))->variableStatus() = VariableStatus::fixed;
     }
 
 

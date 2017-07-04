@@ -11,6 +11,7 @@ const bool a_rho_pi_S  = true;
 const bool a_rho_pi_D  = true;
 const bool a_pipiS_pi  = true;
 
+const bool pi1300      = true;
 
 const bool pipiS_pipiS = true;
 const bool pipiS_f_0   = true;
@@ -19,23 +20,28 @@ const bool pipiS_omega = true;
 const bool pipiS_f_2   = true;
 
 const bool f_0_f_0     = true;
-const bool f_0_rho     = true;
-const bool f_0_omega   = true;
-const bool f_0_f_2     = true;
+const bool f_0_rho     = false;
+const bool f_0_omega   = false;
+const bool f_0_f_2     = false;
 
 const bool rho_rho     = true;
-const bool rho_omega   = true;
-const bool rho_f_2     = true;
+const bool rho_omega   = false;
+const bool rho_f_2     = false;
 
 const bool omega_omega = true;
-const bool omega_f_2   = true;
+const bool omega_f_2   = false;
 
-const bool f_2_f_2     = false; // get very small ff, 10 free parameters
+const bool f_2_f_2     = true;
 
 
-const bool f_0_1370_pipiS = true; // lieber erstmal weglassen, highly ambiguous!
+const bool f_0_1370_pipiS = false; // lieber erstmal weglassen, highly ambiguous!
 
-const bool pi1300_pi_pi_pi = false;
+
+// to add
+// pi1300_rho_pi
+// all f0_1370 combinations
+// a_1_1640
+// pi_2_1670
 
 // background
 const bool bg_flat_4pi = true;
@@ -56,62 +62,124 @@ const bool bg_only     = false; // fix D admixture to 0
 // YAP fitted amplitudes
 
 /*
-const std::complex<double> amp_a_rho_pi_D       = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_a_pipiS_pi       = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_a_minus_rho_pi_S = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_a_minus_rho_pi_D = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_a_minus_pipiS_pi = std::polar(0., yap::rad(0.));
+const std::complex<double> amp_a_rho_pi_D       = ;
+const std::complex<double> amp_a_pipiS_pi       = ;
+const std::complex<double> amp_a_minus_rho_pi_S = ;
+const std::complex<double> amp_a_minus_rho_pi_D = ;
+const std::complex<double> amp_a_minus_pipiS_pi = ;
 
-const std::complex<double> amp_pipiS_pipiS      = std::polar(1., yap::rad(0.));
-const std::complex<double> amp_pipiS_f_0        = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_pipiS_rho        = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_pipiS_omega      = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_pipiS_f_2        = std::polar(0., yap::rad(0.));
+const std::complex<double> amp_pipiS_pipiS      = ;
+const std::complex<double> amp_pipiS_f_0        = ;
+const std::complex<double> amp_pipiS_rho        = ;
+const std::complex<double> amp_pipiS_omega      = ;
+const std::complex<double> amp_pipiS_f_2        = ;
 
-const std::complex<double> amp_f_0_f_0          = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_f_0_rho          = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_f_0_omega        = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_f_0_f_2          = std::polar(0., yap::rad(0.));
+const std::complex<double> amp_f_0_f_0          = ;
+const std::complex<double> amp_f_0_rho          = ;
+const std::complex<double> amp_f_0_omega        = ;
+const std::complex<double> amp_f_0_f_2          = ;
 
 yap::amplitude_basis::canonical<double> amp_rho_rho(
-        std::polar(0., yap::rad(0.)),   // S
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)) ); // D
+        ,   // S
+        ,   // P
+         ); // D
 yap::amplitude_basis::canonical<double> amp_rho_omega(
-        std::polar(0., yap::rad(0.)),   // S
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)) ); // D
+        ,   // S
+        ,   // P
+         ); // D
 const std::vector<std::complex<double>> amp_rho_f_2 = {
         std::polar(0., yap::rad(0.)),   // S (not used)
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)),   // D
-        std::polar(0., yap::rad(0.)) }; // F
+        ,   // P
+        ,   // D
+         }; // F
 
 yap::amplitude_basis::canonical<double> amp_omega_omega(
-        std::polar(0., yap::rad(0.)),   // S
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)) ); // D
+        ,   // S
+        ,   // P
+         ); // D
 const std::vector<std::complex<double>> amp_omega_f_2 = {
         std::polar(0., yap::rad(0.)),   // S (not used)
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)),   // D
-        std::polar(0., yap::rad(0.)) }; // F
+        ,   // P
+        ,   // D
+         }; // F
 
 const std::vector<std::complex<double>> amp_f_2_f_2 = {
-        std::polar(0., yap::rad(0.)),   // S
-        std::polar(0., yap::rad(0.)),   // P
-        std::polar(0., yap::rad(0.)),   // D
-        std::polar(0., yap::rad(0.)),   // F
-        std::polar(0., yap::rad(0.)) }; // G
+        ,   // S
+        ,   // P
+        ,   // D
+        ,   // F
+         }; // G
 
-const std::complex<double> amp_f_0_1370_pipiS   = std::polar(0., yap::rad(0.));
-const std::complex<double> amp_pi1300_pi_pi_pi  = std::polar(0., yap::rad(0.));
+const std::complex<double> amp_f_0_1370_pipiS   = ;
+const std::complex<double> amp_pi1300_pi_pi_pi  = ;
+
+const double admixture_bg_flat_4pi = ;
+const double admixture_bg_rho      = ;
+const double admixture_bg_omega    = ;
+ */
+
+const double scale = sqrt(0.0256149) / sqrt(30.);
+const double scale_omega = 0.1;
+
+const std::complex<double> amp_a_rho_pi_D       = std::polar(scale/sqrt(0.000928884), yap::rad(0.));
+const std::complex<double> amp_a_pipiS_pi       = std::polar(sqrt(5.)*scale/sqrt(0.00122752 ), yap::rad(0.));
+const std::complex<double> amp_a_minus_rho_pi_S = std::polar(scale/sqrt(0.0172902  ), yap::rad(0.));
+const std::complex<double> amp_a_minus_rho_pi_D = std::polar(scale/sqrt(0.000927705), yap::rad(0.));
+const std::complex<double> amp_a_minus_pipiS_pi = std::polar(scale/sqrt(0.00123937 ), yap::rad(0.));
+
+const std::complex<double> amp_pipiS_pipiS      = std::polar(scale/sqrt(0.0149534  ), yap::rad(0.));
+const std::complex<double> amp_pipiS_f_0        = std::polar(scale/sqrt(0.121886   ), yap::rad(0.));
+const std::complex<double> amp_pipiS_rho        = std::polar(scale/sqrt(0.0228801  ), yap::rad(0.));
+const std::complex<double> amp_pipiS_omega      = std::polar(scale_omega*scale/sqrt(0.373366   ), yap::rad(0.));
+const std::complex<double> amp_pipiS_f_2        = std::polar(scale/sqrt(6.7038e-05 ), yap::rad(0.));
+
+const std::complex<double> amp_f_0_f_0          = std::polar(scale/sqrt(0.0675327  ), yap::rad(0.));
+const std::complex<double> amp_f_0_rho          = std::polar(scale/sqrt(0.0529008  ), yap::rad(0.));
+const std::complex<double> amp_f_0_omega        = std::polar(scale_omega*scale/sqrt(0.92534    ), yap::rad(0.));
+const std::complex<double> amp_f_0_f_2          = std::polar(scale/sqrt(6.45355e-05), yap::rad(0.));
+
+yap::amplitude_basis::canonical<double> amp_rho_rho(
+        std::polar(scale/sqrt(0.0342214), yap::rad(0.)),   // S
+        std::polar(scale/sqrt(0.0540938), yap::rad(0.)),   // P
+        std::polar(scale/sqrt(0.00627022), yap::rad(0.)) ); // D
+yap::amplitude_basis::canonical<double> amp_rho_omega(
+        std::polar(scale_omega*scale/sqrt(2.11109), yap::rad(0.)),   // S
+        std::polar(scale_omega*scale/sqrt(2.56213), yap::rad(0.)),   // P
+        std::polar(scale_omega*scale/sqrt(0.341254), yap::rad(0.)) ); // D
+const std::vector<std::complex<double>> amp_rho_f_2 = {
+        std::polar(0., yap::rad(0.)),   // S (not used)
+        std::polar(scale/sqrt(0.000152087), yap::rad(0.)),   // P
+        std::polar(scale/sqrt(0.00013367), yap::rad(0.)),   // D
+        std::polar(scale/sqrt(1.23534e-05), yap::rad(0.)) }; // F
+
+yap::amplitude_basis::canonical<double> amp_omega_omega(
+        std::polar(scale_omega*scale/sqrt(21.48), yap::rad(0.)),   // S
+        std::polar(scale_omega*scale/sqrt(24.4904), yap::rad(0.)),   // P
+        std::polar(scale_omega*scale/sqrt(3.60603), yap::rad(0.)) ); // D
+const std::vector<std::complex<double>> amp_omega_f_2 = {
+        std::polar(0., yap::rad(0.)),   // S (not used)
+        std::polar(scale_omega*scale/sqrt(0.00265211), yap::rad(0.)),   // P
+        std::polar(scale_omega*scale/sqrt(0.0014097), yap::rad(0.)),   // D
+        std::polar(scale_omega*scale/sqrt(0.000188907), yap::rad(0.)) }; // F
+
+const std::vector<std::complex<double>> amp_f_2_f_2 = {
+        std::polar(scale/sqrt(1.03536e-06), yap::rad(0.)),   // S
+        std::polar(scale/sqrt(3.76001e-07 ), yap::rad(0.)),   // P
+        std::polar(scale/sqrt(1.32058e-07), yap::rad(0.)),   // D
+        std::polar(scale/sqrt(3.11975e-08), yap::rad(0.)),   // F
+        std::polar(scale/sqrt(4.55056e-09), yap::rad(0.)) }; // G
+
+const std::complex<double> amp_f_0_1370_pipiS     = std::polar(1., yap::rad(0.));
+const std::complex<double> amp_pi1300_plus_pipiS  = std::polar(scale/sqrt(0.130512), yap::rad(0.));
+const std::complex<double> amp_pi1300_plus_rho    = std::polar(scale/sqrt(0.0488093), yap::rad(0.));
+const std::complex<double> amp_pi1300_minus_pipiS = std::polar(scale/sqrt(0.130766), yap::rad(0.));
+const std::complex<double> amp_pi1300_minus_rho   = std::polar(scale/sqrt(0.0490255), yap::rad(0.));
 
 const double admixture_bg_flat_4pi = 0.;
 const double admixture_bg_rho      = 0.;
 const double admixture_bg_omega    = 0.;
- */
 
+/*
 const std::complex<double> amp_a_rho_pi_D       = std::polar(0.565685, yap::rad(-135));
 const std::complex<double> amp_a_pipiS_pi       = std::polar(0.449188, yap::rad(-62.9355));
 const std::complex<double> amp_a_minus_rho_pi_S = std::polar(0.226954, yap::rad(-92.3392));
@@ -166,7 +234,7 @@ const std::complex<double> amp_pi1300_pi_pi_pi  = std::polar(0., yap::rad(0.));
 const double admixture_bg_flat_4pi = 4.591;
 const double admixture_bg_rho      = 0.1947;
 const double admixture_bg_omega    = 0.00166;
-
+*/
 
 /*
 const std::complex<double> amp_a_rho_pi_D   = std::polar(1.89514, yap::rad(-18.8152));

@@ -50,6 +50,9 @@ public:
     void setUseJacobian(bool j = true)
     { useJacobian_ = j; }
 
+    void setModelSelection(double s)
+    { modelSelection_ = s; }
+
     /// fix a FreeAmplitude
     void fix(std::shared_ptr<yap::FreeAmplitude> A, double amp, double phase);
 
@@ -77,6 +80,18 @@ public:
     /// \return IntegralPartitions_
     yap::DataPartitionVector& integralPartitions()
     { return IntegralPartitions_; }
+
+    /// \return FitFractionData_
+    yap::DataSet& fitFractionData()
+    { return FitFractionData_; }
+
+    /// \return FitFractionPartitions_
+    yap::DataPartitionVector& fitFractionPartitions()
+    { return FitFractionPartitions_; }
+
+    /// \return FitFractionIntegral_
+    yap::ModelIntegral& fitFractionIntegral()
+    { return FitFractionIntegral_; }
 
     yap::ModelIntegral& modelIntegral()
     { return Integral_; }
@@ -129,6 +144,12 @@ protected:
     /// Partitioning of FitData_
     yap::DataPartitionVector IntegralPartitions_;
 
+    /// DataSet to calculate fit fraction (phsp distributed)
+    yap::DataSet FitFractionData_;
+
+    /// Partitioning of FitData_
+    yap::DataPartitionVector FitFractionPartitions_;
+
     /// Number of points to integrate with
     unsigned NIntegrationPoints_;
 
@@ -143,6 +164,9 @@ protected:
 
     /// stores integral result
     yap::ModelIntegral Integral_;
+
+    /// stores integral result
+    yap::ModelIntegral FitFractionIntegral_;
 
     /// vector of parameters to set in model
     yap::ParameterVector Parameters_;
@@ -172,6 +196,9 @@ protected:
 
     // set to true when sampling
     bool useJacobian_;
+
+    // use prior on fit fractions
+    double modelSelection_;
 
 };
 

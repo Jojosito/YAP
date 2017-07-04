@@ -185,6 +185,8 @@ const bool has_changed(const std::shared_ptr<DecayTree>& dt);
 /// \param vector of trees to check in
 const DecayTreeVector select_changed(const DecayTreeVector& dtv);
 
+const std::vector<yap::DecayTreeVector> group_by_free_amplitudes(const DecayTreeVector& dtv);
+
 }
 
 #endif

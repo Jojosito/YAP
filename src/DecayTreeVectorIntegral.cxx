@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <complex>
+#include <iomanip>
 #include <numeric>
 
 namespace yap {
@@ -212,6 +213,33 @@ const RealIntegralElement integral(const DecayTreeVectorIntegral& dtvi, const De
            I += dtvi.integral(indices[i], indices[j]);
 
     return I;
+}
+
+//-------------------------
+std::string to_string(const DecayTreeVectorIntegral& dtvi)
+{
+    auto& diagonals = dtvi.diagonals();
+    auto offDiagonals = dtvi.offDiagonals();
+
+    std::stringstream ss;
+    static const int precision(3);
+
+    for (unsigned i = 0; i < diagonals.size(); ++i) {
+        for (unsigned j = 0; j < diagonals.size(); ++j) {
+            if (i == j)
+                //ss << std::scientific << std::setprecision(precision) << diagonals.at(i).value() << ";";
+                ss << std::scientific << std::setprecision(precision) << 1. << ";";
+            else if (j < i)
+                ss << "      ;";
+            else {
+                double norm = 1. / sqrt(diagonals.at(i).value() * diagonals.at(j).value());
+                ss << std::scientific << std::setprecision(precision) << norm * abs(offDiagonals.at(i).at(j-i-1).value()) << "; ";
+            }
+        }
+        ss << "\n";
+    }
+
+    return ss.str();
 }
 
 }

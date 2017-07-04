@@ -211,7 +211,7 @@ unsigned ImportanceSampler::calculate_subset(std::vector<DecayTreeVectorIntegral
 }
 
 //-------------------------
-void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force)
+bool ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force)
 {
     //LOG(INFO) << "ImportanceSampler::calculate";
 
@@ -220,7 +220,7 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force
 
     // if nothing requires recalculation, return
     if (J.empty())
-        return;
+        return false;
 
     // reset those to be recalculated
     for (auto& j : J)
@@ -229,15 +229,15 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartition& D, bool force
     // calculate it
     calculate_partition(J, D);
 
+    return true;
 }
 
 //-------------------------
-void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force)
+bool ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bool force)
 {
     // if only one data partition, don't thread:
     if (DPV.size() == 1) {
-        calculate(I, *DPV[0], force);
-        return;
+        return calculate(I, *DPV[0], force);
     }
 
     // get DecayTreeVectorIntegral's for DecayTree's that need to be calculated
@@ -247,7 +247,7 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bo
 
     // if nothing requires recalculation, return
     if (J.empty())
-        return;
+        return false;
 
     // reset those to be recalculated
     for (auto& j : J)
@@ -271,7 +271,7 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bo
 
     // calculate data fractions:
     // also waits for threads to finish calculating
-    LOG(INFO) << "recalculate Integral";
+    //LOG(INFO) << "recalculate Integral";
     std::vector<double> f;
     f.reserve(n.size());
     std::transform(n.begin(), n.end(), std::back_inserter(f), std::mem_fn(&std::future<unsigned>::get));
@@ -281,6 +281,13 @@ void ImportanceSampler::calculate(ModelIntegral& I, DataPartitionVector& DPV, bo
     for (size_t i = 0; i < m.size(); ++i)
         for (size_t j = 0; j < J.size(); ++j)
             *J[j] += (*m[i][j] *= f[i]);
+
+    // todo: use smart pointers for cleanup
+    for (size_t i = 0; i < m.size(); ++i)
+        for (size_t j = 0; j < m[i].size(); ++j)
+            delete m[i][j];
+
+    return true;
 
 }
 
