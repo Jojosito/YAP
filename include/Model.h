@@ -162,10 +162,6 @@ public:
     ParticleCombinationCache& particleCombinationCache() const
     { return ParticleCombinationCache_; }
 
-    /// \return ParticleCombinationCache (const)
-    //const ParticleCombinationCache& particleCombinationCache() const
-    //{ return ParticleCombinationCache_; }
-
     /// \return SpinAmplitudeCache
     SpinAmplitudeCache* spinAmplitudeCache()
     { return SpinAmplitudeCache_.get(); }
