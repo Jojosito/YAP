@@ -8,16 +8,16 @@
 
 // which waves to include in the model
 const bool a_rho_pi_S  = true;
-const bool a_rho_pi_D  = true;
+const bool a_rho_pi_D  = false;
 const bool a_pipiS_pi  = true;
 
-const bool pi1300      = true;
+const bool pi1300      = false;
 
 const bool pipiS_pipiS = true;
 const bool pipiS_f_0   = true;
 const bool pipiS_rho   = true;
-const bool pipiS_omega = true;
-const bool pipiS_f_2   = true;
+const bool pipiS_omega = false;
+const bool pipiS_f_2   = false;
 
 const bool f_0_f_0     = true;
 const bool f_0_rho     = false;
@@ -28,10 +28,10 @@ const bool rho_rho     = true;
 const bool rho_omega   = false;
 const bool rho_f_2     = false;
 
-const bool omega_omega = true;
+const bool omega_omega = false;
 const bool omega_f_2   = false;
 
-const bool f_2_f_2     = true;
+const bool f_2_f_2     = false;
 
 
 const bool f_0_1370_pipiS = false; // lieber erstmal weglassen, highly ambiguous!
@@ -52,7 +52,7 @@ const bool a1_bowler   = true;//true and (a_rho_pi_S or a_rho_pi_D);
 const bool a1_shared   = false;  // share a1+ and a1- free amplitudes
 
 const bool a1_plus     = true;
-const bool a1_minus    = true;
+const bool a1_minus    = false;
 
 const bool free_parameters = false; // widths, coupling constants, ...
 

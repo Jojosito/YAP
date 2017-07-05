@@ -44,7 +44,7 @@ int main()
     m.setModelSelection(0.01); // LASSO/BCM parameter
 
     bool mcmc = true;
-    unsigned nPreRun = 50000;
+    unsigned nPreRun = 500000;
     unsigned nRun    = 50000;
 
     const unsigned nData = 10000; // max number of Data points we want
@@ -156,7 +156,7 @@ int main()
     m.SetPrecision(BCEngineMCMC::kMedium);
     m.SetNIterationsPreRunMax(nPreRun);
     m.SetNChains(nThreads); //
-    m.SetMinimumEfficiency(0.7);
+    m.SetMinimumEfficiency(0.15);
     m.SetMaximumEfficiency(0.9);
 
 

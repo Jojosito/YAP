@@ -328,12 +328,11 @@ inline std::unique_ptr<Model> d4pi()
             *free_amplitude(*D, to(a_1_plus)) = 0.;
         free_amplitude(*D, to(a_1_plus))->variableStatus() = VariableStatus::fixed;
 
-        D->addWeakDecay(a_1_minus, piPlus);
-        if (a1_minus)
+        if (a1_minus) {
+            D->addWeakDecay(a_1_minus, piPlus);
             *free_amplitude(*D, to(a_1_minus)) = 1.;
-        else
-            *free_amplitude(*D, to(a_1_minus)) = 0.;
-        free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
+            free_amplitude(*D, to(a_1_minus))->variableStatus() = VariableStatus::fixed;
+        }
     }
 
     if (pi1300) {
