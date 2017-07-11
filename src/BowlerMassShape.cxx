@@ -32,7 +32,6 @@
 #include "PDL.h"
 
 #include "QuantumNumbers.h"
-#include "RelativisticBreitWigner.h"
 #include "SpinAmplitudeCache.h"
 
 #include <algorithm>
@@ -44,7 +43,7 @@ namespace yap {
 
 //-------------------------
 BowlerMassShape::BowlerMassShape(double mass, double width) :
-    BreitWigner(mass, width),
+    ConstantWidthBreitWigner(mass, width),
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
     amp_a1_rho_S_(nullptr),
     amp_a1_rho_D_(nullptr),
@@ -58,7 +57,7 @@ BowlerMassShape::BowlerMassShape(double mass, double width) :
 
 //-------------------------
 BowlerMassShape::BowlerMassShape(const ParticleTableEntry& pde) :
-    BreitWigner(pde),
+    ConstantWidthBreitWigner(pde),
     KsKCoupling_(std::make_shared<PositiveRealParameter>(0.06)),
     amp_a1_rho_S_(nullptr),
     amp_a1_rho_D_(nullptr),

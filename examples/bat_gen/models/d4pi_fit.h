@@ -365,7 +365,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         auto piMinus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi-")));
 
         auto a_1_plus   = (a_rho_pi_S or a_rho_pi_D or a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
-        auto a_1_minus  = (a_rho_pi_S or a_rho_pi_D or a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
+        auto a_1_minus  = (a_1_plus and a1_minus) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
 
         auto pi_1300_plus  = particles(*m.model(), is_named("pi+(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi+(1300)")));
         auto pi_1300_minus = particles(*m.model(), is_named("pi-(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi-(1300)")));

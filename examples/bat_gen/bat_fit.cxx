@@ -138,13 +138,19 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
 }
 
 //-------------------------
-std::vector<double> bat_fit::getInitialPositions() const
+std::vector<double> bat_fit::getInitialPositions(bool centerZeroImag) const
 {
     std::vector<double> initialPositions;
 
     for (auto& fa : FreeAmplitudes_) {
-        initialPositions.push_back(real(fa->value()));
-        initialPositions.push_back(imag(fa->value()));
+        if (centerZeroImag and imag(fa->value()) == 0.) {
+            initialPositions.push_back(0.);
+            initialPositions.push_back(0.);
+        }
+        else {
+            initialPositions.push_back(real(fa->value()));
+            initialPositions.push_back(imag(fa->value()));
+        }
     }
 
     for (auto& a : Admixtures_) {

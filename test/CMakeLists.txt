@@ -30,7 +30,7 @@ set(YAP_TEST_SOURCES
   test_ClebschGordan.cxx
   test_CompensatedSum.cxx
   test_d4pia1.cxx
-  test_d4pia1_2.cxx
+  #test_d4pia1_2.cxx
   test_DataSet.cxx
   test_deduce_parities.cxx
   test_FourMomenta.cxx
@@ -56,6 +56,9 @@ set(YAP_TEST_SOURCES
   test_WignerD.cxx
   yap_test.cxx
 )
+
+file(MAKE_DIRECTORY data)
+configure_file(${YAP_SOURCE_DIR}/data/evt.pdl ${CMAKE_BINARY_DIR}/data/evt.pdl COPYONLY)
 
 add_executable(test EXCLUDE_FROM_ALL ${YAP_TEST_SOURCES})
 add_dependencies(test catch)

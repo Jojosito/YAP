@@ -103,7 +103,7 @@ public:
     void setNIntegrationPoints(unsigned N, unsigned n, unsigned t = 1)
     { NIntegrationPoints_ = N; NIntegrationPointsBatchSize_ = n; NIntegrationThreads_ = t; }
 
-    std::vector<double> getInitialPositions() const;
+    std::vector<double> getInitialPositions(bool centerZeroImag = false) const;
     std::vector<double> getRandomInitialPositions() const;
 
     /// \typedef Generator

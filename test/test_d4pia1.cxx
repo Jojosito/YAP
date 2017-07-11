@@ -76,7 +76,7 @@ TEST_CASE( "d4pia1" )
                 std::mt19937 g(0);
 
 
-                for (unsigned i = 0; i < 10; ++i) {
+                for (unsigned i = 0; i < 100; ++i) {
 
                     auto P = yap::phsp(*M_plus, D_mass, M_plus->massAxes(), yap::squared(yap::mass_range(D_mass, M_plus->massAxes(), M_plus->finalStateParticles())), g, 1000);
 
@@ -94,7 +94,10 @@ TEST_CASE( "d4pia1" )
                             << (amp_plus == Catch::Detail::CApprox(amp_minus) ? "S" :
                                     (-amp_plus == Catch::Detail::CApprox(amp_minus) ? "O" : "X")));
 
-                    REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_minus) );
+                    if (amp_plus != amp_plus)
+                        REQUIRE(amp_minus != amp_minus);
+                    else
+                        REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_minus) );
                 }
             }
         }

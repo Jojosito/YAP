@@ -18,90 +18,80 @@
 
 /// \file
 
-#ifndef yap_BowlerMassShape_h
-#define yap_BowlerMassShape_h
+#ifndef yap_ConstantWidthBreitWigner_h
+#define yap_ConstantWidthBreitWigner_h
 
 #include "fwd/DataPartition.h"
 #include "fwd/DataPoint.h"
-#include "fwd/FreeAmplitude.h"
 #include "fwd/Parameter.h"
 #include "fwd/ParticleCombination.h"
 #include "fwd/ParticleTable.h"
 #include "fwd/StatusManager.h"
 
-#include "ConstantWidthBreitWigner.h"
-#include "DecayTreeVectorIntegral.h"
-#include "Flatte.h"
-#include "ModelIntegral.h"
+#include "MassShapeWithNominalMass.h"
 
 #include <complex>
 #include <memory>
-#include <mutex>
 
 namespace yap {
 
-/// \class BowlerMassShape
-/// \brief Class for mass shape with Bowler parameterization. Its a Flatte with mass dependent width
-/// \author Johannes Rauch
+/// \class ConstantWidthBreitWigner
+/// \brief Class for Constant-Width Relativistic Breit-Wigner resonance shape
+/// \author Daniel Greenwald
 /// \ingroup MassShapes
 ///
-class BowlerMassShape : public ConstantWidthBreitWigner
+/// Amplitude is 1 / (mass^2 - s - i * mass * width)\n\n
+class ConstantWidthBreitWigner : public MassShapeWithNominalMass
 {
 public:
 
     /// Constructor
     /// \param mass Mass of resonance [GeV]
     /// \param width Width of resonance [GeV]
-    BowlerMassShape(double mass, double width);
+    ConstantWidthBreitWigner(double mass, double w);
 
     /// Constructor
     /// \param pde ParticleTableEntry to get mass and width from
-    BowlerMassShape(const ParticleTableEntry& pde);
+    ConstantWidthBreitWigner(const ParticleTableEntry& pde);
 
-    /// Get K*K coupling
-    std::shared_ptr<PositiveRealParameter> coupling()
-    { return KsKCoupling_; }
+    /// Get width
+    std::shared_ptr<PositiveRealParameter> width()
+    { return Width_; }
 
-    using ConstantWidthBreitWigner::calculate;
-    
+    /// Get width (const)
+    const std::shared_ptr<PositiveRealParameter> width() const
+    { return const_cast<ConstantWidthBreitWigner*>(this)->width(); }
+
     /// update the calculationStatus for a DataPartition
     virtual void updateCalculationStatus(StatusManager& D) const override;
+    
+    /// \return value for DataPoint and ParticleCombination
+    /// \param d DataPoint
+    /// \param pc shared_ptr to ParticleCombination
+    virtual const std::complex<double> value(const DataPoint& d, const std::shared_ptr<const ParticleCombination>& pc) const override;
 
+    using MassShapeWithNominalMass::calculate;
+    
     /// Calculate dynamic amplitude T for particular particle combination and store in each DataPoint in DataPartition
     /// \param D DataPartition to calculate on
     /// \param pc ParticleCombination to calculate for
     /// \param si SymmetrizationIndec to calculate for
     virtual void calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const override;
 
+protected:
+
+    /// access cached dynamic amplitude
+    const std::shared_ptr<ComplexCachedValue> T() const
+    { return T_; }
+
 private:
 
-    struct cachedIntegral {
-        ModelIntegral MI_;
-        double Phsp_;
-    };
+    /// cached dynamic amplitude
+    std::shared_ptr<ComplexCachedValue> T_;
 
-    virtual void lock() override;
+    /// Width [GeV]
+    std::shared_ptr<PositiveRealParameter> Width_;
 
-    virtual void fillCache();
-
-    double massDependentWidth(DataPartition& D, double m2) const;
-
-    /// K*K coupling
-    std::shared_ptr<PositiveRealParameter> KsKCoupling_;
-
-    // the a_1 model
-    std::unique_ptr<Model> Model_;
-
-    /// mass dependend width (vs m2)
-    mutable std::map<double, cachedIntegral> Cache_;
-
-    std::shared_ptr<FreeAmplitude> amp_a1_rho_S_;
-    std::shared_ptr<FreeAmplitude> amp_a1_rho_D_;
-    std::shared_ptr<FreeAmplitude> amp_a1_pipiS_;
-
-    std::shared_ptr<FreeAmplitude> amp_model_a1_rho_S_;
-    std::shared_ptr<FreeAmplitude> amp_model_a1_rho_D_;
-    std::shared_ptr<FreeAmplitude> amp_model_a1_pipiS_;
 };
 
 }
