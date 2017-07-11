@@ -41,7 +41,7 @@ int main()
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
-    //m.setModelSelection(0.01); // LASSO/BCM parameter
+    m.setModelSelection(0.01); // LASSO/BCM parameter
 
     bool mcmc = false;
     unsigned nPreRun = 300000;
@@ -185,7 +185,7 @@ int main()
 
 
         //m.FindMode(m.getInitialPositions());
-        m.FindMode(m.getInitialPositions(true)); // start free amplitudes with 0 pahse around 0
+        m.FindMode(m.getInitialPositions(true)); // start free amplitudes with 0 phase around 0
 
         //m.FindMode({-0.337911, 0.00971011, -5.54332, -1.80202, 1.3463, 1.94397, 0.141558, -1.9647, 0.0105804, 0.0300454, -1.54021, 1.68121, -0.0831059, 1.03618, 0.0412823, -0.0582885, 0.105733, 0.0531188, 0.33805, 178.354, 5.82887, -161.992, 2.36464, 55.2953, 1.96979, -85.8789, 0.0318539, 70.6004, 2.28007, 132.494, 1.03951, 94.5855, 0.0714267, -54.6923});
 

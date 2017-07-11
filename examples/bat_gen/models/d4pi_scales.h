@@ -56,6 +56,8 @@ const bool a1_minus    = true;
 
 const bool free_parameters = false; // widths, coupling constants, ...
 
+const int max_L        = 2; // D
+
 const bool bg_only     = false; // fix D admixture to 0
 
 
@@ -123,7 +125,7 @@ const double scale_omega = 0.1;
 
 const std::complex<double> amp_a_rho_pi_D       = std::polar(1.98035, yap::rad(-90.4228));
 const std::complex<double> amp_a_pipiS_pi       = std::polar(0.0334687, yap::rad(0.));
-const std::complex<double> amp_a_minus          = std::polar(scale/sqrt(0.0932236), yap::rad(0.));
+const std::complex<double> amp_a_minus          = std::polar(0.115935, yap::rad(169.948));
 
 const std::complex<double> amp_pipiS_pipiS      = std::polar(0.025386, yap::rad(139.838));
 const std::complex<double> amp_pipiS_f_0        = std::polar(scale/sqrt(5.13339), yap::rad(0.));
