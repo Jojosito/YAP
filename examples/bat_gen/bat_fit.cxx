@@ -97,17 +97,15 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     }
     
     // loop over admixtures
-    double adm_initial = 30.;
     for (auto& comp : model()->components()) {
-        // ignore fixed free amplitudes
+        // ignore fixed components
         if (comp.admixture()->variableStatus() == yap::VariableStatus::fixed)
             continue;
         auto adm_name = std::to_string(iVar++) + " "
                 + "admixture_" + comp.particle()->name()
                 + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, adm_initial);
-        adm_initial /= 10.; // assume bg are added in decreasing importance
+        AddParameter(adm_name, 0, comp.admixture()->value() * 2.);
 
         Admixtures_.push_back(comp.admixture());
     }
@@ -168,13 +166,22 @@ std::vector<double> bat_fit::getInitialPositions(bool centerZeroImag) const
 //-------------------------
 std::vector<double> bat_fit::getRandomInitialPositions() const
 {
-    std::vector<double> initialPositions;
+    /*std::vector<double> initialPositions;
 
     for (auto& fa : FreeAmplitudes_) {
-        double range = std::max(1., 2. * abs(fa->value()));
+        while (true) {
+            double range = std::max(1., 1.4 * abs(fa->value()));
+            double real = gRandom->Uniform(-range, range);
+            double imag = gRandom->Uniform(-range, range);
 
-        initialPositions.push_back(gRandom->Uniform(-range, range));
-        initialPositions.push_back(gRandom->Uniform(-range, range));
+            if (real*real + imag*imag > range*range)
+                continue;
+
+            initialPositions.push_back(gRandom->Uniform(-range, range));
+            initialPositions.push_back(gRandom->Uniform(-range, range));
+            break;
+        }
+
     }
 
     for (auto& a : Admixtures_) {
@@ -185,7 +192,12 @@ std::vector<double> bat_fit::getRandomInitialPositions() const
         initialPositions.push_back(2. * gRandom->Uniform(dynamic_cast<yap::Parameter<double>*>(p.get())->value()));
     }
 
-    return initialPositions;
+    if (!GetParameters().IsWithinLimits(initialPositions))
+        return getRandomInitialPositions(); // try again
+
+    return initialPositions;*/
+
+    return GetParameters().GetUniformRandomValues(gRandom);
 }
 
 //-------------------------
@@ -444,77 +456,91 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
             static std::vector<yap::DecayTreeVector> a1_rho_pi_S_groupedDecayTrees;
             static std::vector<yap::DecayTreeVector> a1_sigma_pi_groupedDecayTrees;
             static std::vector<yap::DecayTreeVector> rho_rho_groupedDecayTrees;
+            static bool initialized(false);
 
-            if (a1_rho_pi_S_groupedDecayTrees.empty()) {
+            if (not initialized) {
                 // a_1
-                auto a_1_plus = std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("a_1+")));
-                auto rho = std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("rho0")));
-                auto pipiS = std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("pipiS")));
+                auto a_1_plus = particles(*model(), yap::is_named("a_1+")).empty() ? nullptr : std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("a_1+")));
+                auto rho = particles(*model(), yap::is_named("rho0")).empty() ? nullptr : std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("rho0")));
+                auto pipiS = particles(*model(), yap::is_named("pipiS")).empty() ? nullptr : std::static_pointer_cast<yap::DecayingParticle>(particle(*model(), yap::is_named("pipiS")));
 
-                auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
-                blub.erase(std::remove_if(blub.begin(), blub.end(),
-                        [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(rho), yap::l_equals(0))).empty();}),
-                        blub.end());
+                if (a_1_plus) {
 
-                LOG(INFO) << "a1_rho_pi_S_groupedDecayTrees";
-                a1_rho_pi_S_groupedDecayTrees.push_back(blub);
-                for (const auto& fa : a1_rho_pi_S_groupedDecayTrees[0])
-                    LOG(INFO) << yap::to_string(*fa);
+                    auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
+                    blub.erase(std::remove_if(blub.begin(), blub.end(),
+                            [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(rho), yap::l_equals(0))).empty();}),
+                            blub.end());
 
-                for(auto& dt : a1_rho_pi_S_groupedDecayTrees.back())  {
-                    auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                    if(iter != decayTrees.end())
-                        decayTrees.erase(iter);
-                }
+                    LOG(INFO) << "a1_rho_pi_S_groupedDecayTrees";
+                    a1_rho_pi_S_groupedDecayTrees.push_back(blub);
+                    for (const auto& fa : a1_rho_pi_S_groupedDecayTrees[0])
+                        LOG(INFO) << yap::to_string(*fa);
 
-                blub = yap::filter(decayTrees, yap::to(a_1_plus));
-                blub.erase(std::remove_if(blub.begin(), blub.end(),
-                        [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
-                        blub.end());
+                    for(auto& dt : a1_rho_pi_S_groupedDecayTrees.back())  {
+                        auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                        if(iter != decayTrees.end())
+                            decayTrees.erase(iter);
+                    }
 
-                LOG(INFO) << "a1_sigma_pi_groupedDecayTrees";
-                a1_sigma_pi_groupedDecayTrees.push_back(blub);
-                for (const auto& fa : a1_sigma_pi_groupedDecayTrees[0])
-                    LOG(INFO) << yap::to_string(*fa);
+                    blub = yap::filter(decayTrees, yap::to(a_1_plus));
+                    blub.erase(std::remove_if(blub.begin(), blub.end(),
+                            [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
+                            blub.end());
 
-                for(auto& dt : a1_sigma_pi_groupedDecayTrees.back())  {
-                    auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                    if(iter != decayTrees.end())
-                        decayTrees.erase(iter);
+                    LOG(INFO) << "a1_sigma_pi_groupedDecayTrees";
+                    a1_sigma_pi_groupedDecayTrees.push_back(blub);
+                    for (const auto& fa : a1_sigma_pi_groupedDecayTrees[0])
+                        LOG(INFO) << yap::to_string(*fa);
+
+                    for(auto& dt : a1_sigma_pi_groupedDecayTrees.back())  {
+                        auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                        if(iter != decayTrees.end())
+                            decayTrees.erase(iter);
+                    }
                 }
 
                 // rho rho
-                blub = yap::filter(decayTrees, yap::to(rho));
+                if (rho) {
+                    auto blub = yap::filter(decayTrees, yap::to(rho, rho));
 
-                LOG(INFO) << "rho_rho_groupedDecayTrees";
-                rho_rho_groupedDecayTrees.push_back(blub);
-                for (const auto& fa : rho_rho_groupedDecayTrees[0])
-                    LOG(INFO) << yap::to_string(*fa);
+                    LOG(INFO) << "rho_rho_groupedDecayTrees";
+                    rho_rho_groupedDecayTrees.push_back(blub);
+                    for (const auto& fa : rho_rho_groupedDecayTrees[0])
+                        LOG(INFO) << yap::to_string(*fa);
 
-                for(auto& dt : rho_rho_groupedDecayTrees.back())  {
-                    auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                    if(iter != decayTrees.end())
-                        decayTrees.erase(iter);
+                    for(auto& dt : rho_rho_groupedDecayTrees.back())  {
+                        auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
+                        if(iter != decayTrees.end())
+                            decayTrees.erase(iter);
+                    }
                 }
 
                 LOG(INFO) << "------------------------------";
                 groupedDecayTrees = group_by_free_amplitudes(decayTrees);
+
+                initialized = true;
             }
 
-            double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_rho_pi_S_groupedDecayTrees).at(0).value();
-            double prior = a1_rho_pi_S_prior.GetLogPrior(ff);
-            LOG(INFO) << "a_1 -> (rho pi)_S fit fraction = " << ff << "%; " << prior;
-            logP +=  prior;
+            if (not a1_rho_pi_S_groupedDecayTrees.empty()) {
+                double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_rho_pi_S_groupedDecayTrees).at(0).value();
+                double prior = a1_rho_pi_S_prior.GetLogPrior(ff);
+                LOG(INFO) << "a_1 -> (rho pi)_S fit fraction = " << ff << "%; " << prior;
+                logP +=  prior;
+            }
 
-            ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_sigma_pi_groupedDecayTrees).at(0).value();
-            prior = a1_sigma_pi_prior.GetLogPrior(ff);
-            LOG(INFO) << "a_1 -> (pipiS pi) fit fraction = " << ff << "%; " << prior;
-            logP += prior;
+            if (not a1_sigma_pi_groupedDecayTrees.empty()) {
+                double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_sigma_pi_groupedDecayTrees).at(0).value();
+                double prior = a1_sigma_pi_prior.GetLogPrior(ff);
+                LOG(INFO) << "a_1 -> (pipiS pi) fit fraction = " << ff << "%; " << prior;
+                logP += prior;
+            }
 
-            ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, a1_rho_pi_S_groupedDecayTrees).at(0).value();
-            prior = rho_rho_prior.GetLogPrior(ff);
-            LOG(INFO) << "D -> rho rho fit fraction = " << ff << "%; " << prior;
-            logP += prior;
+            if (not rho_rho_groupedDecayTrees.empty()) {
+                double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, rho_rho_groupedDecayTrees).at(0).value();
+                double prior = rho_rho_prior.GetLogPrior(ff);
+                LOG(INFO) << "D -> rho rho fit fraction = " << ff << "%; " << prior;
+                logP += prior;
+            }
         }
 
         auto logP_old = logP;
@@ -600,6 +626,15 @@ void bat_fit::setPriors(std::shared_ptr<yap::FreeAmplitude> fa, BCPrior* amp_pri
 
     AbsPriors_[i / 2].reset(amp_prior);
     ArgPriors_[i / 2].reset(arg_prior);
+}
+
+//-------------------------
+void bat_fit::setRealImagRanges()
+{
+    for (auto& fa : FreeAmplitudes_) {
+        double range = abs(fa->value());
+        setRealImagRanges(fa, -range, range, -range, range);
+    }
 }
 
 //-------------------------

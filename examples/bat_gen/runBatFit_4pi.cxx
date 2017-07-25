@@ -36,21 +36,23 @@ int main()
 
     std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.16; // 0.15 // negative for BG fit
+    const double BDT_cut = 0.15; // 0.15 // negative for BG fit
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
-    m.setModelSelection(0.01); // LASSO/BCM parameter
+    m.setModelSelection(0.1); // LASSO/BCM parameter
 
-    bool mcmc = false;
-    unsigned nPreRun = 300000;
-    unsigned nRun    = 100000;
+    bool adjustRangesFF = true; // adjust the real and imag ranges so that all waves have similar ff
+
+    bool mcmc = true;
+    unsigned nPreRun = 50000;
+    unsigned nRun    = 20000;
 
     const unsigned nData = 10000; // max number of Data points we want
-    const bool chargeBlind = true;
+    const bool chargeBlind = false;
     const unsigned nThreads = 4;
-    const double maxHours = 0;
+    const double maxHours = 0.1;
 
 
     std::string dir("/home/ne53mad/CopiedFromKEK/");
@@ -80,7 +82,7 @@ int main()
     // real data, pre-filtered
     {
         TChain t("t");
-        if (chargeBlind) {
+        if (chargeBlind and BDT_cut >= 0) {
             t.Add((dir + "DataSkim_analysis_chargeBlind_bdt_gt_0.025.root").c_str());
             t.AddFriend("t", (dir + "DataSkim_analysis_chargeBlind_bdt_gt_0.025_TMVA_weights.root").c_str());
         }
@@ -125,7 +127,7 @@ int main()
 
     // MC generated data
     /*dir = "/home/ne53mad/YAPfork/buildRelease/output/";
-    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl")["D0"].mass();
     {
         //TChain t("D4pi_rho_pi_S_flatBG_mcmc");
         //t.Add((dir + "D4pi_rho_pi_S_flatBG_mcmc.root").c_str());
@@ -147,6 +149,15 @@ int main()
 
     // partition integral data
     m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), nThreads);
+
+    // force calculate all integrals
+    yap::ImportanceSampler::calculate(m.modelIntegral(), m.integralPartitions(), true);
+
+    if (adjustRangesFF) {
+        for (unsigned i = 0; i < 10; ++i)
+            d4pi_normalizeFitFractions(m);
+        m.setRealImagRanges();
+    }
 
 
     // open log file
@@ -185,13 +196,29 @@ int main()
 
 
         //m.FindMode(m.getInitialPositions());
-        m.FindMode(m.getInitialPositions(true)); // start free amplitudes with 0 phase around 0
+        //m.FindMode(m.getInitialPositions(true)); // start free amplitudes with 0 phase around 0
 
-        //m.FindMode({-0.337911, 0.00971011, -5.54332, -1.80202, 1.3463, 1.94397, 0.141558, -1.9647, 0.0105804, 0.0300454, -1.54021, 1.68121, -0.0831059, 1.03618, 0.0412823, -0.0582885, 0.105733, 0.0531188, 0.33805, 178.354, 5.82887, -161.992, 2.36464, 55.2953, 1.96979, -85.8789, 0.0318539, 70.6004, 2.28007, 132.494, 1.03951, 94.5855, 0.0714267, -54.6923});
+        //m.FindMode({-9.58814, -6.50694, -8.64714, -6.52594, -1.53999, 0.0525196, 0.703545, -1.35909, 2.1226, -0.314182, -96.9996, -89.4811, 0.0839771, -0.268775, 3.60997, -0.678504, -47.912, -39.3641, -0.202606, -0.26742, -1.12792, -2.09835, -9.52495, -8.51107, 17.4215, 15.7363, -0.00556024, -0.0047041, -0.80164, 0.478782, -1.25677, 1.52691, 0.0772175, -0.0794042, 0.269826, -0.258303, 0.00347969, 0.00144554, -2.80713, 0.457574, -0.699671, 0.708493, 0.0207715, -0.0121311, 0.0444898, 0.0996983, -0.0235575, -0.0221101, 3.94205, -8.6873, 0.0593776, 0.0236461, -0.0116456, -0.00305649, 0.155337, 0.477325, 0.279316});
+        m.FindMode({0.0557778, 0.0633547, -4.38364, -10.452, -2.1563, -5.85761, 0.419586, -0.294097, -0.994249, -0.95886, -1.79373, 9.71762, -0.00434213, -0.000476509, -9.32922, -1.60055, -0.0526993, -0.415825, 0.307403, -0.345281, 0.0842681, 1.53982, -0.0800081, 0.045667, 0.00114439, -0.003268, -0.00758869, -0.0102014, 0.0223363, 0.0335351, -0.602239, -0.281768, 0.00931527, 0.0426345, 0.0100023, 0.000121869, 0.00217086, 1.18898, 0.490842, 0.0427989, 1.09312, 0.337672, 0.252606, -0.25507, 0.0844096, 48.6391, 11.334, -112.754, 6.24189, -110.21, 0.512392, -35.0274, 1.38128, -136.038, 9.88178, 100.458, 0.00436819, -173.737, 9.46552, -170.265, 0.419151, -97.2228, 0.462293, -48.3214, 1.54212, 86.8676, 0.0921237, 150.283, 0.00346258, -70.7008, 0.0127144, -126.645, 0.0402929, 56.3342, 0.664894, -154.927, 0.0436403, 77.6751});
 
         // keep on searching for longer
-        //while (std::chrono::duration_cast<std::chrono::hours>(start-std::chrono::steady_clock::now()).count() < maxHours)
-            //m.FindMode(m.getRandomInitialPositions());
+        unsigned iteration(0);
+        auto elapsed = std::chrono::duration_cast<std::chrono::hours>(std::chrono::steady_clock::now() - start).count();
+        LOG(INFO) << "time elapsed: " << elapsed << " hours";
+        while (elapsed < maxHours) {
+
+            LOG(INFO) << "random initial parameters of size " << m.getRandomInitialPositions().size();
+
+            auto mode = m.FindMode(m.getRandomInitialPositions());
+
+            auto bestFitPars = m.GetBestFitParameters();
+
+            elapsed = std::chrono::duration_cast<std::chrono::hours>(std::chrono::steady_clock::now() - start).count();
+
+            LOG(INFO) << "Best fit parameters after iteration " << iteration++ << "; time elasped: " << elapsed << "h :";
+            for (auto par : mode)
+                LOG(INFO) << "\t" << par;
+        }
     }
 
 
@@ -271,7 +298,7 @@ int main()
                 << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
                 << "  \t std::polar(" <<abs(fa->value()) << ", yap::rad(" << deg(arg(fa->value())) << "));";
 
-        const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+        const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl")["D0"].mass();
         bat_gen m_gen("D4pi_fitted_params", std::move(model), D0_mass);
 
         // open log file
@@ -285,7 +312,7 @@ int main()
         m_gen.SetMaximumEfficiency(0.9);
         m_gen.SetInitialPositionAttemptLimit(1e5);
 
-        m_gen.SetNIterationsRun(static_cast<int>(1e7 / m_gen.GetNChains()));
+        m_gen.SetNIterationsRun(static_cast<int>(5e6 / m_gen.GetNChains()));
 
         m_gen.WriteMarkovChain("output/" + m_gen.GetSafeName() + "_mcmc.root", "RECREATE", true, false);
 

@@ -30,7 +30,7 @@ int main()
 {
     plainLogs(el::Level::Info);
 
-    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["D0"].mass();
+    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl")["D0"].mass();
 
 
     vector<bat_gen*> test_models = {

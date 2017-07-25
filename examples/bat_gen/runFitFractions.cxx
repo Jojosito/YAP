@@ -36,7 +36,12 @@ int main()
     auto m2r = yap::squared(mass_range(D_mass, m.axes(), m.model()->finalStateParticles()));
 
     // generate integration data
-    generate_fit_fraction_data(m, 100000, 4);
+    generate_fit_fraction_data(m, 10000, 4);
+
+    d4pi_printFitFractions(m);
+
+    for (unsigned i = 0; i < 10; ++i)
+        d4pi_normalizeFitFractions(m);
 
     d4pi_printFitFractions(m);
 

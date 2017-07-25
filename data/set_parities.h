@@ -21,8 +21,20 @@
 #ifndef yap_set_parities_h
 #define yap_set_parities_h
 
+#include <Exceptions.h>
+#include <logging.h>
 #include <ParticleTable.h>
 #include <QuantumNumbers.h>
+
+inline void set_parity(yap::ParticleTable& pdl, const std::string& name, int parity)
+{
+    try {
+        pdl[name].quantumNumbers().setP(parity);
+    }
+    catch (yap::exceptions::Exception& e) {
+        LOG(INFO) << e.what();
+    }
+}
 
 /// \function set_parities
 /// set parities for selected mesons.
@@ -30,88 +42,104 @@
 inline void set_parities(yap::ParticleTable& pdl) {
 
     // light unflavored mesons
-    pdl["pi+"].quantumNumbers().setP(-1);
-    pdl["pi-"].quantumNumbers().setP(-1);
-    pdl["pi0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "pi+", -1);
+    set_parity(pdl, "pi-", -1);
+    set_parity(pdl, "pi0", -1);
 
-    pdl["eta"].quantumNumbers().setP(-1);
+    set_parity(pdl, "pi(1300)+", -1);
+    set_parity(pdl, "pi(1300)-", -1);
+    set_parity(pdl, "pi(1300)0", -1);
 
-    pdl["f_0(500)"].quantumNumbers().setP(+1);
+    set_parity(pdl, "pi(1800)+", -1);
+    set_parity(pdl, "pi(1800)-", -1);
+    set_parity(pdl, "pi(1800)0", -1);
 
-    pdl["rho+"].quantumNumbers().setP(-1);
-    pdl["rho-"].quantumNumbers().setP(-1);
-    pdl["rho0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "eta", -1);
 
-    pdl["omega"].quantumNumbers().setP(-1);
+    set_parity(pdl, "f_0(500)", +1);
 
-    pdl["eta'"].quantumNumbers().setP(-1);
+    set_parity(pdl, "rho+", -1);
+    set_parity(pdl, "rho-", -1);
+    set_parity(pdl, "rho0", -1);
 
-    pdl["f_0"].quantumNumbers().setP(+1);
+    set_parity(pdl, "omega", -1);
 
-    pdl["a_0+"].quantumNumbers().setP(+1);
-    pdl["a_0-"].quantumNumbers().setP(+1);
-    pdl["a_00"].quantumNumbers().setP(+1);
+    set_parity(pdl, "eta'", -1);
 
-    pdl["phi"].quantumNumbers().setP(-1);
+    set_parity(pdl, "f_0", +1);
 
-    pdl["h_1"].quantumNumbers().setP(+1);
+    set_parity(pdl, "a_0+", +1);
+    set_parity(pdl, "a_0-", +1);
+    set_parity(pdl, "a_00", +1);
 
-    pdl["b_1+"].quantumNumbers().setP(+1);
-    pdl["b_1-"].quantumNumbers().setP(+1);
-    pdl["b_10"].quantumNumbers().setP(+1);
+    set_parity(pdl, "phi", -1);
 
-    pdl["a_1+"].quantumNumbers().setP(+1);
-    pdl["a_1-"].quantumNumbers().setP(+1);
-    pdl["a_10"].quantumNumbers().setP(+1);
+    set_parity(pdl, "h_1", +1);
 
-    pdl["f_2"].quantumNumbers().setP(+1);
+    set_parity(pdl, "b_1+", +1);
+    set_parity(pdl, "b_1-", +1);
+    set_parity(pdl, "b_10", +1);
 
-    pdl["f_1"].quantumNumbers().setP(+1);
+    set_parity(pdl, "a_1+", +1);
+    set_parity(pdl, "a_1-", +1);
+    set_parity(pdl, "a_10", +1);
 
-    pdl["eta(2S)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "a_1(1420)+", +1);
+    set_parity(pdl, "a_1(1420)-", +1);
+    set_parity(pdl, "a_1(1420)0", +1);
 
-    pdl["pi(2S)+"].quantumNumbers().setP(-1);
-    pdl["pi(2S)-"].quantumNumbers().setP(-1);
-    pdl["pi(2S)0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "a_1(1640)+", +1);
+    set_parity(pdl, "a_1(1640)-", +1);
+    set_parity(pdl, "a_1(1640)0", +1);
 
-    pdl["a_2+"].quantumNumbers().setP(+1);
-    pdl["a_2-"].quantumNumbers().setP(+1);
-    pdl["a_20"].quantumNumbers().setP(+1);
+    set_parity(pdl, "f_2", +1);
 
-    pdl["eta(1405)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "f_1", +1);
 
-    pdl["omega(2S)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "eta(2S)", -1);
 
-    pdl["rho(2S)+"].quantumNumbers().setP(-1);
-    pdl["rho(2S)-"].quantumNumbers().setP(-1);
-    pdl["rho(2S)0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "pi(2S)+", -1);
+    set_parity(pdl, "pi(2S)-", -1);
+    set_parity(pdl, "pi(2S)0", -1);
 
-    pdl["eta(1475)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "a_2+", +1);
+    set_parity(pdl, "a_2-", +1);
+    set_parity(pdl, "a_20", +1);
 
-    pdl["f_0(1500)"].quantumNumbers().setP(+1);
+    set_parity(pdl, "eta(1405)", -1);
 
-    pdl["omega(1650)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "omega(2S)", -1);
 
-    pdl["omega(3)(1670)"].quantumNumbers().setP(-1);
+    set_parity(pdl, "rho(2S)+", -1);
+    set_parity(pdl, "rho(2S)-", -1);
+    set_parity(pdl, "rho(2S)0", -1);
+
+    set_parity(pdl, "eta(1475)", -1);
+
+    set_parity(pdl, "f_0(1500)", +1);
+
+    set_parity(pdl, "omega(1650)", -1);
+
+    set_parity(pdl, "omega(3)(1670)", -1);
 
 
     // strange mesons
-    pdl["K+"].quantumNumbers().setP(-1);
-    pdl["K-"].quantumNumbers().setP(-1);
+    set_parity(pdl, "K+", -1);
+    set_parity(pdl, "K-", -1);
 
-    pdl["K0"].quantumNumbers().setP(-1);
-    pdl["anti-K0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "K0", -1);
+    set_parity(pdl, "anti-K0", -1);
 
-    pdl["K_S0"].quantumNumbers().setP(-1);
-    pdl["K_L0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "K_S0", -1);
+    set_parity(pdl, "K_L0", -1);
 
 
     // charmed mesons
-    pdl["D+"].quantumNumbers().setP(-1);
-    pdl["D-"].quantumNumbers().setP(-1);
+    set_parity(pdl, "D+", -1);
+    set_parity(pdl, "D-", -1);
 
-    pdl["D0"].quantumNumbers().setP(-1);
-    pdl["anti-D0"].quantumNumbers().setP(-1);
+    set_parity(pdl, "D0", -1);
+    set_parity(pdl, "anti-D0", -1);
 
 }
 

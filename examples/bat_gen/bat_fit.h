@@ -44,6 +44,8 @@ public:
     /// set the range for a FreeAmplitude's real and imaginary parts
     void setRealImagRanges(std::shared_ptr<yap::FreeAmplitude> fa, double real_low, double real_high, double imag_low, double imag_high);
     
+    void setRealImagRanges();
+
     /// set the range for a FreeAmplitude's abs and arg obvservables
     void setAbsArgRanges(std::shared_ptr<yap::FreeAmplitude> fa, double abs_low, double abs_high, double arg_low, double arg_high);
 

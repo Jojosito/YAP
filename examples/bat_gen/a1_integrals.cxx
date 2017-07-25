@@ -4,7 +4,7 @@
 // bat-project is part of Bayesian Analysis Toolkit (BAT).
 // BAT can be downloaded from http://mpp.mpg.de/bat
 // ***************************************************************
-/*#include "models/a1.h"
+#include "models/a1.h"
 #include "tools.h"
 
 #include <DalitzPhspIntegral.h>
@@ -23,11 +23,11 @@
 #include <algorithm>
 #include <chrono>
 #include <random>
-*/
+
 int main()
 {
-/*
-    yap::plainLogs(el::Level::Info);
+
+    /*yap::plainLogs(el::Level::Info);
 
     const unsigned n_integrationPoints = 1e5;
 
@@ -52,6 +52,8 @@ int main()
     TGraph g_a1_re;
     TGraph g_a1_im;
     TGraph g_a1_norm;
+    TGraph g_a1_arg;
+    TGraph g_a1_argand;
     TGraph g_KK;
 
     const unsigned n_threads = 4;
@@ -110,6 +112,7 @@ int main()
             g_a1_re.SetPoint(g_a1_re.GetN(), m2, real(a));
             g_a1_im.SetPoint(g_a1_re.GetN(), m2, imag(a));
             g_a1_norm.SetPoint(g_a1_norm.GetN(), m2, norm(a));
+            g_a1_norm.SetPoint(g_a1_arg.GetN(), m2, arg(a));
         }
 
         LOG(INFO) << "Integral(" << mass << " GeV) = " << value;
@@ -131,6 +134,5 @@ int main()
     file.Close();
 
 
-    return 0;
-    */
+    return 0;*/
 }

@@ -50,7 +50,7 @@ PiPiSWaveAuMorganPennington::PiPiSWaveAuMorganPennington() :
     sP_[0][0] = -0.0074;  // AMP Table 1, M solution: s_0
     sP_[0][1] =  0.9828;  // AMP Table 1, M solution: s_1
 
-    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl");
 
     piChargedMass_   = T["pi+"].mass();
     piNeutralMass_   = T["pi0"].mass();

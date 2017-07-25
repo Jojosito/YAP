@@ -21,7 +21,7 @@ PoleMass::PoleMass(std::complex<double> mass) :
 
 //-------------------------
 PoleMass::PoleMass(const ParticleTableEntry& pde) :
-    PoleMass(std::complex<double>(pde.mass(), get_nth_element(pde, 0, "PoleMass::PoleMass") / 2))
+    PoleMass(std::complex<double>(pde.mass(), -get_nth_element(pde, 0, "PoleMass::PoleMass") / 2))
 {
 }
 

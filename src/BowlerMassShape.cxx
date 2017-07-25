@@ -103,7 +103,7 @@ void BowlerMassShape::lock()
     // make the model
 
     // \todo: not hardcode
-    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl");
     try {
         deduce_meson_parities(T);
     }
@@ -135,6 +135,8 @@ void BowlerMassShape::lock()
 
     a_1->addStrongDecay(rho,   piPlus);
     a_1->addStrongDecay(pipiS, piPlus);
+
+    assert(free_amplitudes(*a_1, to(rho), l_equals(1)).empty());
 
     M->lock();
 
@@ -175,6 +177,10 @@ void BowlerMassShape::lock()
     Model_.swap(M);
     assert(Model_->finalStateParticles().size() == 3);
 
+    LOG(INFO) << "a_1 Bowler decay trees:";
+    LOG(INFO) << to_string(a_1->decayTrees());
+
+
     fillCache();
 }
 
@@ -182,11 +188,11 @@ void BowlerMassShape::lock()
 void BowlerMassShape::fillCache()
 {
     LOG(INFO) << "Fill Bowler cache ...";
-    static const unsigned n_integrationPoints = 1e5;
+    static const unsigned n_integrationPoints = 5e5; // 5e5
     static const unsigned n_threads = 4;//std::max(1u, std::thread::hardware_concurrency());
     static const unsigned nBins = 150;
     // get FSP mass ranges
-    static auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+    static auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl");
     static const double m_pi = T["pi+"].mass();
     static const double low_m = 3.*m_pi;
     static const double hi_m = 1.01 * (T["D0"].mass() - m_pi);

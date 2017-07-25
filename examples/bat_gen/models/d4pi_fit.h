@@ -16,7 +16,7 @@
 #include <DTo4piStructs.h>
 
 //#include <BAT/BCAux.h>
-//#include <BAT/BCGaussianPrior.h>
+#include <BAT/BCGaussianPrior.h>
 #include <BAT/BCConstantPrior.h>
 //#include <BAT/BCLog.h>
 //#include <BAT/BCParameterSet.h>
@@ -79,7 +79,7 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
     std::vector<double> masses;
 
     // get K0 mass
-    const double K0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl")["K0"].mass();
+    const double K0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl")["K0"].mass();
     LOG(INFO) << "K0 mass = " << K0_mass;
 
     for (long i=0; i<eventList->GetN(); ++i) {
@@ -146,8 +146,8 @@ inline void generate_fit_fraction_data(bat_fit& m, unsigned nPoints, unsigned nP
 {
     auto T = yap::read_pdl_file((::getenv("YAPDIR") ? (std::string)::getenv("YAPDIR") + "/data" : ".") + "/evt.pdl");
 
-    assert(m.model()->initialStates()[0]->name() == "D0");
-    auto isp_mass = T[m.model()->initialStates()[0]->name()].mass();
+    //assert(m.model()->initialStates()[0]->name() == "D0");
+    auto isp_mass = T["D0"].mass();
 
     auto A = m.model()->massAxes();
     auto m2r = yap::squared(yap::mass_range(isp_mass, A, m.model()->finalStateParticles()));
@@ -202,7 +202,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
     //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
     //m.GetParameters().Back().SetPriorConstant();
 
-    if (free_parameters) {
+    if (d4pi_free_parameters) {
         /*if (a_sigma_pi or sigma_f_0_1370) {
             auto sigma  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
             auto width = std::dynamic_pointer_cast<BreitWigner>(sigma->massShape())->width();
@@ -210,40 +210,69 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
             m.GetParameters().Back().SetPriorConstant();
         }*/
 
-        if (f_0_1370_pipiS) {
+        if (d4pi_f_0_1370_pipiS) {
             auto f_0_1370  = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)")));
             auto width = std::dynamic_pointer_cast<BreitWigner>(f_0_1370->massShape())->width();
             m.addParameter("width(f_0(1370))", width, 0.5*width->value(), 1.5*width->value());
-            m.GetParameters().Back().SetPriorConstant();
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.35, 0.15));
         }
 
-        if (a1_bowler) {
+        if (d4pi_a1_bowler) {
             auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
+            auto shape = std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape());
 
-            double mass = std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->mass()->value();
-            m.addParameter("mass(a_1)", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->mass(), 0.9*mass, 1.1*mass);
-            m.GetParameters().Back().SetPriorConstant();
+            double mass = shape->mass()->value();
+            m.addParameter("mass(a_1)", shape->mass(), 0.9*mass, 1.1*mass);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(1.23, 0.04));
 
-            double width = std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width()->value();
-            m.addParameter("width(a_1)", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->width(), 0.7*width, 1.3*width);
-            m.GetParameters().Back().SetPriorConstant();
+            double width = shape->width()->value();
+            m.addParameter("width(a_1)", shape->width(), 0.7*width, 1.3*width);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.425, 0.175));
 
-            double coupling = std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->coupling()->value();
-            m.addParameter("K*K_coupling", std::dynamic_pointer_cast<BowlerMassShape>(a_1->massShape())->coupling(), 0.5*coupling, 2.*coupling);
-            m.GetParameters().Back().SetPriorConstant();
-        }
-
-        if (pi1300) {
-            auto pi1300   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi+(1300)")));
-
-            double mass = std::dynamic_pointer_cast<BreitWigner>(pi1300->massShape())->mass()->value();
-            m.addParameter("mass(pi+(1300))", std::dynamic_pointer_cast<BreitWigner>(pi1300->massShape())->mass(), 0.9*mass, 1.1*mass);
-            m.GetParameters().Back().SetPriorConstant();
-
-            double width = std::dynamic_pointer_cast<BreitWigner>(pi1300->massShape())->width()->value();
-            m.addParameter("width(pi+(1300))", std::dynamic_pointer_cast<BreitWigner>(pi1300->massShape())->width(), 0.7*width, 1.3*width);
+            double coupling = shape->coupling()->value();
+            m.addParameter("K*K_coupling", shape->coupling(), 0.5*coupling, 2.*coupling);
             m.GetParameters().Back().SetPriorConstant();
         }
+
+        if (d4pi_pi1300) {
+            auto pi1300 = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi(1300)+")));
+            auto shape  = std::dynamic_pointer_cast<ConstantWidthBreitWigner>(pi1300->massShape());
+
+            m.addParameter("mass(pi(1300)+)", shape->mass(), 1.1, 1.5);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(1.3, 0.1));
+
+            m.addParameter("width(pi(1300)+)", shape->width(), 0.2, 0.6);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.4, 0.2));
+        }
+
+        // f_0(980)
+        if (not particles(*m.model(), yap::is_named("f_0")).empty()) {
+            auto f_0 = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0")));
+            auto f_0_980_flatte = std::dynamic_pointer_cast<Flatte>(f_0->massShape());
+
+            m.addParameter("mass(f_0)", f_0_980_flatte->mass(), 0.97, 1.01);
+            for (auto ch : f_0_980_flatte->channels()) {
+                double coupling = ch.Coupling->value();
+                m.addParameter("f_0_coupling_" + ch.Particles[0]->name(), ch.Coupling, 0.5*coupling, 2*coupling);
+            }
+        }
+    }
+
+    if (d4pi_bg_K) {
+        auto K0   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("K0")));
+        auto shape = std::dynamic_pointer_cast<BreitWigner>(K0->massShape());
+
+        m.addParameter("width(K0)", shape->width(), 0, 0.2);
+        m.GetParameters().Back().SetPriorConstant();
+    }
+
+    if (d4pi_free_parameters and d4pi_bg_sigma) {
+        auto sigma   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
+        auto shape = std::dynamic_pointer_cast<PoleMass>(sigma->massShape());
+
+        // mass is complex
+        m.addParameter("mass(f_0(500))", shape->mass(), std::complex<double>(0.2, -0.7), std::complex<double>(0.3, -0.16));
+
     }
 
     return m;
@@ -289,6 +318,49 @@ void draw_overlap_integrals(const DecayTreeVectorIntegral& dtvi)
 }
 
 //-------------------------
+inline void d4pi_normalizeFitFractions(bat_fit& m)
+{
+    LOG(INFO) << "\nd4pi_normalizeFitFractions";
+    auto groupedDecayTrees = group_by_free_amplitudes(m.fitFractionIntegral().integrals().at(0).Integral.decayTrees());
+    auto ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
+    for (size_t i = 0; i < ff.size(); ++i) {
+
+        if (groupedDecayTrees[i].empty())
+            continue;
+        if (!groupedDecayTrees[i][0])
+            continue;
+
+        ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
+
+        double frac = ff[i].value();
+
+        std::shared_ptr<FreeAmplitude> fa;
+        for (auto ddtv : groupedDecayTrees[i][0]->daughterDecayTreeVector()) {
+            fa = ddtv->freeAmplitude();
+            if (fa->variableStatus() != yap::VariableStatus::fixed)
+                break;
+        }
+
+        if (not fa or fa->variableStatus() == yap::VariableStatus::fixed)
+            fa =  groupedDecayTrees[i][0]->freeAmplitude();
+
+        if (fa and fa->variableStatus() != yap::VariableStatus::fixed)
+            fa->setValue(fa->value() / sqrt(frac*100));
+
+
+        /*LOG(INFO) << "" ;
+        LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
+                  << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
+                  << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
+        for (const auto& dt : groupedDecayTrees[i])
+            LOG(INFO) << yap::to_string(*dt);*/
+
+        LOG(INFO) << to_string(*fa) << " = " << fa->value() << "; \t ff =" << frac*100. << " %";
+
+    }
+}
+
+//-------------------------
 inline void d4pi_printFitFractions(bat_fit& m)
 {
     // sum of integrals
@@ -299,9 +371,9 @@ inline void d4pi_printFitFractions(bat_fit& m)
     }
     LOG(INFO) << "\nsum of integrals = " << sumIntegrals;
 
+    double sum(0);
 
     LOG(INFO) << "\nFit fractions for single decay trees:";
-    double sum(0);
     for (const auto& mci : m.fitFractionIntegral().integrals()) {
         double sum_admixture(0);
         auto ff = fit_fractions(mci.Integral);
@@ -317,16 +389,13 @@ inline void d4pi_printFitFractions(bat_fit& m)
     LOG(INFO) << "Sum = " << sum*100 << " %";
     LOG(INFO) << "Deviation from 100% = " << (sum-1.)*100 << " %";
 
-    /*LOG(INFO) << "Overlap integrals:";
-    for (const auto& mci : m.fitFractionIntegral().integrals()) {
-        LOG(INFO) << to_string(mci.Integral);
-    }*/
-
     draw_overlap_integrals(m.fitFractionIntegral().integrals()[0].Integral);
 
 
 
     LOG(INFO) << "\nFit fractions grouped by free amplitudes:";
+    sum = 0;
+    std::multimap<double, unsigned> ff_map;
     auto groupedDecayTrees = group_by_free_amplitudes(m.fitFractionIntegral().integrals().at(0).Integral.decayTrees());
     auto ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
     for (size_t i = 0; i < ff.size(); ++i) {
@@ -340,22 +409,33 @@ inline void d4pi_printFitFractions(bat_fit& m)
         LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
                   << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
                   << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
-        for (const auto& fa : groupedDecayTrees[i])
-            LOG(INFO) << yap::to_string(*fa);
+        for (const auto& dt : groupedDecayTrees[i])
+            LOG(INFO) << yap::to_string(*dt);
 
-        LOG(INFO) << "\t" << ff[i].value()*100. << " %";
-        sum += ff[i].value();
+        double frac = ff[i].value();
+
+        LOG(INFO) << "\t" << frac*100. << " %";
+        sum += frac;
+
+        ff_map.insert( std::pair<double, unsigned>(-frac, i) );
     }
     LOG(INFO) << "Sum = " << sum*100 << " %\n";
 
 
+    LOG(INFO) << "\nFit fractions grouped by free amplitudes, sorted by decreasing fit fraction:";
+    for (auto kv : ff_map) {
+        unsigned i = kv.second;
 
+        LOG(INFO) << "" ;
+        LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
+                  << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
+                  << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
+        for (const auto& dt : groupedDecayTrees[i])
+            LOG(INFO) << yap::to_string(*dt);
+        LOG(INFO) << "\t" << -kv.first*100. << " %";
+    }
 
-
-
-
-
-
+/*
     LOG(INFO) << "\nFit fractions for grouped decay trees:";
     sum = 0;
     for (const auto& mci : m.fitFractionIntegral().integrals()) {
@@ -364,8 +444,8 @@ inline void d4pi_printFitFractions(bat_fit& m)
         auto piPlus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi+")));
         auto piMinus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi-")));
 
-        auto a_1_plus   = (a_rho_pi_S or a_rho_pi_D or a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
-        auto a_1_minus  = (a_1_plus and a1_minus) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
+        auto a_1_plus   = (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D or d4pi_a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
+        auto a_1_minus  = (a_1_plus and d4pi_a1_minus) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
 
         auto pi_1300_plus  = particles(*m.model(), is_named("pi+(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi+(1300)")));
         auto pi_1300_minus = particles(*m.model(), is_named("pi-(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi-(1300)")));
@@ -396,7 +476,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
 
 
         // a_rho_pi_S
-        if (a_rho_pi_S) {
+        if (d4pi_a_rho_pi_S) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
@@ -411,7 +491,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_rho_pi_D
-        if (a_rho_pi_D) {
+        if (d4pi_a_rho_pi_D) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
@@ -426,7 +506,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_sigma_pi
-        if (a_pipiS_pi) {
+        if (d4pi_a_pipiS_pi) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
@@ -441,7 +521,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_rho_pi_S
-        if (a_rho_pi_S) {
+        if (d4pi_a_rho_pi_S) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
@@ -456,7 +536,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_rho_pi_D
-        if (a_rho_pi_D) {
+        if (d4pi_a_rho_pi_D) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
@@ -471,7 +551,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
         }
 
         // a_sigma_pi
-        if (a_pipiS_pi) {
+        if (d4pi_a_pipiS_pi) {
             auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
             blub.erase(std::remove_if(blub.begin(), blub.end(),
                     [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
@@ -555,7 +635,7 @@ inline void d4pi_printFitFractions(bat_fit& m)
                     << "; \t value = " << comp.admixture()->value();
         }
 
-    }
+    }*/
 }
 
 //-------------------------

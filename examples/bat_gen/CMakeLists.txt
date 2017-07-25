@@ -17,6 +17,7 @@ add_custom_target(link-macros
 
 set(PROGRAMS
 	a1_integrals
+	drawMassShapes
     runBatGen
     runBatFit
     runBatFit_4pi
