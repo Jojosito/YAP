@@ -86,6 +86,7 @@ void Flatte::checkDecayChannel(const DecayChannel& c) const
             (fc.Particles[0] == c.daughters()[1] and fc.Particles[1] == c.daughters()[0]))
             // if found, return before exception can be thrown
             return;
+
     throw exceptions::Exception("Flatte doesn't contain channel for " + to_string(c), "Flatte::checkDecayChannel");
 }
     
@@ -113,12 +114,13 @@ void Flatte::calculate(DataPartition& D, const std::shared_ptr<const ParticleCom
     // common factors:
 
     // mass^2
-    const auto m2 = pow(mass()->value(), 2);
+    const double m  = mass()->value();
+    const double m2 = m*m;
 
     // width at nominal mass
     std::complex<double> w = 0;
     for (const auto& fc : FlatteChannels_)
-        w += fc.Coupling->value() * std::sqrt(std::complex<double>(measured_breakup_momenta::q2(m2, fc.Particles[0]->mass(), fc.Particles[1]->mass())));
+        w += fc.Coupling->value() * measured_breakup_momenta::q_complex(m2, fc.Particles[0]->mass(), fc.Particles[1]->mass());
 
     // normalization factor
     auto w_o_m = 2. * w / mass()->value();
@@ -132,10 +134,10 @@ void Flatte::calculate(DataPartition& D, const std::shared_ptr<const ParticleCom
         // calculate width term := sum of coupling * complex-breakup-momentum
         std::complex<double> ws = 0;
         for (const auto& fc : FlatteChannels_)
-            ws += fc.Coupling->value() * std::sqrt(std::complex<double>(measured_breakup_momenta::q2(m2, fc.Particles[0]->mass(), fc.Particles[1]->mass())));
+            ws += fc.Coupling->value() * measured_breakup_momenta::q_complex(s, fc.Particles[0]->mass(), fc.Particles[1]->mass());
 
         // T = 1 / (M^2 - m^2 - width-term)
-        T_->setValue(w_o_m / (m2 - s - 1_i * 2. * ws / sqrt(m2)), d, si, D);
+        T_->setValue(w_o_m / (m2 - s - 1_i * 2. * ws / m), d, si, D);
     }
 
     D.status(*T_, si) = CalculationStatus::calculated;
