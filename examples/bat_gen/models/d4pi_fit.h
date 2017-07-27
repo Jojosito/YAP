@@ -266,14 +266,13 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
         m.GetParameters().Back().SetPriorConstant();
     }
 
-    if (d4pi_free_parameters and d4pi_bg_sigma) {
+    /*if (d4pi_free_parameters and d4pi_bg_sigma) {
         auto sigma   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
         auto shape = std::dynamic_pointer_cast<PoleMass>(sigma->massShape());
 
         // mass is complex
         m.addParameter("mass(f_0(500))", shape->mass(), std::complex<double>(0.2, -0.7), std::complex<double>(0.3, -0.16));
-
-    }
+    }*/
 
     return m;
 }

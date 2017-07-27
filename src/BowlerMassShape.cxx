@@ -188,7 +188,7 @@ void BowlerMassShape::lock()
 void BowlerMassShape::fillCache()
 {
     LOG(INFO) << "Fill Bowler cache ...";
-    static const unsigned n_integrationPoints = 5e5; // 5e5
+    static const unsigned n_integrationPoints = 1e5; // 5e5
     static const unsigned n_threads = 4;//std::max(1u, std::thread::hardware_concurrency());
     static const unsigned nBins = 150;
     // get FSP mass ranges

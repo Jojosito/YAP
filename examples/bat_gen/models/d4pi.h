@@ -225,8 +225,8 @@ inline std::unique_ptr<Model> d4pi()
 
     // f_0(980) (as Flatte)
     auto f_0_980_flatte = std::make_shared<Flatte>(T["f_0"]);
-    f_0_980_flatte->add(FlatteChannel(0.406 * 0.406, *piPlus, *piMinus));
-    f_0_980_flatte->add(FlatteChannel(0.406 * 0.406 * 4, T[321], T[-321])); // K+K-
+    f_0_980_flatte->add(FlatteChannel(0.406 * 0.406,     *piPlus, *piMinus));
+    f_0_980_flatte->add(FlatteChannel(0.406 * 0.406 * 4, T["K+"], T["K-"]));
     auto f_0_980 = DecayingParticle::create(T["f_0"], r, f_0_980_flatte);
     f_0_980->addStrongDecay(piPlus, piMinus);
                                             
@@ -240,6 +240,9 @@ inline std::unique_ptr<Model> d4pi()
     auto f_0_1370 = DecayingParticle::create(pdl_f_0_1370, r, std::make_shared<BreitWigner>(pdl_f_0_1370));
     f_0_1370->addStrongDecay(piPlus, piMinus);
 
+    // f_0(1500)
+    auto f_0_1500 = DecayingParticle::create(T["f_0(1500)"], r, std::make_shared<BreitWigner>(T["f_0(1500)"]));
+    f_0_1500->addStrongDecay({piPlus, piMinus});
 
     //
     // decays and amplitudes
@@ -334,7 +337,7 @@ inline std::unique_ptr<Model> d4pi()
 
 
     if (d4pi_f_2_f_2) {
-        D->addWeakDecay<d4pi_max_L>(f_2, f_2);
+        D->addWeakDecay<0>(f_2, f_2);
         for (auto& fa : free_amplitudes(*D, to(f_2, f_2)))
             *fa = static_cast<std::complex<double> >(d4pi_amp_f_2_f_2[fa->spinAmplitude()->L()]);
     }
@@ -353,7 +356,8 @@ inline std::unique_ptr<Model> d4pi()
 
         if (d4pi_a_rho_pi_S) {
             *free_amplitude(*a_1_plus, to(rho), l_equals(0)) = 1.; // reference amplitude
-            free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+            if (d4pi_fix_a_rho_pi_S)
+                free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
 
             free_amplitude(*a_1_minus, to(rho), l_equals(0))->shareFreeAmplitude(*free_amplitude(*a_1_plus, to(rho), l_equals(0)));
         }
@@ -420,24 +424,24 @@ inline std::unique_ptr<Model> d4pi()
         add_3pi_decays(D, piPlus, piMinus,
                 pi_1800_plus, pi_1800_minus,
                 d4pi_amp_pi_1800_plus, d4pi_amp_pi_1800_minus,
-                {pipiS, f_0_980},
-                {{1}, {d4pi_amp_pi_1800_f_0_980}});
+                {f_0_980, f_0_1500},
+                {{1}, {d4pi_amp_pi_1800_f_0_1500}});
     }
 
     if (d4pi_a_1_1420) {
         add_3pi_decays(D, piPlus, piMinus,
                 a_1_1420_plus, a_1_1420_minus,
                 d4pi_amp_a_1_1420_plus, d4pi_amp_a_1_1420_minus,
-                {f_0_980, rho},
-                {{0, 1}, {d4pi_amp_a_1_1420_rho_S, 0, d4pi_amp_a_1_1420_rho_D}});
+                {f_0_980},
+                {{0, 1}});
     }
 
     if (d4pi_a_1_1640) {
         add_3pi_decays(D, piPlus, piMinus,
                 a_1_1640_plus, a_1_1640_minus,
                 d4pi_amp_a_1_1640_plus, d4pi_amp_a_1_1640_minus,
-                {f_2, rho},
-                {{0, 1}, {d4pi_amp_a_1_1640_rho_S, 0, d4pi_amp_a_1_1640_rho_D}});
+                {f_2},
+                {{0, 1}});
     }
 
     if (d4pi_a_2_1320) {
@@ -537,14 +541,24 @@ inline std::unique_ptr<Model> d4pi()
     unsigned i_adm(0);
     for (auto& comp : M->components()) {
         if (comp.particle() == &*D) {
-            if (d4pi_bg_only)
+            if (d4pi_bg_only) {
                 comp.admixture()->setValue(0);
-            comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
-            assert( comp.admixture()->variableStatus() == yap::VariableStatus::fixed );
-            LOG(INFO) << "fixed D0 admixture";
+                comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
+                LOG(INFO) << "fixed D0 admixture to 0";
+            }
+            if (not d4pi_fix_bg) {
+                comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
+                LOG(INFO) << "fixed D0 admixture";
+            }
         }
         else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed) {
+
             *comp.admixture() = admixtures[i_adm++];
+
+            if (d4pi_fix_bg) {
+                comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
+                LOG(INFO) << "fixed bg admixture";
+            }
         }
 
         LOG(INFO) << "admixture " << comp.particle()->name()

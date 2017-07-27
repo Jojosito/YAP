@@ -105,7 +105,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
                 + "admixture_" + comp.particle()->name()
                 + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, comp.admixture()->value() * 2.);
+        AddParameter(adm_name, 0, comp.admixture()->value() * 5.);
 
         Admixtures_.push_back(comp.admixture());
     }
