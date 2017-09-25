@@ -10,45 +10,42 @@
 // m_D = 1.86484
 // m_D - m_pi   = 1.72527
 // m_D - 2 m_pi = 1.58570
+const bool d4pi_a_rho_pi_S     = true;
+const bool d4pi_a_rho_pi_D     = true;
+const bool d4pi_a_pipiS_pi     = true;
+//
+const bool d4pi_a_1_1420       = false;
+const bool d4pi_a_1_1640       = false;
+//
+const bool d4pi_pi1300         = false; // todo: too broad for BreitWigner???
+const bool d4pi_pi1800         = false; // heavy and overlapping with other resonances
+//
+const bool d4pi_a_2_1320       = false; // -> rho pi // seems to have low ff in data
+const bool d4pi_pi_2_1670      = false; // -> rho pi, f_2(1270) pi, pipiS pi
+//
+const bool d4pi_pipiS_pipiS    = true;
+const bool d4pi_pipiS_f_0      = false; // large overlap with pipiS_pipiS and f_0_f_0
+const bool d4pi_pipiS_rho      = true;
+const bool d4pi_pipiS_omega    = false;
+const bool d4pi_pipiS_f_2      = true;
+//
+const bool d4pi_f_0_f_0        = true;
+const bool d4pi_f_0_rho        = true;
+const bool d4pi_f_0_omega      = false;
+const bool d4pi_f_0_f_2        = false; // large overlap with pipiS, f2
+//
+const bool d4pi_rho_rho        = true;
+const bool d4pi_rho_omega      = false;
+const bool d4pi_rho_f_2        = true;
+//
+const bool d4pi_omega_omega    = false;
+const bool d4pi_omega_f_2      = false;
+//
+const bool d4pi_f_2_f_2        = false; // only S wave
+//
+const bool d4pi_f_0_1370_pipiS = false; // large overlap with pipiS, pipiS
 
-const bool d4pi_fix_a_rho_pi_S = true;
-
-const bool d4pi_a_rho_pi_S  = true;
-const bool d4pi_a_rho_pi_D  = true;
-const bool d4pi_a_pipiS_pi  = true;
-
-
-const bool d4pi_a_1_1420    = true;
-const bool d4pi_a_1_1640    = true;
-
-const bool d4pi_pi1300      = true; // todo: too broad for BreitWigner???
-const bool d4pi_pi1800      = false;
-
-const bool d4pi_a_2_1320    = false; // -> rho pi
-const bool d4pi_pi_2_1670   = false; // -> rho pi, f_2(1270) pi, pipiS pi
-
-const bool d4pi_pipiS_pipiS = true;
-const bool d4pi_pipiS_f_0   = true;
-const bool d4pi_pipiS_rho   = true;
-const bool d4pi_pipiS_omega = false;
-const bool d4pi_pipiS_f_2   = true;
-
-const bool d4pi_f_0_f_0     = true;
-const bool d4pi_f_0_rho     = true;
-const bool d4pi_f_0_omega   = false;
-const bool d4pi_f_0_f_2     = true; // probably too heavy
-
-const bool d4pi_rho_rho     = true;
-const bool d4pi_rho_omega   = false;
-const bool d4pi_rho_f_2     = true;
-
-const bool d4pi_omega_omega = false;
-const bool d4pi_omega_f_2   = false;
-
-const bool d4pi_f_2_f_2     = true; // only S wave
-
-
-const bool d4pi_f_0_1370_pipiS = false; // lieber erstmal weglassen, highly ambiguous!
+//const bool d4pi_flat
 
 
 // to add
@@ -62,8 +59,8 @@ const bool d4pi_f_0_1370_pipiS = false; // lieber erstmal weglassen, highly ambi
 
 // background
 const bool d4pi_bg_flat_4pi = true; // ~45% of BG
-const bool d4pi_bg_rho      = true;  // ~5% of BG
-const bool d4pi_bg_sigma    = true; // ~50 % of BG
+const bool d4pi_bg_rho      = false;  // ~5% of BG
+const bool d4pi_bg_sigma    = false; // ~50 % of BG
 
 const bool d4pi_bg_f_0      = false;
 const bool d4pi_bg_a_1      = false;
@@ -75,12 +72,15 @@ const bool bg_omega    = false;  // 0% of BG
 */
 
 // configuration
+const bool d4pi_fix_a_rho_pi_S = true; // default: true
+
 const bool d4pi_a1_bowler   = false and (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D);
-const bool d4pi_pm_shared   = true;  // share free amplitudes of 3pi + and - states
+/*const*/ bool d4pi_pm_shared   = true;  // share free amplitudes of 3pi + and - states
 
-const bool d4pi_a1_plus     = true;
-const bool d4pi_a1_minus    = true;
+/*const*/ bool d4pi_a1_plus     = true;
+/*const*/ bool d4pi_a1_minus    = true;
 
+const bool d4pi_fix_amplitudes  = false;
 const bool d4pi_free_parameters = false; // widths, coupling constants, ...
 /*
  * a1 mass, width, K*K coupling
@@ -155,8 +155,8 @@ const double admixture_bg_omega    = ;
  */
 
 
-const std::complex<double> d4pi_amp_a_rho_pi_D       = std::polar(1., yap::rad(0.));
-const std::complex<double> d4pi_amp_a_pipiS_pi       = std::polar(1., yap::rad(0.));
+const std::complex<double> d4pi_amp_a_rho_pi_D       = std::polar(-1.406, 1.471);
+const std::complex<double> d4pi_amp_a_pipiS_pi       = std::polar(-0.115, 0.0306);
 const std::complex<double> d4pi_amp_a_minus          = std::polar(1., yap::rad(0.));
 
 const std::complex<double> d4pi_amp_pi1300_plus      = std::polar(1., yap::rad(0.));
@@ -165,6 +165,7 @@ const std::complex<double> d4pi_amp_pi1300_rho       = std::polar(1., yap::rad(0
 
 const std::complex<double> d4pi_amp_pi_1800_plus     = std::polar(1., yap::rad(0.));
 const std::complex<double> d4pi_amp_pi_1800_minus    = std::polar(1., yap::rad(0.));
+const std::complex<double> d4pi_amp_pi_1800_f_0      = std::polar(1., yap::rad(0.));
 const std::complex<double> d4pi_amp_pi_1800_f_0_1500  = std::polar(1., yap::rad(0.));
 
 const std::complex<double> d4pi_amp_a_1_1420_plus    = std::polar(1., yap::rad(0.));

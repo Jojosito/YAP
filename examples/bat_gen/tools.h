@@ -7,6 +7,7 @@
 
 #include <TLorentzVector.h>
 
+#include <assert.h>
 #include <memory>
 
 template <typename T>
@@ -21,6 +22,14 @@ constexpr double quad(double s0, Types ... additional)
 { return quad({s0, additional...}); }
 
 inline yap::FourVector<double> convert(const TLorentzVector& p)
-{ return yap::FourVector<double>({p.E(), p.X(), p.Y(), p.Z()}); }
+//{ return yap::FourVector<double>({p.E(), p.X(), p.Y(), p.Z()}); }
+{
+    yap::FourVector<double> P({p.E(), p.X(), p.Y(), p.Z()});
+    assert(p.E() == P[0]);
+    assert(p.X() == P[1]);
+    assert(p.Y() == P[2]);
+    assert(p.Z() == P[3]);
+    return P;
+}
 
 #endif

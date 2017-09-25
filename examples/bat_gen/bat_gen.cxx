@@ -76,9 +76,20 @@ double bat_gen::LogAPrioriProbability(const std::vector<double>& parameters)
     if (P.empty())
         return -std::numeric_limits<double>::infinity();
 
+    // check
+    /*unsigned i_m2(0);
+    for (auto a : axes()) {
+        yap::FourVector<double> p;
+        for (auto i : a->indices())
+            p += P[i];
+        assert ( norm(p) - parameters.at(i_m2++) < 1e-5 );
+    }*/
+
     unsigned c = GetCurrentChain();
     Data_[c].setAll(yap::VariableStatus::changed);
     Data_[c].setAll(yap::CalculationStatus::uncalculated);
     model()->setFinalStateMomenta(Data_[c][0], P, Data_[c]);
+    model()->calculate(Data_[c]);
+
     return 0;
 }

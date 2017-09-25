@@ -79,7 +79,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
             + " S = " + yap::spin_to_string(fa->spinAmplitude()->twoS());
 
         // add real parameter
-        double range = 2. * abs(fa->value());
+        double range = 5. * abs(fa->value());
         AddParameter("real(" + fa_name + ")", -range, range);
         // add imag parameter
         AddParameter("imag(" + fa_name + ")", -range, range);
@@ -105,7 +105,7 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
                 + "admixture_" + comp.particle()->name()
                 + "_" + std::to_string(comp.decayTrees()[0]->initialTwoM());
 
-        AddParameter(adm_name, 0, comp.admixture()->value() * 5.);
+        AddParameter(adm_name, 0, comp.admixture()->value() * 10.);
 
         Admixtures_.push_back(comp.admixture());
     }
@@ -254,6 +254,9 @@ size_t load_data(yap::DataSet& data, const yap::Model& M, const yap::MassAxes& A
     if (A.empty())
         throw yap::exceptions::Exception("mass axes empty", "load_data");
 
+    LOG(INFO) << "Load with mass axes " << to_string(A);
+    t_mcmc.Print();
+
     // set branch addresses
     std::vector<double> m2;
     m2.reserve(A.size());
@@ -326,8 +329,9 @@ void bat_fit::setParameters(const std::vector<double>& p)
 {
     DEBUG("p.size() = " << p.size());
     DEBUG("FreeAmplitudes_.size() = " << FreeAmplitudes_.size());
-    DEBUG("Admixtures_.size() = " << Admixtures_.size());
-    DEBUG("Parameters_.size() = " << Parameters_.size());
+    DEBUG("Admixtures_.size()     = " << Admixtures_.size());
+    DEBUG("Parameters_.size()     = " << Parameters_.size());
+    DEBUG("FirstParameter_        = " << FirstParameter_);
 
     assert(p.size() >= 2 * FreeAmplitudes_.size() + Admixtures_.size() + Parameters_.size());
 
@@ -629,11 +633,20 @@ void bat_fit::setPriors(std::shared_ptr<yap::FreeAmplitude> fa, BCPrior* amp_pri
 }
 
 //-------------------------
-void bat_fit::setRealImagRanges()
+void bat_fit::setRealImagRanges(double rangeFactor)
 {
     for (auto& fa : FreeAmplitudes_) {
-        double range = abs(fa->value());
+        double range = rangeFactor * abs(fa->value());
         setRealImagRanges(fa, -range, range, -range, range);
+    }
+}
+
+//-------------------------
+void bat_fit::setAdmixtureRanges(double rangeFactor)
+{
+    unsigned i = FreeAmplitudes_.size() * 2;
+    for (auto& adm : Admixtures_) {
+        GetParameter(i++).SetLimits(0., rangeFactor * adm->value());
     }
 }
 

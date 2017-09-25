@@ -26,24 +26,32 @@ TEST_CASE( "Vector" )
 
     SECTION( "ThreeVector" ) {
 
-        auto zero = yap::ThreeVector<double>({0, 0, 0});
-        auto v1 = yap::ThreeVector<double>({1, 2, 3});
-        auto v2 = yap::ThreeVector<double>({4, 5, 6});
+        const auto zero = yap::ThreeVector<double>({0, 0, 0});
+        const auto v1 = yap::ThreeVector<double>({1, 2, 3});
+        const auto v2 = yap::ThreeVector<double>({4, 5, 6});
 
         SECTION( "addition-assignment" ) {
-            v1 += v2;
-            REQUIRE( v1 == yap::ThreeVector<double>({5, 7, 9}) );
+            yap::ThreeVector<double> v1_copy(v1);
+            v1_copy += v2;
+            REQUIRE( v1_copy == yap::ThreeVector<double>({5, 7, 9}) );
+            REQUIRE( not (v1_copy == zero) );
         }
 
+
         SECTION( "subtraction-assignment" ) {
-            v1 -= v2;
-            REQUIRE( v1 == yap::ThreeVector<double>({ -3, -3, -3}) );
+            yap::ThreeVector<double> v1_copy(v1);
+            v1_copy -= v2;
+            REQUIRE( v1_copy == yap::ThreeVector<double>({ -3, -3, -3}) );
+            REQUIRE( not (v1_copy == zero) );
         }
 
         SECTION( "multiplication-assignment" ) {
-            v1 *= 3.;
-            REQUIRE( v1 == yap::ThreeVector<double>({3, 6, 9}) );
+            yap::ThreeVector<double> v1_copy(v1);
+            v1_copy *= 3.;
+            REQUIRE( v1_copy == yap::ThreeVector<double>({3, 6, 9}) );
+            REQUIRE( not (v1_copy == zero) );
         }
+
 
         SECTION( "arithmetic operations" ) {
 
@@ -120,22 +128,28 @@ TEST_CASE( "Vector" )
 
     SECTION( "FourVector" ) {
 
-        auto v1 = yap::FourVector<double>({4, 3, 2, 1});
-        auto v2 = yap::FourVector<double>({8, 7, 6, 5});
+        const auto v1 = yap::FourVector<double>({4, 3, 2, 1});
+        const auto v2 = yap::FourVector<double>({8, 7, 6, 5});
 
         SECTION( "addition-assignment" ) {
-            v1 += v2;
-            REQUIRE( v1 == yap::FourVector<double>({12, 10, 8, 6}) );
+            yap::FourVector<double> v1_copy(v1);
+            v1_copy += v2;
+            REQUIRE( v1_copy == yap::FourVector<double>({12, 10, 8, 6}) );
+            REQUIRE( not (v1_copy == v1) );
         }
 
         SECTION( "subtraction-assignment" ) {
-            v1 -= v2;
-            REQUIRE( v1 == yap::FourVector<double>({ -4, -4, -4, -4}) );
+            yap::FourVector<double> v1_copy(v1);
+            v1_copy -= v2;
+            REQUIRE( v1_copy == yap::FourVector<double>({ -4, -4, -4, -4}) );
+            REQUIRE( not (v1_copy == v1) );
         }
 
         SECTION( "multiplication-assignment" ) {
-            v1 *= 2.;
-            REQUIRE( v1 == yap::FourVector<double>({8, 6, 4, 2}) );
+            yap::FourVector<double> v1_copy(v1);
+            v1_copy *= 2.;
+            REQUIRE( v1_copy == yap::FourVector<double>({8, 6, 4, 2}) );
+            REQUIRE( not (v1_copy == v1) );
         }
 
         SECTION( "arithmetic operations" ) {

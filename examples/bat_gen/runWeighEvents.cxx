@@ -53,18 +53,21 @@ int main()
     DataPoint& dp = dataSet.at(0);
 
     const auto massAxes = m->massAxes();
+    //const MassAxes massAxes{{0,1}, {1,2}, {2,3}, {0,2}, {1,3}};
     const auto FSPs = m->finalStateParticles();
     const auto components = m->components();
     assert(components.size() == 1);
+
+    LOG(INFO) << "mass axes: " << to_string(massAxes);
 
     std::vector<FourVector<double> > P;
 
 
 
-    unsigned N = tree->GetEntries();
-    //unsigned N = 100;
+    //unsigned N = tree->GetEntries();
+    unsigned N = 20000000;
 
-    TFile* f_weight = TFile::Open("/home/ne53mad/YAPfork/buildRelease/output/D4pi_phsp__mcmc_weight.root", "RECREATE");
+    TFile* f_weight = TFile::Open("/home/ne53mad/YAPfork/buildRelease/output/D4pi_phsp_mcmc_weight_a1_rho_pi_S.root", "RECREATE");
 
     double weight;
     TTree* weightTree = new TTree("weight", "weight");
@@ -75,16 +78,51 @@ int main()
         if (i%10000==0)
             LOG(INFO) << i;
 
+        // lag
+        if (i%5 != 0) {
+            weight = 0;
+            weightTree->Fill();
+            continue;
+        }
+
         tree->GetEntry(i);
 
         P = calculate_four_momenta(D0_mass, FSPs, massAxes,
                                         {m2_01, m2_12, m2_23, m2_02, m2_13});
+
+        // check
+        assert ( norm(FourVector<double>(P[0] + P[1])) - m2_01 < 1e-5 );
+        assert ( norm(FourVector<double>(P[1] + P[2])) - m2_12 < 1e-5 );
+        assert ( norm(FourVector<double>(P[2] + P[3])) - m2_23 < 1e-5 );
+        assert ( norm(FourVector<double>(P[0] + P[2])) - m2_02 < 1e-5 );
+        assert ( norm(FourVector<double>(P[1] + P[3])) - m2_13 < 1e-5 );
+        //
 
         m->setFinalStateMomenta(dp, P, dataSet);
         m->calculate(dataSet);
 
         weight = intensity(components[0], dp);
         weightTree->Fill();
+
+        // check
+        const auto amp = amplitude(components[0].decayTrees(), dp);
+
+        m->setFinalStateMomenta(dp, {P[2], P[3], P[0], P[1]}, dataSet);
+        m->calculate(dataSet);
+        assert (weight - intensity(components[0], dp) < 1e-7);
+        assert (abs(amp - amplitude(components[0].decayTrees(), dp)) < 1e-7);
+
+        m->setFinalStateMomenta(dp, {P[1], P[0], P[3], P[2]}, dataSet);
+        m->calculate(dataSet);
+        assert (weight - intensity(components[0], dp) < 1e-7);
+        assert (abs(amp - amplitude(components[0].decayTrees(), dp)) < 1e-7);
+
+        m->setFinalStateMomenta(dp, {P[0], P[3], P[2], P[1]}, dataSet);
+        m->calculate(dataSet);
+        assert (weight - intensity(components[0], dp) < 1e-7);
+        assert (abs(amp - amplitude(components[0].decayTrees(), dp)) < 1e-7);
+        //
+
 
         //LOG(INFO) << "intensity = " << intens;
     }

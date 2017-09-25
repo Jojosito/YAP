@@ -1,7 +1,7 @@
 include_directories(
 	${YAP_SOURCE_DIR}/include 
 	${BAT_INCLUDE_DIRS} 
-	${ROOT_INCLUDE_DIR}
+	${ROOT_INCLUDE_DIRS}
 	"/nfs/hicran/project/belle/users/jrauch/SmokeyJoesBelle/analysis/include"
 	)
 
@@ -23,6 +23,7 @@ set(PROGRAMS
     runBatFit_4pi
     runBatFitFitFractions
     runFitFractions
+    runRootGen_4pi
     runWeighEvents)
 
 # Add the program to the `make example` dependencies

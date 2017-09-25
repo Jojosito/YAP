@@ -55,58 +55,39 @@ TEST_CASE( "d4pia1_2" )
     // create models
     for (bool rho_pi_S : {false, true})
         for (bool rho_pi_D : {false, true})
-            for (bool sigma_pi : {false, true})
-                for (bool test_a1_omega : {false, true}){
-                if ((rho_pi_S || rho_pi_D || sigma_pi) == false)
+            for (bool pipiS_pi : {false, true}) {
+                if ((rho_pi_S || rho_pi_D || pipiS_pi) == false)
                     continue;
 
                 LOG(INFO) << "Waves used: " << (rho_pi_S ? "rho_pi_S; " : "")
-                        << (rho_pi_D ? "rho_pi_D; " : "")
-                        << (sigma_pi ? "sigma_pi; " : "")
-                        << (a1_omega ? "a1_omega; " : "");
+                                << (rho_pi_D ? "rho_pi_D; " : "")
+                                << (pipiS_pi ? "pipiS_pi; " : "");
 
                 // which waves to include in the model
-                const_cast<bool&>(a_rho_pi_S)  = rho_pi_S;
-                const_cast<bool&>(a_rho_pi_D)  = rho_pi_D;
-                const_cast<bool&>(a_sigma_pi)  = sigma_pi;
-                const_cast<bool&>(rho_rho  )   = false;
-                const_cast<bool&>(f_0_pipi  )  = false;
-                const_cast<bool&>(f_2_pipi  )  = false;
-                const_cast<bool&>(sigma_pipi)  = false;
+                const_cast<bool&>(d4pi_a_rho_pi_S)  = rho_pi_S;
+                const_cast<bool&>(d4pi_a_rho_pi_D)  = rho_pi_D;
+                const_cast<bool&>(d4pi_a_pipiS_pi)  = pipiS_pi;
 
-                const_cast<bool&>(omega_omega) = false;
-                const_cast<bool&>(a1_omega   ) = test_a1_omega;
+                const_cast<bool&>(d4pi_pm_shared)   = false;
 
-                // CLEO waves
-                const_cast<bool&>(sigma_f_0_1370) = false;
-                const_cast<bool&>(sigma_rho) = false;
-                const_cast<bool&>(f_2_f_2  ) = false;
-
-                const_cast<bool&>(pi1300_pi_pi_pi) = false;
-
-
-                const_cast<bool&>(flat_4pi)    = false;
-
-
-                const_cast<bool&>(bg_flat_4pi) = false;
-                const_cast<bool&>(bg_rho     ) = false;  // ~10% of BG
-                const_cast<bool&>(bg_a1      ) = false; // <1% of BG
-
-                const_cast<bool&>(a1_bowler)  = false;//(rho_pi_S or rho_pi_D) or sigma_pi;
-                const_cast<bool&>(a1_shared)  = true;  // share a1+ and a1- free amplitudes
-
-                const_cast<bool&>(a1_plus )    = true;// and (rho_pi_S or rho_pi_D or sigma_pi);
-                const_cast<bool&>(a1_minus)    = false;
-
-                const_cast<bool&>(bg_only)     = false; // fix D admixture to 0
+                const_cast<bool&>(d4pi_a1_plus )   = true;
+                const_cast<bool&>(d4pi_a1_minus)   = false;
 
                 auto M_plus = d4pi();
 
                 // which waves to include in the model
-                const_cast<bool&>(a1_plus )   = false;
-                const_cast<bool&>(a1_minus)   = true;// and (rho_pi_S or rho_pi_D or sigma_pi);
+                const_cast<bool&>(d4pi_a1_plus )   = false;
+                const_cast<bool&>(d4pi_a1_minus)   = true;
 
                 auto M_minus = d4pi();
+
+                // which waves to include in the model
+                const_cast<bool&>(d4pi_a1_plus )   = true;
+                const_cast<bool&>(d4pi_a1_minus)   = true;
+
+                const_cast<bool&>(d4pi_pm_shared)   = true;
+
+                auto M_plusMinus = d4pi();
 
                 // get pi pi mass ranges
                 auto m2_pipi_range = yap::squared(yap::mass_range(D_mass, M_plus->massAxes(), M_plus->finalStateParticles()))[0];
@@ -117,7 +98,7 @@ TEST_CASE( "d4pia1_2" )
                 std::mt19937 g(143425);
 
 
-                for (unsigned i = 0; i < 10; ++i) {
+                for (unsigned i = 0; i < 100; ++i) {
 
                     auto P = yap::phsp(*M_plus, D_mass, M_plus->massAxes(), yap::squared(yap::mass_range(D_mass, M_plus->massAxes(), M_plus->finalStateParticles())), g, 1000);
 
@@ -125,17 +106,16 @@ TEST_CASE( "d4pia1_2" )
                         continue;
                     }
 
-                    DEBUG("\namp_plus");
-                    auto amp_plus =  calculate_model(D_mass, *M_plus,  M_plus->massAxes(), P);
-                    DEBUG("\namp_minus");
-                    auto amp_minus = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[1], P[0], P[3], P[2]});
+                    const auto amp_plus =  calculate_model(D_mass, *M_plus,  M_plus->massAxes(), P);
+                    const auto amp_minus = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[1], P[0], P[3], P[2]});
+                    const auto amp_plusMinus =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), P);
 
-                    DEBUG(amp_plus << "; " << amp_minus << " \t"
+                    LOG(INFO) << amp_plus << "; " << amp_minus << "; " << amp_plusMinus << " \t"
                             << (amp_plus == Catch::Detail::CApprox(amp_minus) ? "S" :
-                                    (-amp_plus == Catch::Detail::CApprox(amp_minus) ? "O" : "X")));
+                                    (-amp_plus == Catch::Detail::CApprox(amp_minus) ? "O" : "X"));
 
-                    // can have slight differences due to bowlermass shape
-                    if (a1_bowler) {
+                    // can have slight differences due to bowler mass shape
+                    if (d4pi_a1_bowler) {
                         REQUIRE ( fabs((real(amp_plus) - real(amp_minus)) / (real(amp_plus) + real(amp_minus))) < 0.01);
                         REQUIRE ( fabs((imag(amp_plus) - imag(amp_minus)) / (imag(amp_plus) + imag(amp_minus))) < 0.01);
                     }
@@ -155,12 +135,103 @@ TEST_CASE( "d4pia1_2" )
                     REQUIRE ( amp_minus == Catch::Detail::CApprox(amp_minus_swap) );
                     amp_minus_swap = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[3], P[0], P[1], P[2]});
                     REQUIRE ( amp_minus == Catch::Detail::CApprox(amp_minus_swap) );
+
+                    auto amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[2], P[3], P[0], P[1]});
+                    REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
+                    amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[1], P[0], P[3], P[2]});
+                    REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
+                    amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[0], P[3], P[2], P[1]});
+                    REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
                 }
             }
-
 }
 
+TEST_CASE( "d4pia1_3" )
+{
 
+    // disable debug logs in test
+    //yap::disableLogs(el::Level::Debug);
+    //yap::plainLogs(el::Level::Debug);
+
+    auto F = yap::read_pdl_file((std::string)::getenv("YAPDIR") + "/data/evt.pdl");
+
+    auto D_mass = F["D0"].mass();
+
+    // create models
+    auto M_plusMinus = d4pi();
+
+    // which waves to include in the model
+    const_cast<bool&>(d4pi_pm_shared)   = false;
+
+    const_cast<bool&>(d4pi_a1_plus )   = true;
+    const_cast<bool&>(d4pi_a1_minus)   = false;
+
+    auto M_plus = d4pi();
+
+    // which waves to include in the model
+    const_cast<bool&>(d4pi_a1_plus )   = false;
+    const_cast<bool&>(d4pi_a1_minus)   = true;
+
+    auto M_minus = d4pi();
+
+
+    // get pi pi mass ranges
+    auto m2_pipi_range = yap::squared(yap::mass_range(D_mass, M_plus->massAxes(), M_plus->finalStateParticles()))[0];
+    m2_pipi_range[0] *= 1.01;
+    m2_pipi_range[1] *= 0.99;
+
+    // create random number engine for generation of points
+    std::mt19937 g(143425);
+
+
+    for (unsigned i = 0; i < 100; ++i) {
+
+        auto P = yap::phsp(*M_plus, D_mass, M_plus->massAxes(), yap::squared(yap::mass_range(D_mass, M_plus->massAxes(), M_plus->finalStateParticles())), g, 1000);
+
+        if (P.empty()) {
+            continue;
+        }
+
+        const auto amp_plus =  calculate_model(D_mass, *M_plus,  M_plus->massAxes(), P);
+        const auto amp_minus = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[1], P[0], P[3], P[2]});
+        const auto amp_plusMinus =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), P);
+
+        LOG(INFO) << amp_plus << "; " << amp_minus << "; " << amp_plusMinus << " \t"
+        << (amp_plus == Catch::Detail::CApprox(amp_minus) ? "S" :
+                (-amp_plus == Catch::Detail::CApprox(amp_minus) ? "O" : "X"));
+
+        // can have slight differences due to bowler mass shape
+        if (d4pi_a1_bowler) {
+            REQUIRE ( fabs((real(amp_plus) - real(amp_minus)) / (real(amp_plus) + real(amp_minus))) < 0.01);
+            REQUIRE ( fabs((imag(amp_plus) - imag(amp_minus)) / (imag(amp_plus) + imag(amp_minus))) < 0.01);
+        }
+        else
+            REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_minus) );
+
+        auto amp_plus_swap = calculate_model(D_mass, *M_plus, M_plus->massAxes(), {P[2], P[3], P[0], P[1]});
+        REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_plus_swap) );
+        amp_plus_swap = calculate_model(D_mass, *M_plus, M_plus->massAxes(), {P[0], P[3], P[2], P[1]});
+        REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_plus_swap) );
+        amp_plus_swap = calculate_model(D_mass, *M_plus, M_plus->massAxes(), {P[0], P[1], P[2], P[3]});
+        REQUIRE ( amp_plus == Catch::Detail::CApprox(amp_plus_swap) );
+
+        auto amp_minus_swap = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[3], P[2], P[1], P[0]});
+        REQUIRE ( amp_minus == Catch::Detail::CApprox(amp_minus_swap) );
+        amp_minus_swap = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[1], P[2], P[3], P[0]});
+        REQUIRE ( amp_minus == Catch::Detail::CApprox(amp_minus_swap) );
+        amp_minus_swap = calculate_model(D_mass, *M_minus, M_plus->massAxes(), {P[3], P[0], P[1], P[2]});
+        REQUIRE ( amp_minus == Catch::Detail::CApprox(amp_minus_swap) );
+
+        auto amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[2], P[3], P[0], P[1]});
+        REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
+        amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[1], P[0], P[3], P[2]});
+        REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
+        amp_plusMinus_swap =  calculate_model(D_mass, *M_plusMinus,  M_plus->massAxes(), {P[0], P[3], P[2], P[1]});
+        REQUIRE ( amp_plusMinus == Catch::Detail::CApprox(amp_plusMinus_swap) );
+    }
+}
+
+/*
 TEST_CASE( "d4pi_components" )
 {
 
@@ -275,4 +346,4 @@ TEST_CASE( "d4pi_components" )
     }
 
 }
-
+*/

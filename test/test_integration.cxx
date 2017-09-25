@@ -73,7 +73,6 @@ TEST_CASE("integration")
         sum += ff[i].value();
     }
     //LOG(INFO) << "Sum = " << sum*100 << " %";
-    REQUIRE(sum >= 1.);
 
     //
     // check components

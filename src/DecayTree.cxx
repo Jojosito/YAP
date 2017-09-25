@@ -236,7 +236,7 @@ const std::vector<yap::DecayTreeVector> group_by_free_amplitudes(const DecayTree
         group.push_back(dt);
         for (unsigned i = 1; i < decayTrees.size(); ++i) {
             auto dt2 = decayTrees[i];
-            if (dt->freeAmplitude() != dt2->freeAmplitude())
+            if (dt->freeAmplitude()->freeAmplitude() != dt2->freeAmplitude()->freeAmplitude())
                 continue;
 
             if (dt->daughterDecayTreeVector().size() != dt2->daughterDecayTreeVector().size())

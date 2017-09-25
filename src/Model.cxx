@@ -153,7 +153,12 @@ const double sum_of_log_intensity(const Model& M, DataPartitionVector& DP, doubl
 
     // wait for each partition to finish calculating
     return std::accumulate(partial_sums.begin(), partial_sums.end(), 0.,
-                           [](double& l, std::future<double>& s) {return l += s.get();});
+                           [](double& l, std::future<double>& s)
+                           {
+        //auto sget = s.get();
+        //DEBUG("likelihood increase for partition: " << sget);
+        return l += s.get();
+                           });
 }
 
 //-------------------------

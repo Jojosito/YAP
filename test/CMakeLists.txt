@@ -30,7 +30,7 @@ set(YAP_TEST_SOURCES
   test_ClebschGordan.cxx
   test_CompensatedSum.cxx
   test_d4pia1.cxx
-  #test_d4pia1_2.cxx
+  test_d4pia1_2.cxx
   test_DataSet.cxx
   test_deduce_parities.cxx
   test_FourMomenta.cxx

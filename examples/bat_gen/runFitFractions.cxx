@@ -38,12 +38,12 @@ int main()
     // generate integration data
     generate_fit_fraction_data(m, 10000, 4);
 
-    d4pi_printFitFractions(m);
+    //d4pi_printFitFractions(m);
 
     for (unsigned i = 0; i < 10; ++i)
         d4pi_normalizeFitFractions(m);
 
-    d4pi_printFitFractions(m);
+    //d4pi_printFitFractions(m);
 
     return 0;
 }

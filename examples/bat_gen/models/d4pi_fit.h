@@ -32,6 +32,7 @@
 #include <complex>
 #include <future>
 #include <memory>
+#include <regex>
 
 using namespace yap;
 
@@ -162,9 +163,9 @@ inline void generate_fit_fraction_data(bat_fit& m, unsigned nPoints, unsigned nP
 }
 
 //-------------------------
-inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pcs = {})
+inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 {
-    bat_fit m(name, d4pi(), pcs);
+    bat_fit m(name, d4pi(pars), {});
 
     //LOG(INFO) << "setting priors";
     // set priors: complete range in real and imag
@@ -256,6 +257,18 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
                 m.addParameter("f_0_coupling_" + ch.Particles[0]->name(), ch.Coupling, 0.5*coupling, 2*coupling);
             }
         }
+
+        // rho
+        if (not particles(*m.model(), yap::is_named("rho0")).empty()) {
+            auto rho = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
+            auto shape = std::dynamic_pointer_cast<BreitWigner>(rho->massShape());
+
+            m.addParameter("mass(rho0)", shape->mass(), 0.76, 0.78);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.77526, 10.*0.00025));
+
+            m.addParameter("width(rho0)", shape->width(), 0.11, 0.16);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.1491, 5.*0.008));
+        }
     }
 
     if (d4pi_bg_K) {
@@ -266,15 +279,46 @@ inline bat_fit d4pi_fit(std::string name, std::vector<std::vector<unsigned> > pc
         m.GetParameters().Back().SetPriorConstant();
     }
 
-    /*if (d4pi_free_parameters and d4pi_bg_sigma) {
+    if (d4pi_free_parameters and d4pi_bg_sigma /*and d4pi_bg_only*/) {
         auto sigma   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(500)")));
         auto shape = std::dynamic_pointer_cast<PoleMass>(sigma->massShape());
 
         // mass is complex
         m.addParameter("mass(f_0(500))", shape->mass(), std::complex<double>(0.2, -0.7), std::complex<double>(0.3, -0.16));
-    }*/
+    }
 
     return m;
+}
+
+//-------------------------
+std::string to_short_string(const DecayTree& dt)
+{
+    std::string s = yap::to_string(dt);
+
+    s = std::regex_replace(s, std::regex("D0 \\[m = 0\\] --> "), "");
+    s = std::regex_replace(s, std::regex(".*pi\\+.*pi\\-.*"), "");
+    s = std::regex_replace(s, std::regex("\\[m = ..\\]"), "");
+    s = std::regex_replace(s, std::regex("\\[m = .\\]"), "");
+    s = std::regex_replace(s, std::regex(".*-->"), "_");
+    s = std::regex_replace(s, std::regex(", S = .."), "");
+    s = std::regex_replace(s, std::regex(", S = ."), "");
+    s = std::regex_replace(s, std::regex("\n"), ",");
+    s = std::regex_replace(s, std::regex(" "), "");
+    s = std::regex_replace(s, std::regex(" "), "");
+    s = std::regex_replace(s, std::regex("pi[\\+\\-],"), "");
+    s = std::regex_replace(s, std::regex(",,"), ",");
+    s = std::regex_replace(s, std::regex(",$"), "");
+    s = std::regex_replace(s, std::regex(",$"), "");
+    s = std::regex_replace(s, std::regex("\\("), "_");
+    s = std::regex_replace(s, std::regex("\\)"), "");
+    s = std::regex_replace(s, std::regex("\\+"), "_plus");
+    s = std::regex_replace(s, std::regex("\\-"), "_minus");
+    s = std::regex_replace(s, std::regex(",L=0"), ",S");
+    s = std::regex_replace(s, std::regex(",L=1"), ",P");
+    s = std::regex_replace(s, std::regex(",L=2"), ",D");
+    s = std::regex_replace(s, std::regex(",L=3"), ",F");
+
+    return s;
 }
 
 //-------------------------
@@ -283,36 +327,103 @@ void draw_overlap_integrals(const DecayTreeVectorIntegral& dtvi)
     auto& diagonals = dtvi.diagonals();
     auto offDiagonals = dtvi.offDiagonals();
 
-    TFile file("output/overlapIntegrals.root", "RECREATE");
-    TH2D histo("overlapIntegrals", "overlapIntegrals", diagonals.size(), 0, diagonals.size(), diagonals.size(), 0, diagonals.size());
-
-    for (unsigned i = 0; i < diagonals.size(); ++i) {
-        auto str = to_string(*dtvi.decayTrees().at(i)->freeAmplitude()->decayChannel());
-        str.erase(0, 7);
-        /*for (const auto& d_dt : dtvi.decayTrees().at(i)->daughterDecayTrees()) {
-            if
-
-        }*/
-
-        histo.GetXaxis()->SetBinLabel(i+1, str.c_str());
-        histo.GetYaxis()->SetBinLabel(diagonals.size()-i, str.c_str());
-    }
-
-    for (unsigned i = 0; i < diagonals.size(); ++i) {
-        for (unsigned j = i; j < diagonals.size(); ++j) {
-            double val = 0.;
-            if (i == j) {
-                val = 1.;
-            }
-            else {
-                double norm = 1. / sqrt(diagonals.at(i).value() * diagonals.at(j).value());
-                val = norm * abs(offDiagonals.at(i).at(j-i-1).value());
-            }
-            histo.Fill(j+0.5, diagonals.size()-i-0.5, val);
+    LOG(INFO) << "off-diagonals: ";
+    for (auto els : offDiagonals) {
+        for (auto el : els) {
+            LOG(INFO) << to_string(el.value());
         }
     }
 
-    histo.Write();
+    TFile file("output/overlapIntegrals.root", "RECREATE");
+
+    // for all decay trees
+    {
+        TH2D histo("overlapIntegrals", "overlapIntegrals", diagonals.size(), 0, diagonals.size(), diagonals.size(), 0, diagonals.size());
+
+        for (unsigned i = 0; i < diagonals.size(); ++i) {
+            auto str = to_string(*dtvi.decayTrees().at(i)->freeAmplitude()->decayChannel());
+            str.erase(0, 7);
+
+            histo.GetXaxis()->SetBinLabel(i+1, str.c_str());
+            histo.GetYaxis()->SetBinLabel(diagonals.size()-i, str.c_str());
+        }
+
+        for (unsigned i = 0; i < diagonals.size(); ++i) {
+            for (unsigned j = i; j < diagonals.size(); ++j) {
+                double val = 0.;
+                if (i == j) {
+                    val = 1.;
+                }
+                else {
+                    double norm = 1. / sqrt(diagonals.at(i).value() * diagonals.at(j).value());
+                    val = norm * abs(offDiagonals.at(i).at(j-i-1).value());
+                }
+                histo.Fill(j+0.5, diagonals.size()-i-0.5, val);
+            }
+        }
+
+        histo.Write();
+    }
+
+    // for grouped decay trees
+    {
+        auto groupedDecayTrees = group_by_free_amplitudes(dtvi.decayTrees());
+
+        // new grouped matrix
+        RealIntegralElementVector groupedDiagonals(groupedDecayTrees.size());
+        ComplexIntegralElementMatrix groupedOffDiagonals(groupedDecayTrees.size() - 1);
+        for (size_t i = 0; i < groupedOffDiagonals.size(); ++i)
+            groupedOffDiagonals[i] = ComplexIntegralElementMatrix::value_type(groupedDecayTrees.size() - i - 1);
+
+        std::vector<unsigned> limits({0});
+        for (auto dts : groupedDecayTrees)
+            limits.push_back(limits.back() + dts.size());
+
+        // fill grouped matrix
+        for (unsigned iGroup = 0; iGroup < groupedDecayTrees.size(); ++iGroup) {
+            for (unsigned jGroup = iGroup; jGroup < groupedDecayTrees.size(); ++jGroup) {
+                ComplexIntegralElement element(0);
+                for (unsigned i = limits.at(iGroup); i < limits.at(iGroup + 1); ++ i)
+                    for (unsigned j = limits.at(jGroup); j < limits.at(jGroup + 1); ++ j)
+                        element += dtvi.component(i, j);
+
+                if (iGroup == jGroup) {
+                    assert(fabs(imag(element.value())) < 1.e-7);
+                    groupedDiagonals.at(iGroup).value() = real(element.value());
+                }
+                else
+                    groupedOffDiagonals.at(iGroup).at(jGroup - iGroup - 1) = element;
+            }
+        }
+
+
+        TH2D histo("groupedOverlapIntegrals", "groupedOverlapIntegrals", groupedDiagonals.size(), 0, groupedDiagonals.size(), groupedDiagonals.size(), 0, groupedDiagonals.size());
+
+        for (unsigned i = 0; i < groupedDiagonals.size(); ++i) {
+            auto str = to_short_string(*groupedDecayTrees.at(i).at(0));
+
+            histo.GetXaxis()->SetBinLabel(i+1, str.c_str());
+            histo.GetYaxis()->SetBinLabel(groupedDiagonals.size()-i, str.c_str());
+        }
+
+        for (unsigned i = 0; i < groupedDiagonals.size(); ++i) {
+            for (unsigned j = i; j < groupedDiagonals.size(); ++j) {
+                double val = 0.;
+                if (i == j) {
+                    val = 1.;
+                }
+                else {
+                    double norm = 1. / sqrt(groupedDiagonals.at(i).value() * groupedDiagonals.at(j).value());
+                    val = norm * abs(groupedOffDiagonals.at(i).at(j-i-1).value());
+                }
+                histo.Fill(j+0.5, groupedDiagonals.size()-i-0.5, val);
+            }
+        }
+
+        histo.Write();
+
+    }
+
     file.Close();
 }
 
@@ -321,7 +432,24 @@ inline void d4pi_normalizeFitFractions(bat_fit& m)
 {
     LOG(INFO) << "\nd4pi_normalizeFitFractions";
     auto groupedDecayTrees = group_by_free_amplitudes(m.fitFractionIntegral().integrals().at(0).Integral.decayTrees());
+
+    // aim so that fixed a1 wave will have ~40%
+    double sum(0);
     auto ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
+    for (size_t i = 0; i < ff.size(); ++i) {
+
+        if (groupedDecayTrees[i].empty())
+            continue;
+        if (!groupedDecayTrees[i][0])
+            continue;
+
+        ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
+
+        sum += ff[i].value();
+    }
+
+    const double aim = 0.6 * sum / (groupedDecayTrees.size() - 1);
+
     for (size_t i = 0; i < ff.size(); ++i) {
 
         if (groupedDecayTrees[i].empty())
@@ -344,15 +472,8 @@ inline void d4pi_normalizeFitFractions(bat_fit& m)
             fa =  groupedDecayTrees[i][0]->freeAmplitude();
 
         if (fa and fa->variableStatus() != yap::VariableStatus::fixed)
-            fa->setValue(fa->value() / sqrt(frac*100));
+            fa->setValue(fa->value() / sqrt(frac) * sqrt(aim));
 
-
-        /*LOG(INFO) << "" ;
-        LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
-                  << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
-                  << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
-        for (const auto& dt : groupedDecayTrees[i])
-            LOG(INFO) << yap::to_string(*dt);*/
 
         LOG(INFO) << to_string(*fa) << " = " << fa->value() << "; \t ff =" << frac*100. << " %";
 
@@ -433,208 +554,6 @@ inline void d4pi_printFitFractions(bat_fit& m)
             LOG(INFO) << yap::to_string(*dt);
         LOG(INFO) << "\t" << -kv.first*100. << " %";
     }
-
-/*
-    LOG(INFO) << "\nFit fractions for grouped decay trees:";
-    sum = 0;
-    for (const auto& mci : m.fitFractionIntegral().integrals()) {
-
-        // particles
-        auto piPlus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi+")));
-        auto piMinus = std::static_pointer_cast<FinalStateParticle>(particle(*m.model(), is_named("pi-")));
-
-        auto a_1_plus   = (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D or d4pi_a_pipiS_pi) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+"))) : nullptr;
-        auto a_1_minus  = (a_1_plus and d4pi_a1_minus) ? std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1-"))) : nullptr;
-
-        auto pi_1300_plus  = particles(*m.model(), is_named("pi+(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi+(1300)")));
-        auto pi_1300_minus = particles(*m.model(), is_named("pi-(1300)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi-(1300)")));
-
-        auto pipiS = particles(*m.model(), is_named("pipiS")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pipiS")));
-        auto f_0 = particles(*m.model(), is_named("f_0")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0")));
-        auto rho = particles(*m.model(), is_named("rho0")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
-        auto omega = particles(*m.model(), is_named("omega")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("omega")));
-        auto f_2 = particles(*m.model(), is_named("f_2")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_2")));
-        auto f_0_1370 = particles(*m.model(), is_named("f_0(1370)")).empty() ? nullptr : std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0(1370)")));
-
-
-        std::vector<std::shared_ptr<yap::Particle>> twoPiResonances;
-        if (pipiS)
-            twoPiResonances.push_back(pipiS);
-        if (f_0)
-            twoPiResonances.push_back(f_0);
-        if (rho)
-            twoPiResonances.push_back(rho);
-        if (omega)
-            twoPiResonances.push_back(omega);
-        if (f_2)
-            twoPiResonances.push_back(f_2);
-
-
-        auto decayTrees = mci.Integral.decayTrees();
-        std::vector<yap::DecayTreeVector> groupedDecayTrees;
-
-
-        // a_rho_pi_S
-        if (d4pi_a_rho_pi_S) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // a_rho_pi_D
-        if (d4pi_a_rho_pi_D) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // a_sigma_pi
-        if (d4pi_a_pipiS_pi) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_plus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // a_rho_pi_S
-        if (d4pi_a_rho_pi_S) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(0))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(0))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // a_rho_pi_D
-        if (d4pi_a_rho_pi_D) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), to(rho), l_equals(2))).empty() and (filter(dt->daughterDecayTreeVector(), to(omega), l_equals(2))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // a_sigma_pi
-        if (d4pi_a_pipiS_pi) {
-            auto blub = yap::filter(decayTrees, yap::to(a_1_minus));
-            blub.erase(std::remove_if(blub.begin(), blub.end(),
-                    [&](const std::shared_ptr<yap::DecayTree>& dt){return (filter(dt->daughterDecayTreeVector(), yap::to(pipiS))).empty();}),
-                    blub.end());
-            groupedDecayTrees.push_back(blub);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // pi 1300
-        if (pi_1300_plus) {
-            DecayTreeVector dtv = yap::filter(decayTrees, yap::to(pi_1300_plus));
-            groupedDecayTrees.push_back(dtv);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-        if (pi_1300_minus) {
-            DecayTreeVector dtv = yap::filter(decayTrees, yap::to(pi_1300_minus));
-            groupedDecayTrees.push_back(dtv);
-
-            for(auto dt : groupedDecayTrees.back())  {
-                auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                if(iter != decayTrees.end())
-                    decayTrees.erase(iter);
-            }
-        }
-
-        // 2 pi resonances
-        for (unsigned i = 0; i < twoPiResonances.size(); ++i)
-            for (unsigned j = i; j < twoPiResonances.size(); ++j) {
-                DecayTreeVector dtv = yap::filter(decayTrees, yap::to(twoPiResonances[i], twoPiResonances[j]));
-                groupedDecayTrees.push_back(dtv);
-
-                for(auto dt : groupedDecayTrees.back())  {
-                    auto iter = std::find(decayTrees.begin(), decayTrees.end(), dt);
-                    if(iter != decayTrees.end())
-                        decayTrees.erase(iter);
-                }
-            }
-
-        // rest
-        groupedDecayTrees.push_back(decayTrees);
-
-        if (groupedDecayTrees.empty())
-            return;
-
-        auto ff = fit_fractions(mci.Integral, groupedDecayTrees);
-        for (size_t i = 0; i < ff.size(); ++i) {
-
-            if (groupedDecayTrees[i].empty())
-                continue;
-            if (!groupedDecayTrees[i][0])
-                continue;
-
-            LOG(INFO) << "" ;
-            LOG(INFO) << yap::daughter_name()(*(groupedDecayTrees[i][0]))
-                      << "   L = " << yap::orbital_angular_momentum()(*(groupedDecayTrees[i][0]))
-                      << " :: " << std::to_string(groupedDecayTrees[i].size()) << " amplitudes:";
-            for (const auto& fa : groupedDecayTrees[i])
-                LOG(INFO) << yap::to_string(*fa);
-
-            LOG(INFO) << "\t" << ff[i].value()*100. << " %";
-            sum += ff[i].value();
-        }
-        LOG(INFO) << "Sum = " << sum*100 << " %\n";
-
-
-        // loop over admixtures
-        for (auto& comp : m.model()->components()) {
-            LOG(INFO) << "admixture " << comp.particle()->name()
-                    << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
-                    << "; variableStatus = " << to_string(comp.admixture()->variableStatus())
-                    << "; \t value = " << comp.admixture()->value();
-        }
-
-    }*/
 }
 
 //-------------------------
@@ -867,6 +786,366 @@ inline double chi2(bat_fit& batFit, std::vector<double> sbinUpperBounds = {0.237
     std::cout << "reduced chi2 = " << chi2/NDF << "\n";
 
     return chi2;
+}
+
+//-------------------------
+std::string forRootAsTxt(bat_fit& m, std::vector<double> params) {
+    std::string descriptor;
+    std::string data;
+
+    // L
+    double L = m.LogLikelihood(params);
+
+    descriptor += "LogLikelihood/F:";
+    data += std::to_string(L) + " ";
+
+    // fit fractions
+    double sum = 0;
+    auto groupedDecayTrees = group_by_free_amplitudes(m.fitFractionIntegral().integrals().at(0).Integral.decayTrees());
+    auto ff = fit_fractions(m.fitFractionIntegral().integrals().at(0).Integral, groupedDecayTrees);
+    for (size_t i = 0; i < ff.size(); ++i) {
+
+        if (groupedDecayTrees[i].empty())
+            continue;
+        if (!groupedDecayTrees[i][0])
+            continue;
+
+        descriptor += "FF_" + to_short_string(*groupedDecayTrees[i][0]) + "/F:";
+        data += std::to_string(ff[i].value()) + " ";
+
+        sum += ff[i].value();
+    }
+
+    descriptor += "FF_total/F:";
+    data += std::to_string(sum) + " ";
+
+    //
+    // background fractions
+    //
+    // sum of integrals
+    double sumIntegrals(0);
+    // loop over admixtures
+    for (const auto& mci : m.fitFractionIntegral().integrals()) {
+        sumIntegrals += mci.Admixture->value() * integral(mci.Integral).value();
+    }
+
+    unsigned i_adm(0);
+    for (const auto& mci : m.fitFractionIntegral().integrals()) {
+        auto ff = fit_fractions(mci.Integral);
+        if (ff.size() != 1)
+            continue;
+
+        double fit_frac = mci.Admixture->value()  * integral(mci.Integral).value() / sumIntegrals * ff[0].value();
+
+        descriptor += "ADM_" + std::to_string(i_adm++) + "/F:";
+        data += std::to_string(fit_frac) + " ";
+    }
+
+    //
+    // complex amplitudes
+    //
+
+
+    //
+    // pars, within limits?
+    //
+    auto batPars = m.GetParameters();
+    assert( params.size() >= batPars.Size());
+    bool limit(false);
+
+    for (unsigned i = 0; i < batPars.Size(); ++i) {
+        if (batPars[i].IsAtLimit(params[i])) {
+            LOG(INFO) << "parameter " << i << " " << batPars[i].GetName() << " at limit:";
+            LOG(INFO) << "value = " << params[i] << "; lower limit = " << batPars[i].GetLowerLimit()
+                    << "; upper limit = " << batPars[i].GetUpperLimit();
+            limit = true;
+        }
+        descriptor += "PAR_" + batPars[i].GetSafeName() + "/F:";
+        data += std::to_string(params[i]) + " ";
+    }
+
+    descriptor += "at_limit/B:";
+    data += std::to_string(limit) + " ";
+
+
+    descriptor.pop_back(); // remove last :
+
+    return descriptor + "\n" + data;
+}
+
+//-------------------------
+void write_weighted_integral_data(bat_fit& m, std::string filename)
+{
+    TFile* f = new TFile(filename.c_str(), "RECREATE");
+    TTree t_data("data", "data");
+    TTree t_integralData("integralData", "integral data");
+    TTree t_fitFractionData("fitFractionData", "fitFraction data");
+    TTree t_fit("fit",  "weighted integration data, aka fit result");
+
+    // prepare storing of helicity angles
+    ParticleCombinationSet pcs;
+    auto D0s = particles(*m.model(), is_named("D0"));
+    if (D0s.size() == 1)
+        pcs = (*(D0s.begin()))->particleCombinations();
+
+    // add all daughter non-fsp pcs
+    // inefficient, but does the job
+    for (unsigned i=0; i<4; ++i)
+        for (auto pc : pcs)
+            for (auto d : pc->daughters())
+                if (not is_final_state_particle_combination(*d))
+                    pcs.insert(d);
+
+    std::vector<float> angles(pcs.size() * 2, 0);
+    std::vector<std::string> branchnames_angles;
+
+    for (auto pc : pcs) {
+        branchnames_angles.push_back("theta_" + to_string(*pc));
+        branchnames_angles.push_back("phi_" + to_string(*pc));
+    }
+
+    // make name ROOT-branchable
+    for (auto& s : branchnames_angles) {
+        s = std::regex_replace(s, std::regex("[\\(\\) ]"), "");
+        s = std::regex_replace(s, std::regex("->"), "_");
+        s = std::regex_replace(s, std::regex("\\+"), "_");
+        s = std::regex_replace(s, std::regex(";"), "__");
+    }
+
+    float m_12, m_23, m_14, m_34, m_24, m_13,  m_124, m_123, m_234, m_134;
+
+    //
+    // data
+    //
+    {
+        t_data.Branch("m_12 ", &m_12,  "m_12/F");
+        t_data.Branch("m_23 ", &m_23,  "m_23/F");
+        t_data.Branch("m_14 ", &m_14,  "m_14/F");
+        t_data.Branch("m_34 ", &m_34,  "m_34/F");
+        t_data.Branch("m_24 ", &m_24,  "m_24/F");
+        t_data.Branch("m_13 ", &m_13,  "m_13/F");
+        t_data.Branch("m_124", &m_124, "m_124/F");
+        t_data.Branch("m_123", &m_123, "m_123/F");
+        t_data.Branch("m_234", &m_234, "m_234/F");
+        t_data.Branch("m_134", &m_134, "m_134/F");
+
+        unsigned i(0);
+        for (auto name : branchnames_angles)
+            t_data.Branch(name.c_str(), &angles[i++], (name + "/F").c_str());
+
+        for (auto& dp : m.fitData()) {
+            auto fsm = m.model()->fourMomenta()->finalStateMomenta(dp);
+
+            m_12  = abs(FourVector<double>(fsm[0] + fsm[1]));
+            m_23  = abs(FourVector<double>(fsm[1] + fsm[2]));
+            m_14  = abs(FourVector<double>(fsm[0] + fsm[3]));
+            m_34  = abs(FourVector<double>(fsm[2] + fsm[3]));
+            m_24  = abs(FourVector<double>(fsm[1] + fsm[3]));
+            m_13  = abs(FourVector<double>(fsm[0] + fsm[2]));
+            m_124 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[3]));
+            m_123 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[2]));
+            m_234 = abs(FourVector<double>(fsm[1] + fsm[2] + fsm[3]));
+            m_134 = abs(FourVector<double>(fsm[0] + fsm[2] + fsm[3]));
+
+            i = 0;
+            for (auto pc : pcs) {
+                auto hel_angles = m.model()->helicityAngles()(dp, m.fitData(), pc);
+                //LOG(INFO) << "helicity angles for pc " << to_string(*pc) << ": " << angles.phi << ", " << angles.theta;
+                angles[i++] = hel_angles.theta;
+                angles[i++] = hel_angles.phi;
+            }
+
+            t_data.Fill();
+        }
+
+        t_data.Write();
+    }
+
+    //
+    // integralData
+    //
+    {
+        t_integralData.Branch("m_12 ", &m_12,  "m_12/F");
+        t_integralData.Branch("m_23 ", &m_23,  "m_23/F");
+        t_integralData.Branch("m_14 ", &m_14,  "m_14/F");
+        t_integralData.Branch("m_34 ", &m_34,  "m_34/F");
+        t_integralData.Branch("m_24 ", &m_24,  "m_24/F");
+        t_integralData.Branch("m_13 ", &m_13,  "m_13/F");
+        t_integralData.Branch("m_124", &m_124, "m_124/F");
+        t_integralData.Branch("m_123", &m_123, "m_123/F");
+        t_integralData.Branch("m_234", &m_234, "m_234/F");
+        t_integralData.Branch("m_134", &m_134, "m_134/F");
+
+        unsigned i(0);
+        for (auto name : branchnames_angles)
+            t_integralData.Branch(name.c_str(), &angles[i++], (name + "/F").c_str());
+
+        for (auto& dp : m.integralData()) {
+            auto fsm = m.model()->fourMomenta()->finalStateMomenta(dp);
+
+            m_12  = abs(FourVector<double>(fsm[0] + fsm[1]));
+            m_23  = abs(FourVector<double>(fsm[1] + fsm[2]));
+            m_14  = abs(FourVector<double>(fsm[0] + fsm[3]));
+            m_34  = abs(FourVector<double>(fsm[2] + fsm[3]));
+            m_24  = abs(FourVector<double>(fsm[1] + fsm[3]));
+            m_13  = abs(FourVector<double>(fsm[0] + fsm[2]));
+            m_124 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[3]));
+            m_123 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[2]));
+            m_234 = abs(FourVector<double>(fsm[1] + fsm[2] + fsm[3]));
+            m_134 = abs(FourVector<double>(fsm[0] + fsm[2] + fsm[3]));
+
+            i = 0;
+            for (auto pc : pcs) {
+                auto hel_angles = m.model()->helicityAngles()(dp, m.fitData(), pc);
+                //LOG(INFO) << "helicity angles for pc " << to_string(*pc) << ": " << angles.phi << ", " << angles.theta;
+                angles[i++] = hel_angles.theta;
+                angles[i++] = hel_angles.phi;
+            }
+
+            t_integralData.Fill();
+        }
+
+        t_integralData.Write();
+    }
+
+
+    //
+    // fitFractionData
+    //
+    {
+        t_fitFractionData.Branch("m_12 ", &m_12,  "m_12/F");
+        t_fitFractionData.Branch("m_23 ", &m_23,  "m_23/F");
+        t_fitFractionData.Branch("m_14 ", &m_14,  "m_14/F");
+        t_fitFractionData.Branch("m_34 ", &m_34,  "m_34/F");
+        t_fitFractionData.Branch("m_24 ", &m_24,  "m_24/F");
+        t_fitFractionData.Branch("m_13 ", &m_13,  "m_13/F");
+        t_fitFractionData.Branch("m_124", &m_124, "m_124/F");
+        t_fitFractionData.Branch("m_123", &m_123, "m_123/F");
+        t_fitFractionData.Branch("m_234", &m_234, "m_234/F");
+        t_fitFractionData.Branch("m_134", &m_134, "m_134/F");
+
+        unsigned i(0);
+        for (auto name : branchnames_angles)
+            t_fitFractionData.Branch(name.c_str(), &angles[i++], (name + "/F").c_str());
+
+        for (auto& dp : m.fitFractionData()) {
+            auto fsm = m.model()->fourMomenta()->finalStateMomenta(dp);
+
+            m_12  = abs(FourVector<double>(fsm[0] + fsm[1]));
+            m_23  = abs(FourVector<double>(fsm[1] + fsm[2]));
+            m_14  = abs(FourVector<double>(fsm[0] + fsm[3]));
+            m_34  = abs(FourVector<double>(fsm[2] + fsm[3]));
+            m_24  = abs(FourVector<double>(fsm[1] + fsm[3]));
+            m_13  = abs(FourVector<double>(fsm[0] + fsm[2]));
+            m_124 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[3]));
+            m_123 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[2]));
+            m_234 = abs(FourVector<double>(fsm[1] + fsm[2] + fsm[3]));
+            m_134 = abs(FourVector<double>(fsm[0] + fsm[2] + fsm[3]));
+
+            i = 0;
+            for (auto pc : pcs) {
+                auto hel_angles = m.model()->helicityAngles()(dp, m.fitData(), pc);
+                //LOG(INFO) << "helicity angles for pc " << to_string(*pc) << ": " << angles.phi << ", " << angles.theta;
+                angles[i++] = hel_angles.theta;
+                angles[i++] = hel_angles.phi;
+            }
+
+            t_fitFractionData.Fill();
+        }
+
+        t_fitFractionData.Write();
+    }
+
+
+    //
+    // fit
+    //
+    {
+        float intens;
+
+        // prepare writing of individual admixtures' and waves' intensities
+        std::vector<std::string> branchnames_admixtures;
+        unsigned i_adm(0);
+        for (const auto& mc : m.model()->components())
+            branchnames_admixtures.push_back("intens_adm_" + std::to_string(i_adm++));
+        std::vector<float> intens_admixtures(branchnames_admixtures.size());
+
+        std::vector<std::string> branchnames_waves;
+        auto groupedDecayTrees = group_by_free_amplitudes(m.fitFractionIntegral().integrals().at(0).Integral.decayTrees());
+
+        unsigned i = 0;
+        for (; i < groupedDecayTrees.size(); ++i)
+            branchnames_waves.push_back("intens_" + to_short_string(*groupedDecayTrees[i][0]));
+
+        for (auto dt : m.fitFractionIntegral().integrals().at(0).Integral.decayTrees())
+            groupedDecayTrees.push_back({dt});
+
+        for (; i < groupedDecayTrees.size(); ++i)
+            branchnames_waves.push_back("intens_" + to_short_string(*groupedDecayTrees[i][0]) + "_" + std::to_string(i));
+
+
+        std::vector<float> intens_waves(branchnames_waves.size());
+
+        t_fit.Branch("m_12 ", &m_12,  "m_12/F");
+        t_fit.Branch("m_23 ", &m_23,  "m_23/F");
+        t_fit.Branch("m_14 ", &m_14,  "m_14/F");
+        t_fit.Branch("m_34 ", &m_34,  "m_34/F");
+        t_fit.Branch("m_24 ", &m_24,  "m_24/F");
+        t_fit.Branch("m_13 ", &m_13,  "m_13/F");
+        t_fit.Branch("m_124", &m_124, "m_124/F");
+        t_fit.Branch("m_123", &m_123, "m_123/F");
+        t_fit.Branch("m_234", &m_234, "m_234/F");
+        t_fit.Branch("m_134", &m_134, "m_134/F");
+        t_fit.Branch("intensity", &intens, "intens/F");
+
+        for (unsigned i = 0; i < branchnames_admixtures.size(); ++i)
+            t_fit.Branch(branchnames_admixtures[i].c_str(), &intens_admixtures[i], (branchnames_admixtures[i] + "/F").c_str());
+
+        for (unsigned i = 0; i < branchnames_waves.size(); ++i)
+            t_fit.Branch(branchnames_waves[i].c_str(), &intens_waves[i], (branchnames_waves[i] + "/F").c_str());
+
+        for (unsigned i = 0; i < branchnames_angles.size(); ++i)
+            t_fit.Branch(branchnames_angles[i].c_str(), &angles[i], (branchnames_angles[i] + "/F").c_str());
+
+        // force calculate all integrals
+        yap::ImportanceSampler::calculate(m.modelIntegral(), m.integralPartitions(), true);
+
+        for (auto& dp : m.integralData()) {
+            auto fsm = m.model()->fourMomenta()->finalStateMomenta(dp);
+
+            m_12  = abs(FourVector<double>(fsm[0] + fsm[1]));
+            m_23  = abs(FourVector<double>(fsm[1] + fsm[2]));
+            m_14  = abs(FourVector<double>(fsm[0] + fsm[3]));
+            m_34  = abs(FourVector<double>(fsm[2] + fsm[3]));
+            m_24  = abs(FourVector<double>(fsm[1] + fsm[3]));
+            m_13  = abs(FourVector<double>(fsm[0] + fsm[2]));
+            m_124 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[3]));
+            m_123 = abs(FourVector<double>(fsm[0] + fsm[1] + fsm[2]));
+            m_234 = abs(FourVector<double>(fsm[1] + fsm[2] + fsm[3]));
+            m_134 = abs(FourVector<double>(fsm[0] + fsm[2] + fsm[3]));
+
+            intens = intensity(*m.model(), dp);
+
+            for (unsigned i = 0; i < intens_admixtures.size(); ++i)
+                intens_admixtures[i] = intensity(m.model()->components()[i], dp);
+
+            for (unsigned i = 0; i < intens_waves.size(); ++i)
+                intens_waves[i] = intensity(groupedDecayTrees[i], dp);
+
+            unsigned i(0);
+            for (auto pc : pcs) {
+                auto hel_angles = m.model()->helicityAngles()(dp, m.fitData(), pc);
+                angles[i++] = hel_angles.theta;
+                angles[i++] = hel_angles.phi;
+            }
+
+            t_fit.Fill();
+        }
+
+        t_fit.Write();
+    }
+
+    f->Close();
 }
 
 

@@ -109,6 +109,16 @@ inline void add_3pi_decays(std::shared_ptr<DecayingParticle>& isp,
 }
 
 //-------------------------
+void fix_free_amplitudes(Model& M)
+{
+    for (const auto& fa : free_amplitudes(M, yap::is_not_fixed()))
+        fa->freeAmplitude()->variableStatus() = yap::VariableStatus::fixed;
+
+    for (auto& comp : M.components())
+        comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
+}
+
+//-------------------------
 inline std::unique_ptr<Model> d4pi_phsp()
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl");
@@ -135,7 +145,7 @@ inline std::unique_ptr<Model> d4pi_phsp()
 }
 
 //-------------------------
-inline std::unique_ptr<Model> d4pi()
+inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
 {
     auto T = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl");
     try {
@@ -424,8 +434,8 @@ inline std::unique_ptr<Model> d4pi()
         add_3pi_decays(D, piPlus, piMinus,
                 pi_1800_plus, pi_1800_minus,
                 d4pi_amp_pi_1800_plus, d4pi_amp_pi_1800_minus,
-                {f_0_980, f_0_1500},
-                {{1}, {d4pi_amp_pi_1800_f_0_1500}});
+                {pipiS, f_0_980, f_0_1500},
+                {{1}, {d4pi_amp_pi_1800_f_0}, {d4pi_amp_pi_1800_f_0_1500}});
     }
 
     if (d4pi_a_1_1420) {
@@ -440,16 +450,16 @@ inline std::unique_ptr<Model> d4pi()
         add_3pi_decays(D, piPlus, piMinus,
                 a_1_1640_plus, a_1_1640_minus,
                 d4pi_amp_a_1_1640_plus, d4pi_amp_a_1_1640_minus,
-                {f_2},
-                {{0, 1}});
+                {pipiS, f_0_980, rho}, // no f_2 in data
+                {{0, 1}, {0, 1}, {1, 0, 1}});
     }
 
     if (d4pi_a_2_1320) {
         add_3pi_decays(D, piPlus, piMinus,
                 a_2_1320_plus, a_2_1320_minus,
                 d4pi_amp_a_2_1320_plus, d4pi_amp_a_2_1320_minus,
-                {rho},
-                {{0, 0, 1}});
+                {rho, f_2},
+                {{0, 0, 1}, {0, 1}});
     }
 
     if (d4pi_pi_2_1670) {
@@ -522,25 +532,45 @@ inline std::unique_ptr<Model> d4pi()
         admixtures.push_back(d4pi_admixture_bg_sigma);
     }
 
-    //
-    // finish and print summary
-    //
+    // lock before dealing with admixtures
     M->lock();
 
-    LOG(INFO) << "D Decay trees:";
-    LOG(INFO) << to_string(D->decayTrees());
+    // set parameters if given
+    if (not pars.empty()) {
+        LOG(INFO) << "set amplitudes";
+        std::set<ComplexParameter*> famps;
+        unsigned i = 0;
+        for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed())) {
+            if (famps.find(fa->freeAmplitude().get()) != famps.end())
+                continue;
+            famps.insert(fa->freeAmplitude().get());
 
-    LOG(INFO) << "\nFree amplitudes: ";
-    for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed()))
-        LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
-            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
-            << "  \t" << fa.get()
-            << "  \t" << fa->freeAmplitude().get();
+            fa->setValue(std::complex<double>(pars[i], pars[i+1]));
+            LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
+                << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
+                << "  \t" << fa.get()
+                << "  \t" << fa->freeAmplitude().get();
+            i += 2;
+        }
+        LOG(INFO) << "set admixtures";
+        for (auto& comp : M->components()) {
+            if (comp.particle() == &*D)
+                continue;
+            comp.admixture()->setValue(pars[i++]);
+            LOG(INFO) << "admixture " << comp.particle()->name()
+                    << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
+                    << "; variableStatus = " << to_string(comp.admixture()->variableStatus())
+                    << "; value = " << comp.admixture()->value();
+        }
+    }
 
     // loop over admixtures
     unsigned i_adm(0);
+    bool D0component(false);
+    bool fixed(false);
     for (auto& comp : M->components()) {
         if (comp.particle() == &*D) {
+            D0component = true;
             if (d4pi_bg_only) {
                 comp.admixture()->setValue(0);
                 comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
@@ -553,7 +583,8 @@ inline std::unique_ptr<Model> d4pi()
         }
         else if (comp.admixture()->variableStatus() != yap::VariableStatus::fixed) {
 
-            *comp.admixture() = admixtures[i_adm++];
+            if (pars.empty())
+                *comp.admixture() = admixtures[i_adm++];
 
             if (d4pi_fix_bg) {
                 comp.admixture()->variableStatus() = yap::VariableStatus::fixed;
@@ -561,6 +592,39 @@ inline std::unique_ptr<Model> d4pi()
             }
         }
 
+        if (comp.admixture()->variableStatus() == yap::VariableStatus::fixed)
+            fixed = true;
+    }
+
+    if (not D0component and not fixed and not d4pi_fix_amplitudes) {
+        //M->components()[0].admixture()->setValue(1.);
+        M->components()[0].admixture()->variableStatus() = yap::VariableStatus::fixed;
+    }
+
+    if (d4pi_fix_amplitudes)
+        fix_free_amplitudes(*M);
+
+    //
+    // finish and print summary
+    //
+    LOG(INFO) << "D Decay trees:";
+    LOG(INFO) << to_string(D->decayTrees());
+
+    LOG(INFO) << "\nFixed amplitudes: ";
+    for (const auto& fa : free_amplitudes(*M, yap::is_fixed()))
+        LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
+            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
+            << "  \t" << fa.get()
+            << "  \t" << fa->freeAmplitude().get();
+
+    LOG(INFO) << "\nFree amplitudes: ";
+    for (const auto& fa : free_amplitudes(*M, yap::is_not_fixed()))
+        LOG(INFO) << yap::to_string(*fa) << "  \t (mag, phase) = (" << abs(fa->value()) << ", " << deg(arg(fa->value())) << "°)"
+            << "  \t (real, imag) = (" << real(fa->value()) << ", " << imag(fa->value()) << ")"
+            << "  \t" << fa.get()
+            << "  \t" << fa->freeAmplitude().get();
+
+    for (auto& comp : M->components()) {
         LOG(INFO) << "admixture " << comp.particle()->name()
                 << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
                 << "; variableStatus = " << to_string(comp.admixture()->variableStatus())
