@@ -24,6 +24,7 @@
 #include <Flatte.h>
 #include <FourMomenta.h>
 #include <FreeAmplitude.h>
+#include <GounarisSakurai.h>
 #include <HelicityFormalism.h>
 #include <ImportanceSampler.h>
 #include <logging.h>
@@ -215,7 +216,7 @@ inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
     auto pi_2_1670_minus = DecayingParticle::create(T["pi_2(1670)-"], r, pi_2_1670_shape);
 
     // rho
-    auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<BreitWigner>(T["rho0"]));
+    auto rho = DecayingParticle::create(T["rho0"], r, std::make_shared<GounarisSakurai>(T["rho0"]));
     rho->addStrongDecay(piPlus, piMinus);
 
     // omega

@@ -25,6 +25,7 @@ set(YAP_SOURCES
 	Flatte.cxx
 	FourMomenta.cxx
 	FreeAmplitude.cxx
+	GounarisSakurai.cxx
 	HelicityAngles.cxx
 	HelicityFormalism.cxx
 	ImportanceSampler.cxx

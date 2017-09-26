@@ -74,7 +74,7 @@ const bool bg_omega    = false;  // 0% of BG
 // configuration
 const bool d4pi_fix_a_rho_pi_S = true; // default: true
 
-const bool d4pi_a1_bowler   = false and (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D);
+const bool d4pi_a1_bowler   = true and (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D);
 /*const*/ bool d4pi_pm_shared   = true;  // share free amplitudes of 3pi + and - states
 
 /*const*/ bool d4pi_a1_plus     = true;
