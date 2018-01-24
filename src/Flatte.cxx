@@ -123,7 +123,7 @@ void Flatte::calculate(DataPartition& D, const std::shared_ptr<const ParticleCom
         w += fc.Coupling->value() * measured_breakup_momenta::q_complex(m2, fc.Particles[0]->mass(), fc.Particles[1]->mass());
 
     // normalization factor
-    auto w_o_m = 2. * w / mass()->value();
+    auto w_o_m = 2. * w / m;
 
     /////////////////////////
 

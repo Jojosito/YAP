@@ -122,7 +122,7 @@ inline size_t load_data_4pi(yap::DataSet& data, TTree& t, int N, const double BD
         if (++n_loaded >= N)
             break;
 
-        if (n_loaded%10 == 0)
+        if (n_loaded%10000 == 0)
             std::cout << "\r" << 100. * n_loaded/N << "%                           ";
     }
     std::cout << std::endl;
@@ -224,11 +224,11 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
             double mass = shape->mass()->value();
             m.addParameter("mass(a_1)", shape->mass(), 0.9*mass, 1.1*mass);
-            m.GetParameters().Back().SetPrior(new BCGaussianPrior(1.23, 0.04));
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(mass, 0.04));
 
             double width = shape->width()->value();
             m.addParameter("width(a_1)", shape->width(), 0.7*width, 1.3*width);
-            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.425, 0.175));
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(width, 0.175));
 
             double coupling = shape->coupling()->value();
             m.addParameter("K*K_coupling", shape->coupling(), 0.5*coupling, 2.*coupling);
@@ -251,23 +251,26 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
             auto f_0 = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("f_0")));
             auto f_0_980_flatte = std::dynamic_pointer_cast<Flatte>(f_0->massShape());
 
-            m.addParameter("mass(f_0)", f_0_980_flatte->mass(), 0.97, 1.01);
-            for (auto ch : f_0_980_flatte->channels()) {
+            double mass = f_0_980_flatte->mass()->value();
+            m.addParameter("mass(f_0)", f_0_980_flatte->mass(), 0.9*mass, 1.1*mass);
+            /*for (auto ch : f_0_980_flatte->channels()) {
                 double coupling = ch.Coupling->value();
                 m.addParameter("f_0_coupling_" + ch.Particles[0]->name(), ch.Coupling, 0.5*coupling, 2*coupling);
-            }
+            }*/
         }
 
         // rho
         if (not particles(*m.model(), yap::is_named("rho0")).empty()) {
             auto rho = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("rho0")));
-            auto shape = std::dynamic_pointer_cast<BreitWigner>(rho->massShape());
+            auto shape = std::dynamic_pointer_cast<GounarisSakurai>(rho->massShape());
 
-            m.addParameter("mass(rho0)", shape->mass(), 0.76, 0.78);
-            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.77526, 10.*0.00025));
+            double mass = shape->mass()->value();
+            m.addParameter("mass(rho0)", shape->mass(), 0.9*mass, 1.1*mass);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(mass, 10.*0.00025));
 
-            m.addParameter("width(rho0)", shape->width(), 0.11, 0.16);
-            m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.1491, 5.*0.008));
+            double width = shape->width()->value();
+            m.addParameter("width(rho0)", shape->width(), 0.7*width, 1.3*width);
+            m.GetParameters().Back().SetPrior(new BCGaussianPrior(width, 5.*0.008));
         }
     }
 
@@ -326,13 +329,6 @@ void draw_overlap_integrals(const DecayTreeVectorIntegral& dtvi)
 {
     auto& diagonals = dtvi.diagonals();
     auto offDiagonals = dtvi.offDiagonals();
-
-    LOG(INFO) << "off-diagonals: ";
-    for (auto els : offDiagonals) {
-        for (auto el : els) {
-            LOG(INFO) << to_string(el.value());
-        }
-    }
 
     TFile file("output/overlapIntegrals.root", "RECREATE");
 

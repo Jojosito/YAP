@@ -46,6 +46,7 @@ set(YAP_SOURCES
 	PDL.cxx
 	PoleMass.cxx
 	RecalculableDataAccessor.cxx
+	SmearedFlatte.cxx
 	SpinAmplitude.cxx
 	SpinAmplitudeCache.cxx
 	StaticDataAccessor.cxx

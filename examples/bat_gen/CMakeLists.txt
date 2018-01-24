@@ -2,7 +2,7 @@ include_directories(
 	${YAP_SOURCE_DIR}/include 
 	${BAT_INCLUDE_DIRS} 
 	${ROOT_INCLUDE_DIRS}
-	"/nfs/hicran/project/belle/users/jrauch/SmokeyJoesBelle/analysis/include"
+	"/nfs/freenas/tuph/e18/project/belle/users/jrauch/SmokeyJoesBelle/analysis/include"
 	)
 
 set(SOURCES
@@ -35,6 +35,6 @@ configure_file(${YAP_SOURCE_DIR}/data/evt.pdl ${CMAKE_CURRENT_BINARY_DIR}/data/e
 foreach(program ${PROGRAMS})
     add_executable(${program} EXCLUDE_FROM_ALL ${program}.cxx ${SOURCES})
     target_link_libraries(${program} ${ROOT_LIBS} ${BAT_LIBRARIES} YAP
-    	/nfs/hicran/project/belle/users/jrauch/SmokeyJoesBelle/analysis/lib/libanalysis.so
+    	/nfs/freenas/tuph/e18/project/belle/users/jrauch/SmokeyJoesBelle/analysis/lib/libanalysis.so
     )
 endforeach(program)

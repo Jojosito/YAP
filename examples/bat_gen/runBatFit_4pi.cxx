@@ -40,23 +40,24 @@ int main()
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
-    //bat_fit m(d4pi_fit(model_name + "_fit", {0.648836, 0.422986, -2.15676, -0.642001, 4.01047, 3.50073, -0.258891, 0.388413, 0.0229304, -0.218011, -2.31237, 19.4437, -14.5828, -42.9002, 3.06353, 5.86252, -43.1035, 45.4922, 2.4479, 3.08631, 358.925, -355.689, -37058.4, -22568, -5.81963, 1.53752, -0.888657, -0.113678, 4.59961, 1.22946, 0.424136, 0.06, 1.00995, 0.329296, 0.329725, 0.779961, 0.159991, 0.774536, 33.1009, 2.25029, -163.423, 5.32344, 41.1177, 0.466787, 123.685, 0.219214, -83.9957, 19.5807, 96.7821, 45.311, -108.774, 6.61471, 62.4102, 62.6694, 133.456, 3.93923, 51.5804, 505.313, -44.7405, 43389.4, -148.659, 6.01931, 165.201, 0.895898, -172.71}));
-    //m.setModelSelection(0.1); // LASSO/BCM parameter
+    //bat_fit m(d4pi_fit(model_name + "_fit", {   -0.982423, -1.11708, -37.4235, -27.7717, -3.08474, -0.609421, 5.86998, 10.4598, 0.832805, 1.53719, 4.3105, 2.70736, -4.50548, 5.54519, 30.3196, 200.503, 124190, 45460.8, 4.13664, -1.0761, -4.08, -3.8142, 2.32384, 4.50658, 61.379, 1.22991, 0.424383, 0.06, 1.48762, -131.33, 46.6024, -143.421, 3.14436, -168.825, 11.9943, 60.6991, 1.74829, 61.5524, 5.09021, 32.1323, 7.14482, 129.094, 202.782, 81.401, 132249, 20.1056, 4.27431, -14.5816, 5.58521, -136.928, 5.07046, 62.7219}));
+    //bat_fit m(d4pi_fit(model_name + "_fit", {-0.154518, 0.227784, 0.177584, -0.392354, -20.707, 28.1154, 7.63314, -2.7599, 0.115322, 0.00264234, -2.82195, 2.16605, 82.8522, -19.4367, -1.0357, 0.421327, -23.0284, 3.68123, -0.631946, 0.476604, -0.475645, 0.227638, 1.02482, -0.668613, -404.364, 171.518, -6.79664, 2.55212, -6.78063, -12.8324, 1.41051, 6.41238, 114.503, 57.3835, -15.6803, -74.0754, -26.5365, -3.97416, 103.276, 8.50773, -750.726, -5590.62, 515.759, -105.61, 32.8272, 10.4841, 41302, 23896.5, -0.551647, 0.00909297, 1.65934, -0.810574, -0.474255, -0.664477, -1.77448, -0.158776, -3.92576, 1.96692, 0.0899473, -0.117294, 4.20759, 0.811348, 6.63504, 2.383, -4.99893, 2.51687, -0.210127, 0.248135, -4.66397, -0.950354, 1.07129, -0.0454435, -21.448, -33.0476, -1.14807, 2.97919, -0.24193, -0.0889014, 99.5525, 23.527, -0.865321, -1.21978, -2.0214, -0.45496, -0.0743514, -0.164393, -0.0360475, -0.09143, -46.8871, -58.8546, 0.0153325}));
+    m.setModelSelection(0.75); // LASSO/BCM parameter
 
     const bool adjustRangesFF = true; // adjust the real and imag ranges so that all waves have similar ff
 
     const bool minuit = true;
-    //m.SetRelativePrecision(0.05); // default is 1%, to speed things up a bit
+    m.SetRelativePrecision(0.1); // default is 1%, to speed things up a bit
 
     const bool mcmc = false;
-    const unsigned nPreRun = 10000;
-    const unsigned nRun    = 1000;
-    const unsigned nChains = 64;
+    const unsigned nPreRun = 1500;
+    const unsigned nRun    = 100;
+    const unsigned nChains = 128;
 
     const unsigned nData = 300000; // 300000; max number of Data points we want
     const bool chargeBlind = false;
     const unsigned nThreads = 4;
-    const double maxHours = 0.;//9*24;
+    const double maxHours = 37;
 
     const bool generate_mc = true;
 
@@ -114,7 +115,6 @@ int main()
         }
         LOG(INFO) << "Load data";
         load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
-        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     }
     { // MC data, pre-filtered
         LOG(INFO) << "Load integration (MC) data";
@@ -165,8 +165,6 @@ int main()
         TChain t_phsp("t");
         t_phsp.Add("/home/ne53mad/YAPfork/output/D4pi_phsp_root.root");
         load_data_4pi(m.fitFractionData(), t_phsp, nData, 0, 0, false);
-
-        yap::ImportanceSampler::calculate(m.fitFractionIntegral(), m.fitFractionPartitions(), true);
     }
 
     /*{ // YAP generated; seems to have some problems!
@@ -174,10 +172,13 @@ int main()
         generate_fit_fraction_data(m, nData, nThreads);
     }*/
 
-    // partition integral data
+    // partition data
+    m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
     m.integralPartitions() = yap::DataPartitionBlock::create(m.integralData(), nThreads);
+    m.fitFractionPartitions() = yap::DataPartitionBlock::create(m.fitFractionData(), nThreads);
 
     // force calculate all integrals
+    yap::ImportanceSampler::calculate(m.fitFractionIntegral(), m.fitFractionPartitions(), true);
     yap::ImportanceSampler::calculate(m.modelIntegral(), m.integralPartitions(), true);
 
     if (adjustRangesFF) {
@@ -217,6 +218,11 @@ int main()
         m.PrintSummary();
         m.setUseJacobian(true);
         m.MarginalizeAll(BCIntegrate::kMargMetropolis);
+
+        auto bestFitPars = m.GetBestFitParameters();
+        std::ofstream out("output/MCMC_result.dat");
+        out << forRootAsTxt(m, bestFitPars);
+        out.close();
     }
     if (minuit) {
         m.setUseJacobian(false);
@@ -281,9 +287,10 @@ int main()
     for (auto par : bestFitPars)
         LOG(INFO) << "\t" << par;
 
-    if (mcmc) {
+    //if (mcmc) {
         LOG(INFO) << "\nFind global mode";
         m.setUseJacobian(false);
+        m.SetRelativePrecision(0.1);
         auto globalMode = m.FindMode(bestFitPars);
 
         double llGlobMode = std::numeric_limits<double>::min();
@@ -293,7 +300,7 @@ int main()
             llGlobMode = m.LogLikelihood(globalMode);
 
         LOG(INFO) << "\nLogLikelihood of global mode = " << llGlobMode;
-    }
+    //}
 
     chi2(m);
     chi2_adaptiveBinning(m);
@@ -314,7 +321,7 @@ int main()
     m.PrintSummary();
     LOG(INFO) << "Generate plots";
     m.PrintAllMarginalized("output/" + m.GetSafeName() + "_plots.pdf", 2, 2);
-    if (mcmc) {
+    if (mcmc and not minuit) {
         try { m.PrintParameterPlot("output/" + m.GetSafeName() + "_parameterPlots.pdf", 2, 2); }
         catch (...) { LOG(ERROR) << "Failed PrintParameterPlot"; }
         try { m.PrintCorrelationMatrix("output/" + m.GetSafeName() + "_matrix.pdf"); }

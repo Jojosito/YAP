@@ -60,9 +60,9 @@ namespace Detail {
     };
 }
 
-    template <typename T>
-    inline std::string toString(const Detail::VApprox<T>& value) {
-        return value.toString();
+template <typename T>
+inline std::string toString(const Detail::VApprox<T>& value) {
+    return value.toString();
 }
 
 } // end namespace Catch

@@ -40,6 +40,7 @@
 #include <PDL.h>
 #include <PHSP.h>
 #include <QuantumNumbers.h>
+#include <SmearedFlatte.h>
 #include <SpinAmplitudeCache.h>
 
 #include <assert.h>
@@ -235,7 +236,8 @@ inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
     pipi->addStrongDecay<d4pi_max_L>(piPlus, piMinus);
 
     // f_0(980) (as Flatte)
-    auto f_0_980_flatte = std::make_shared<Flatte>(T["f_0"]);
+    //auto f_0_980_flatte = std::make_shared<Flatte>(T["f_0"]);
+    auto f_0_980_flatte = std::make_shared<SmearedFlatte>(T["f_0"], 0.00397333297611, 0.2, 1.6); // sigma from K resolution
     f_0_980_flatte->add(FlatteChannel(0.406 * 0.406,     *piPlus, *piMinus));
     f_0_980_flatte->add(FlatteChannel(0.406 * 0.406 * 4, T["K+"], T["K-"]));
     auto f_0_980 = DecayingParticle::create(T["f_0"], r, f_0_980_flatte);
@@ -361,7 +363,7 @@ inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
 
 
     // a_1
-    if (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D) {
+    /*if (d4pi_a_rho_pi_S or d4pi_a_rho_pi_D) {
         a_1_plus->addStrongDecay(rho, piPlus);
         a_1_minus->addStrongDecay(rho, piMinus);
 
@@ -421,7 +423,18 @@ inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
             else
                 *free_amplitude(*D, to(a_1_minus)) = d4pi_amp_a_minus;
         }
+    }*/
+
+    if (d4pi_a_1) {
+        add_3pi_decays(D, piPlus, piMinus,
+                a_1_plus, a_1_minus,
+                1, d4pi_amp_a_minus,
+                {rho, pipiS, f_2}, // kein f0
+                {{1, 0, d4pi_amp_a_rho_pi_D}, {0, d4pi_amp_a_pipiS_pi}, {0, 1}});
     }
+    free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
+    free_amplitude(*D, to(a_1_plus))->variableStatus() = VariableStatus::fixed;
+
 
     if (d4pi_pi1300) {
         add_3pi_decays(D, piPlus, piMinus,
@@ -451,16 +464,16 @@ inline std::unique_ptr<Model> d4pi(std::vector<double> pars = {})
         add_3pi_decays(D, piPlus, piMinus,
                 a_1_1640_plus, a_1_1640_minus,
                 d4pi_amp_a_1_1640_plus, d4pi_amp_a_1_1640_minus,
-                {pipiS, f_0_980, rho}, // no f_2 in data
-                {{0, 1}, {0, 1}, {1, 0, 1}});
+                {pipiS, rho, f_2}, // no f0; no f_2 in data
+                {{0, 1}, {1, 0, 1}, {0, 1}});
     }
 
     if (d4pi_a_2_1320) {
         add_3pi_decays(D, piPlus, piMinus,
                 a_2_1320_plus, a_2_1320_minus,
                 d4pi_amp_a_2_1320_plus, d4pi_amp_a_2_1320_minus,
-                {rho, f_2},
-                {{0, 0, 1}, {0, 1}});
+                {rho}, // f2 vernachlaessigbar
+                {{0, 0, 1}});
     }
 
     if (d4pi_pi_2_1670) {
