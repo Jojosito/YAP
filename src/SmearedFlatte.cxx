@@ -44,6 +44,10 @@ void SmearedFlatte::calculate(DataPartition& D, const std::shared_ptr<const Part
     double m_step = 0.01 * sigma_;
     std::vector<double> shape_real;
     std::vector<double> shape_imag;
+
+    std::vector<double> shape_norm;
+    std::vector<double> shape_arg;
+
     shape_real.reserve( (m_max - m_min) / m_step );
     shape_imag.reserve(shape_real.size());
 
@@ -56,18 +60,34 @@ void SmearedFlatte::calculate(DataPartition& D, const std::shared_ptr<const Part
             ws += fc.Coupling->value() * measured_breakup_momenta::q_complex(s, fc.Particles[0]->mass(), fc.Particles[1]->mass());
 
         auto amp = w_o_m / (m2 - s - 1_i * 2. * ws / m);
+
         shape_real.push_back(amp.real());
         shape_imag.push_back(amp.imag());
+
+        shape_norm.push_back(norm(amp));
+        shape_arg.push_back(arg(amp));
     }
 
     // smear
     gaussianiir1d(shape_real.data(), shape_real.size(), sigma_/m_step, 10);
     gaussianiir1d(shape_imag.data(), shape_imag.size(), sigma_/m_step, 10);
 
+    gaussianiir1d(shape_norm.data(), shape_norm.size(), sigma_/m_step, 10);
+
     /////////////////////////
     for (auto& d : D) {
         double sqrt_s = model()->fourMomenta()->m(d, pc);
-        std::complex<double> amp(interpolate(sqrt_s, shape_real, m_min, m_step), interpolate(sqrt_s, shape_imag, m_min, m_step));
+        std::complex<double> amp;
+        if (false) // smear real and imag
+        {
+            amp = std::complex<double>(interpolate(sqrt_s, shape_real, m_min, m_step), interpolate(sqrt_s, shape_imag, m_min, m_step));
+        }
+        else { // smear abs
+            double abs = sqrt(interpolate(sqrt_s, shape_norm, m_min, m_step));
+            double arg = interpolate(sqrt_s, shape_arg, m_min, m_step);
+            amp = std::complex<double>(abs * cos(arg), abs * sin(arg));
+        }
+
         T()->setValue(amp, d, si, D);
     }
 
