@@ -30,9 +30,9 @@ const bool d4pi_pipiS_omega    = true and d4pi_omega;
 const bool d4pi_pipiS_f_2      = true;
 //
 const bool d4pi_f_0_f_0        = true;
-const bool d4pi_f_0_rho        = true; // low support in data
+const bool d4pi_f_0_rho        = false; // low support in data
 const bool d4pi_f_0_omega      = true and d4pi_omega;
-const bool d4pi_f_0_f_2        = true; // large overlap with pipiS, f2
+const bool d4pi_f_0_f_2        = false; // very large overlap with pipiS, f2
 //
 const bool d4pi_rho_rho        = true;
 const bool d4pi_rho_omega      = true and d4pi_omega;
@@ -74,11 +74,11 @@ const bool bg_omega    = false;  // 0% of BG
 // configuration
 const bool d4pi_fix_a_rho_pi_S = true; // default: true
 
-const bool d4pi_a1_bowler       = true and (d4pi_a_1);
-/*const*/ bool d4pi_pm_shared   = true;  // share free amplitudes of 3pi + and - states
+const bool d4pi_a1_bowler   = true and (d4pi_a_1);
+const bool d4pi_pm_shared   = true;  // share free amplitudes of 3pi + and - states
 
-/*const*/ bool d4pi_a1_plus     = true;
-/*const*/ bool d4pi_a1_minus    = true;
+const bool d4pi_a1_plus     = true;
+const bool d4pi_a1_minus    = true;
 
 const bool d4pi_fix_amplitudes  = false;
 const bool d4pi_free_parameters = false; // widths, coupling constants, ...

@@ -165,38 +165,7 @@ inline void generate_fit_fraction_data(bat_fit& m, unsigned nPoints, unsigned nP
 //-------------------------
 inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 {
-    bat_fit m(name, d4pi(pars), {});
-
-    //LOG(INFO) << "setting priors";
-    // set priors: complete range in real and imag
-    /*for (const auto& fa : m.freeAmplitudes()) {
-        double re = real(fa->value());
-        double im = imag(fa->value());
-
-        double rangeHi = 2.0;
-
-        m.setRealImagRanges(fa, -rangeHi*fabs(re), rangeHi*fabs(re), -rangeHi*fabs(im), rangeHi*fabs(im));
-    }*/
-
-    // set priors: range around expected value
-    for (const auto& fa : m.freeAmplitudes()) {
-        //double re = real(fa->value());
-        //double im = imag(fa->value());
-
-        double ab = abs(fa->value());
-        double ar = deg(arg(fa->value()));
-        double range = 2.;
-        m.setPriors(fa, new BCConstantPrior(0, range*ab),
-                new BCConstantPrior(ar - 180, ar + 180));
-        /*m.setRealImagRanges(fa, std::min(re-rangeMin, std::min(rangeLo*re, rangeHi*re)), std::max(re+rangeMin, std::max(rangeLo*re, rangeHi*re)),
-                                std::min(im-rangeMin, std::min(rangeLo*im, rangeHi*im)), std::max(im+rangeMin, std::max(rangeLo*im, rangeHi*im)));*/
-        m.setRealImagRanges(fa, -range*ab, range*ab, -range*ab, range*ab);
-        m.setAbsArgRanges(fa, 0, range*ab,
-                          ar - 180, ar + 180);
-    }
-
-
-
+    bat_fit m(name, d4pi(), {});
 
     // free a_1 width
     //auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
@@ -289,6 +258,29 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
         // mass is complex
         m.addParameter("mass(f_0(500))", shape->mass(), std::complex<double>(0.2, -0.7), std::complex<double>(0.3, -0.16));
     }
+
+    if (not pars.empty()) {
+        m.setParameters(pars);
+        LOG(INFO) << "Amplitudes after setting parameters: ";
+        printAmplitudes(*m.model());
+    }
+
+    // set priors: range around expected value
+    double range = 2.;
+    for (const auto& fa : m.freeAmplitudes()) {
+        //double re = real(fa->value());
+        //double im = imag(fa->value());
+
+        double ab = abs(fa->value());
+        double ar = deg(arg(fa->value()));
+        m.setPriors(fa, new BCConstantPrior(0, range*ab),
+                new BCConstantPrior(ar - 180, ar + 180));
+        m.setRealImagRanges(fa, -range*ab, range*ab, -range*ab, range*ab);
+        m.setAbsArgRanges(fa, 0, range*ab,
+                          ar - 180, ar + 180);
+    }
+    //m.setRealImagRanges(range);
+
 
     return m;
 }
@@ -553,13 +545,13 @@ inline void d4pi_printFitFractions(bat_fit& m)
 }
 
 //-------------------------
-inline double chi2_adaptiveBinning(bat_fit& batFit, unsigned EvtsPerBin = 30)
+inline double chi2_adaptiveBinning(bat_fit& batFit, bool sigma = false, unsigned EvtsPerBin = 30)
 {
     auto massAxes = batFit.model()->massAxes({{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}});
 
     unsigned dataDim = 5;
     unsigned dataSize_meas = batFit.fitData().size();
-    std::vector<double> data_meas; // stride=1 for the points and = N (the dataSize) for the dimension
+    std::vector<double> data_meas; // invariant mass squares; stride = 1 for the points and = N (the dataSize) for the dimension
     data_meas.reserve(dataDim * dataSize_meas);
 
     // fill data_meas
@@ -585,6 +577,7 @@ inline double chi2_adaptiveBinning(bat_fit& batFit, unsigned EvtsPerBin = 30)
 
     // bin integralData
     std::vector<double> histo_exp(kdBins.GetNBins(), 0.);
+    std::vector<double> histo_exp_sigma2(kdBins.GetNBins(), 0.);
     std::vector<unsigned> histo_exp_N(kdBins.GetNBins(), 0.);
     std::vector<double> ss(5, 0.); // invariant mass squares
 
@@ -599,6 +592,7 @@ inline double chi2_adaptiveBinning(bat_fit& batFit, unsigned EvtsPerBin = 30)
 
         // fill bin with intensity
         histo_exp.at(kdBins.FindBin(&ss[0])) += intensity(*batFit.model(), dp);
+        histo_exp_sigma2.at(kdBins.FindBin(&ss[0])) += pow(intensity(*batFit.model(), dp), 2); // compare arXiv:1712.08609
         histo_exp_N.at(kdBins.FindBin(&ss[0])) += 1;
     }
 
@@ -632,15 +626,21 @@ inline double chi2_adaptiveBinning(bat_fit& batFit, unsigned EvtsPerBin = 30)
 
         double NbExp = histo_exp.at(i) * norm_exp;
         double Nb = kdBins.GetBinContent(i);
+        double sigma2 = 0.;
+        if (sigma)
+            sigma2 = histo_exp_sigma2.at(i) * norm_exp * norm_exp;
 
-        double chi2inc = pow(Nb - NbExp, 2) / NbExp;
+        double chi2inc = pow(Nb - NbExp, 2) / (NbExp + sigma2);
         //std::cout<< chi2inc << "  ";
         chi2 += chi2inc;
         NDF += 1.;
     }
     std::cout << "\n";
 
-    std::cout << "total chi2 with adaptive binning = " << chi2 << "\n";
+    if (sigma)
+        std::cout << "total chi2 with adaptive binning, taking uncertainty into account = " << chi2 << "\n";
+    else
+        std::cout << "total chi2 with adaptive binning = " << chi2 << "\n";
     std::cout << "NDF = " << NDF << "\n";
     std::cout << "reduced chi2 = " << chi2/NDF << "\n";
 

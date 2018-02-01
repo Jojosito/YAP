@@ -40,11 +40,13 @@ int main()
 
     // create model
     bat_fit m(d4pi_fit(model_name + "_fit"));
-    //bat_fit m(d4pi_fit(model_name + "_fit", {   -0.982423, -1.11708, -37.4235, -27.7717, -3.08474, -0.609421, 5.86998, 10.4598, 0.832805, 1.53719, 4.3105, 2.70736, -4.50548, 5.54519, 30.3196, 200.503, 124190, 45460.8, 4.13664, -1.0761, -4.08, -3.8142, 2.32384, 4.50658, 61.379, 1.22991, 0.424383, 0.06, 1.48762, -131.33, 46.6024, -143.421, 3.14436, -168.825, 11.9943, 60.6991, 1.74829, 61.5524, 5.09021, 32.1323, 7.14482, 129.094, 202.782, 81.401, 132249, 20.1056, 4.27431, -14.5816, 5.58521, -136.928, 5.07046, 62.7219}));
-    //bat_fit m(d4pi_fit(model_name + "_fit", {-0.154518, 0.227784, 0.177584, -0.392354, -20.707, 28.1154, 7.63314, -2.7599, 0.115322, 0.00264234, -2.82195, 2.16605, 82.8522, -19.4367, -1.0357, 0.421327, -23.0284, 3.68123, -0.631946, 0.476604, -0.475645, 0.227638, 1.02482, -0.668613, -404.364, 171.518, -6.79664, 2.55212, -6.78063, -12.8324, 1.41051, 6.41238, 114.503, 57.3835, -15.6803, -74.0754, -26.5365, -3.97416, 103.276, 8.50773, -750.726, -5590.62, 515.759, -105.61, 32.8272, 10.4841, 41302, 23896.5, -0.551647, 0.00909297, 1.65934, -0.810574, -0.474255, -0.664477, -1.77448, -0.158776, -3.92576, 1.96692, 0.0899473, -0.117294, 4.20759, 0.811348, 6.63504, 2.383, -4.99893, 2.51687, -0.210127, 0.248135, -4.66397, -0.950354, 1.07129, -0.0454435, -21.448, -33.0476, -1.14807, 2.97919, -0.24193, -0.0889014, 99.5525, 23.527, -0.865321, -1.21978, -2.0214, -0.45496, -0.0743514, -0.164393, -0.0360475, -0.09143, -46.8871, -58.8546, 0.0153325}));
-    m.setModelSelection(0.75); // LASSO/BCM parameter
-
     const bool adjustRangesFF = true; // adjust the real and imag ranges so that all waves have similar ff
+
+    //bat_fit m(d4pi_fit(model_name + "_fit", {4.03148, -32.5435, -4.51938, -1.59346, 136.728, -73.0129, -699953, -125468, -0.444905, -0.93394, 10.5643, 3.10409, -30.4939, 15.9983, 52.5308, -37.9762, 5.14999, 2.77111, 0.00602175, 0.756096, 236.493, 17.6788, 111.186, -55.8603, -2.25629, 1.67204, 3.4199, -1.36056, -1.87353, 1.34619, -17.2051, -33.5261, 1.16347, -10.496, -254.044, -77.1403, 8.07964, 3.70565, -26.6026, -21.6966, -5.52496, 1.28902, 1.02664e-05}));
+    //const bool adjustRangesFF = false; // adjust the real and imag ranges so that all waves have similar ff
+
+    //m.setModelSelection(0.75); // LASSO/BCM parameter
+
 
     const bool minuit = true;
     m.SetRelativePrecision(0.1); // default is 1%, to speed things up a bit
@@ -57,34 +59,13 @@ int main()
     const unsigned nData = 300000; // 300000; max number of Data points we want
     const bool chargeBlind = false;
     const unsigned nThreads = 4;
-    const double maxHours = 37;
+    const double maxHours = 18;
 
     const bool generate_mc = true;
 
 
     std::string dir("/home/ne53mad/CopiedFromKEK/");
 
-    // real data
-    //std::string dir = "/nfs/hicran/scratch/user/jrauch/CopiedFromKEK/";
-    /*{
-        TChain t("t");
-        t.Add((dir + "DataSkim_0?_analysis.root").c_str());
-        t.AddFriend("t", (dir + "DataSkim_analysis_TMVA_weights.root").c_str());
-        LOG(INFO) << "Load data";
-        load_data_4pi(m.fitData(), t, nData, BDT_cut, K0_cut, false);
-        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), 4);
-    }
-    // MC data, load from several streams if needed
-    for (int i = 0; i < 6; ++i) {
-        auto nLoaded = m.integralData().size();
-        if (nLoaded >= nData)
-            break;
-        TChain t_mcmc("t");
-        t_mcmc.Add(dir + TString::Format("FourPionsSkim_s%d_analysis.root", i));
-        t_mcmc.AddFriend("t", dir + TString::Format("FourPionsSkim_analysis_s%d_TMVA_weights.root", i));
-        LOG(INFO) << "Load integration (MC) data";
-        load_data_4pi(m.integralData(), t_mcmc, nData-nLoaded, BDT_cut, K0_cut, true);
-    }*/
 
     // real data, pre-filtered
     {
@@ -132,45 +113,13 @@ int main()
         }
     }
 
-    /*{ // root generated PHSP
-        LOG(INFO) << "Load integral data";
-        TChain t_phsp("t");
-        t_phsp.Add("/home/ne53mad/YAPfork/output/D4pi_phsp_root.root");
-        load_data_4pi(m.integralData(), t_phsp, nData, 0, K0_cut, false);
-    }*/
-
-
-    // MC generated data
-    /*dir = "/home/ne53mad/YAPfork/buildRelease/output/";
-    {
-        TChain t("D4pi_mcmc");
-        t.Add((dir + "D4pi_mcmc.root").c_str());
-
-        LOG(INFO) << "Load data";
-        load_data(m.fitData(), *m.model(), m.axes(), D0_mass, t, nData, -1);
-        m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
-    }
-    const double D0_mass = read_pdl_file((std::string)::getenv("YAPDIR") + "/data/d4pi.pdl")["D0"].mass();
-    { // MC data, pre-filtered
-        TChain t_mcmc("D4pi_phsp_mcmc");
-        t_mcmc.Add("/home/ne53mad/YAPfork/buildRelease/output/D4pi_phsp_mcmc.root");
-        LOG(INFO) << "Load integration (MC) data";
-        load_data(m.integralData(), *m.model(), m.axes(), D0_mass, t_mcmc, nData, -1);
-    }*/
-
     // fit fraction data
-
     { // root generated PHSP
         LOG(INFO) << "Load fitFractionData data";
         TChain t_phsp("t");
         t_phsp.Add("/home/ne53mad/YAPfork/output/D4pi_phsp_root.root");
         load_data_4pi(m.fitFractionData(), t_phsp, nData, 0, 0, false);
     }
-
-    /*{ // YAP generated; seems to have some problems!
-        LOG(INFO) << "Generate data to calculate fit fractions";
-        generate_fit_fraction_data(m, nData, nThreads);
-    }*/
 
     // partition data
     m.fitPartitions() = yap::DataPartitionBlock::create(m.fitData(), nThreads);
@@ -208,6 +157,7 @@ int main()
 
     chi2(m);
     chi2_adaptiveBinning(m);
+    chi2_adaptiveBinning(m, true);
 
     LOG(INFO) << "MCMCUserInitialize";
     m.MCMCUserInitialize();
@@ -278,6 +228,8 @@ int main()
         }
     }
 
+    LOG(INFO) << "amplitudes after fit:";
+    printAmplitudes(*m.model());
 
     // end timing
     const auto end = std::chrono::steady_clock::now();
@@ -302,8 +254,13 @@ int main()
         LOG(INFO) << "\nLogLikelihood of global mode = " << llGlobMode;
     //}
 
+
+    LOG(INFO) << "amplitudes after finding global mode:";
+    printAmplitudes(*m.model());
+
     chi2(m);
     chi2_adaptiveBinning(m);
+    chi2_adaptiveBinning(m, true);
 
     if (generate_mc) {
         LOG(INFO) << "Generate weight file with fitted amplitudes";

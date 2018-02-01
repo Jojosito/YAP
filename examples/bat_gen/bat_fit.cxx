@@ -54,8 +54,21 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
 
     unsigned iVar(0);
 
+    //
     // loop over all free amplitudes
-    for (const auto& fa : free_amplitudes(*model())) {
+    //
+    // need to sort freeAmplitudes in a defined manner (default is by memory address)
+    // sort alphabetically by name
+    yap::FreeAmplitudeVector freeAmplitudes;
+    for (auto& amp : free_amplitudes(*model())) {
+        freeAmplitudes.push_back(amp);
+    }
+    std::sort(freeAmplitudes.begin(), freeAmplitudes.end(), [](const std::shared_ptr<yap::FreeAmplitude>& lhs, const std::shared_ptr<yap::FreeAmplitude>& rhs)
+            {
+                return (to_string(*lhs) < to_string(*rhs));
+            });
+
+    for (const auto& fa : freeAmplitudes) {
         // ignore fixed free amplitudes
         if (fa->variableStatus() == yap::VariableStatus::fixed)
             continue;
@@ -566,7 +579,7 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
 
         //LOG(INFO) << to_string(mci.Integral);
 
-    }
+    } // end if (modelSelection_ > 0.)
 
     LOG(INFO) << "bat_fit::LogAPrioriProbability = " << logP;
 
