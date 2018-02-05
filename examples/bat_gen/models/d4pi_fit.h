@@ -167,6 +167,11 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 {
     bat_fit m(name, d4pi(), {});
 
+    // check if pars need to be completed with free parameters
+    bool addFreeParams = false;
+    if ((int)pars.size() == m.firstParameter())
+        addFreeParams = true;
+
     // free a_1 width
     //auto a_1   = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("a_1+")));
     //m.addParameter("width(a_1)", std::dynamic_pointer_cast<BreitWigner>(a_1->massShape())->width(), 0, 1.4);
@@ -185,6 +190,8 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
             auto width = std::dynamic_pointer_cast<BreitWigner>(f_0_1370->massShape())->width();
             m.addParameter("width(f_0(1370))", width, 0.5*width->value(), 1.5*width->value());
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.35, 0.15));
+            if (addFreeParams)
+                pars.push_back(width->value());
         }
 
         if (d4pi_a1_bowler) {
@@ -194,17 +201,23 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
             double mass = shape->mass()->value();
             m.addParameter("mass(a_1)", shape->mass(), 0.9*mass, 1.1*mass);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(mass, 0.04));
+            if (addFreeParams)
+                pars.push_back(mass);
 
             double width = shape->width()->value();
             m.addParameter("width(a_1)", shape->width(), 0.7*width, 1.3*width);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(width, 0.175));
+            if (addFreeParams)
+                pars.push_back(width);
 
             double coupling = shape->coupling()->value();
             m.addParameter("K*K_coupling", shape->coupling(), 0.5*coupling, 2.*coupling);
             m.GetParameters().Back().SetPriorConstant();
+            if (addFreeParams)
+                pars.push_back(coupling);
         }
 
-        if (d4pi_pi1300) {
+        /*if (d4pi_pi1300) {
             auto pi1300 = std::static_pointer_cast<DecayingParticle>(particle(*m.model(), is_named("pi(1300)+")));
             auto shape  = std::dynamic_pointer_cast<ConstantWidthBreitWigner>(pi1300->massShape());
 
@@ -213,7 +226,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
             m.addParameter("width(pi(1300)+)", shape->width(), 0.2, 0.6);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(0.4, 0.2));
-        }
+        }*/
 
         // f_0(980)
         if (not particles(*m.model(), yap::is_named("f_0")).empty()) {
@@ -222,6 +235,9 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
             double mass = f_0_980_flatte->mass()->value();
             m.addParameter("mass(f_0)", f_0_980_flatte->mass(), 0.9*mass, 1.1*mass);
+            if (addFreeParams)
+                pars.push_back(mass);
+
             /*for (auto ch : f_0_980_flatte->channels()) {
                 double coupling = ch.Coupling->value();
                 m.addParameter("f_0_coupling_" + ch.Particles[0]->name(), ch.Coupling, 0.5*coupling, 2*coupling);
@@ -236,10 +252,14 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
             double mass = shape->mass()->value();
             m.addParameter("mass(rho0)", shape->mass(), 0.9*mass, 1.1*mass);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(mass, 10.*0.00025));
+            if (addFreeParams)
+                pars.push_back(mass);
 
             double width = shape->width()->value();
             m.addParameter("width(rho0)", shape->width(), 0.7*width, 1.3*width);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(width, 5.*0.008));
+            if (addFreeParams)
+                pars.push_back(width);
         }
     }
 
@@ -249,6 +269,8 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
         m.addParameter("width(K0)", shape->width(), 0, 0.2);
         m.GetParameters().Back().SetPriorConstant();
+        if (addFreeParams)
+            pars.push_back(shape->width()->value());
     }
 
     if (d4pi_free_parameters and d4pi_bg_sigma /*and d4pi_bg_only*/) {
@@ -257,12 +279,22 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
         // mass is complex
         m.addParameter("mass(f_0(500))", shape->mass(), std::complex<double>(0.2, -0.7), std::complex<double>(0.3, -0.16));
+        if (addFreeParams) {
+            pars.push_back(0);
+            pars.push_back(0);
+        }
     }
 
     if (not pars.empty()) {
         m.setParameters(pars);
         LOG(INFO) << "Amplitudes after setting parameters: ";
         printAmplitudes(*m.model());
+    }
+
+    if (d4pi_fix_amplitudes) {
+        //fix_free_amplitudes(*m.model());
+        m.fixAmplitudes();
+        m.fixAdmixtures();
     }
 
     // set priors: range around expected value
@@ -281,6 +313,8 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
     }
     //m.setRealImagRanges(range);
 
+    LOG(INFO) << "Amplitudes: ";
+    printAmplitudes(*m.model());
 
     return m;
 }

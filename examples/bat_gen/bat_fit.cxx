@@ -689,6 +689,25 @@ void bat_fit::fix(std::shared_ptr<yap::FreeAmplitude> A, double amp, double phas
 }
 
 //-------------------------
+void bat_fit::fixAmplitudes()
+{
+    for (auto A : FreeAmplitudes_) {
+        auto i = findFreeAmplitude(A);
+        GetParameter(i).Fix(real(A->value()));
+        GetParameter(i + 1).Fix(imag(A->value()));
+    }
+}
+
+//-------------------------
+void bat_fit::fixAdmixtures()
+{
+    for (size_t i = 0; i < Admixtures_.size(); ++i) {
+        unsigned index = FreeAmplitudes_.size()*2 + i;
+        GetParameter(index).Fix(Admixtures_[i]->value());
+    }
+}
+
+//-------------------------
 void bat_fit::MCMCUserInitialize()
 {
     bat_yap_base::MCMCUserInitialize();

@@ -164,6 +164,7 @@ inline void printAmplitudes(const Model& M)
             << "  \t" << fa.get()
             << "  \t" << fa->freeAmplitude().get();
 
+    LOG(INFO) << "\nAdmixtures: ";
     for (auto& comp : M.components()) {
         LOG(INFO) << "admixture " << comp.particle()->name()
                 << "; m = " << spin_to_string(comp.decayTrees()[0]->initialTwoM())
@@ -611,9 +612,6 @@ inline std::unique_ptr<Model> d4pi()
         //M->components()[0].admixture()->setValue(1.);
         M->components()[0].admixture()->variableStatus() = yap::VariableStatus::fixed;
     }
-
-    if (d4pi_fix_amplitudes)
-        fix_free_amplitudes(*M);
 
     // print summary
     LOG(INFO) << "D Decay trees:";

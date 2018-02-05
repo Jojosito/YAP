@@ -60,6 +60,12 @@ public:
     /// fix a FreeAmplitude
     void fix(std::shared_ptr<yap::FreeAmplitude> A, double amp, double phase);
 
+    // fix all free amplitudes
+    void fixAmplitudes();
+
+    // fix all free amplitudes
+    void fixAdmixtures();
+
     /// log likelihood
     double LogLikelihood(const std::vector<double>& p) override;
 

@@ -232,7 +232,7 @@ const std::vector<std::complex<double>> d4pi_amp_f_2_f_2 = {
 
 const std::complex<double> d4pi_amp_f_0_1370_pipiS     = std::polar(1., yap::rad(0.));
 
-const double d4pi_admixture_bg_flat_4pi = 20.26/4000.;
+const double d4pi_admixture_bg_flat_4pi = 6.18;
 const double d4pi_admixture_bg_rho      = 1.043/4000.;
 const double d4pi_admixture_bg_sigma    = 4.431/4000.;
 
