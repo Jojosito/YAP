@@ -39,11 +39,11 @@ int main()
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
-    //bat_fit m(d4pi_fit(model_name + "_fit"));
-    //const bool adjustRangesFF = true; // adjust the real and imag ranges so that all waves have similar ff
+    bat_fit m(d4pi_fit(model_name + "_fit"));
+    const bool adjustRangesFF = true; // adjust the real and imag ranges so that all waves have similar ff
 
-    bat_fit m(d4pi_fit(model_name + "_fit", {-1.22883, -0.922519, -1.32635, -3.14188, -31.6014, 3.15694, 10945.3, 43543.1, 1.00071, -0.190047, -1.66411, -1.23789, 6.70537, -0.850745, -8.04325, 4.36536, -3.45045, -1.19075, -7.35832e-05, -0.0114382, 1.16518, -0.331835, -3.80143, 19.3788, -0.631882, 0.732494, -0.0216242, 0.107558, -2.38662, -1.22603, 0.809621, 0.33677, -0.147173, 0.11237, 7.50958, 1.53236, 0.1928, -2.45786, 1.32031, 0.829733, 0.117645, 0.483706, 6.18557}));
-    const bool adjustRangesFF = false; // adjust the real and imag ranges so that all waves have similar ff
+    //bat_fit m(d4pi_fit(model_name + "_fit", {-4.15122, 3.68891, 0.741348, 3.04082, -5.50869, 4.42673, 8566.13, 69861.7, -0.0305991, -0.447143, -1.00211, 1.40456, -0.298814, 0.399281, 16.8457, 29.4565, 0.505518, 0.402704, -0.112889, -0.0823777, -0.873772, -2.877, 2.71338, -47.6297, -0.737843, 1.72989, 0.2079, -0.529286, -0.921386, -1.53797, 12.6392, 23.0118, -0.73756, 1.58562, -39.6037, -46.4287, 0.481253, -1.7101, -2.31671, 2.30706, 2.3972, 1.37429, 9.59445}));
+    //const bool adjustRangesFF = false; // adjust the real and imag ranges so that all waves have similar ff
 
     //m.setModelSelection(0.75); // LASSO/BCM parameter
 
@@ -59,7 +59,7 @@ int main()
     const unsigned nData = 300000; // 300000; max number of Data points we want
     const bool chargeBlind = false;
     const unsigned nThreads = 4;
-    const double maxHours = 0;
+    const double maxHours = 16;
 
     const bool generate_mc = true;
 

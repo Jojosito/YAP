@@ -25,7 +25,7 @@ const bool d4pi_pi_2_1670      = false; // -> rho pi, f_2(1270) pi, pipiS pi // 
 //
 const bool d4pi_pipiS_pipiS    = true;
 const bool d4pi_pipiS_f_0      = true; // large overlap with pipiS_pipiS and f_0_f_0
-const bool d4pi_pipiS_rho      = true; // low support in data
+const bool d4pi_pipiS_rho      = false; // low support in data
 const bool d4pi_pipiS_omega    = true and d4pi_omega;
 const bool d4pi_pipiS_f_2      = true;
 //
@@ -36,7 +36,7 @@ const bool d4pi_f_0_f_2        = false; // very large overlap with pipiS, f2
 //
 const bool d4pi_rho_rho        = true;
 const bool d4pi_rho_omega      = true and d4pi_omega;
-const bool d4pi_rho_f_2        = true;
+const bool d4pi_rho_f_2        = false;
 //
 const bool d4pi_omega_omega    = true and d4pi_omega;
 const bool d4pi_omega_f_2      = false and d4pi_omega; // eher kleine ff
