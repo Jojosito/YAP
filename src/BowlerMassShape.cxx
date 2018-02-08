@@ -223,8 +223,14 @@ void BowlerMassShape::fillCache()
 void BowlerMassShape::calculate(DataPartition& D, const std::shared_ptr<const ParticleCombination>& pc, unsigned si) const
 {
     // if no calculation necessary, exit
-    if (D.status(*T(), si) != CalculationStatus::uncalculated)
+    //if (D.status(*T(), si) != CalculationStatus::uncalculated)
+    //    return;
+
+    if (status() != VariableStatus::changed and
+            D.status(*T(), si) != CalculationStatus::uncalculated)
         return;
+
+    //LOG(INFO) << "recalculate Bowler mass shape for data partition " << &D << " and pc " << to_string(*pc);
 
     for (auto& d : D) {
         auto m2 = model()->fourMomenta()->m2(d, pc);
