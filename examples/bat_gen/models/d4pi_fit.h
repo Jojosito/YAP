@@ -205,7 +205,7 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
                 pars.push_back(mass);
 
             double width = shape->width()->value();
-            m.addParameter("width(a_1)", shape->width(), 0.7*width, 1.3*width);
+            m.addParameter("width(a_1)", shape->width(), 0.7*width, 1.5*width);
             m.GetParameters().Back().SetPrior(new BCGaussianPrior(width, 0.175));
             if (addFreeParams)
                 pars.push_back(width);
