@@ -89,7 +89,8 @@ const bool d4pi_free_parameters = false; // widths, coupling constants, ...
  *
  */
 
-const int  d4pi_max_L       = 2; // D
+//const int  d4pi_max_L       = 2; // D
+const int  d4pi_max_L       = 3; // F
 
 const bool d4pi_bg_only     = false; // fix D admixture to 0
 const bool d4pi_fix_bg      = false; // fix bg admixtures, free D0 admixture

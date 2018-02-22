@@ -457,7 +457,7 @@ inline std::unique_ptr<Model> d4pi()
                 a_1_plus, a_1_minus,
                 1, d4pi_amp_a_minus,
                 {rho, pipiS, f_2}, // kein f0
-                {{1, 0, d4pi_amp_a_rho_pi_D}, {0, d4pi_amp_a_pipiS_pi}, {0, 1}});
+                {{1, 0, d4pi_amp_a_rho_pi_D}, {0, d4pi_amp_a_pipiS_pi}, {0, 1, 1, 1}});
     }
     free_amplitude(*a_1_plus, to(rho), l_equals(0))->variableStatus() = VariableStatus::fixed;
     free_amplitude(*D, to(a_1_plus))->variableStatus() = VariableStatus::fixed;
@@ -492,7 +492,7 @@ inline std::unique_ptr<Model> d4pi()
                 a_1_1640_plus, a_1_1640_minus,
                 d4pi_amp_a_1_1640_plus, d4pi_amp_a_1_1640_minus,
                 {/*pipiS,*/ rho, f_2}, // no f0; no f_2 in data
-                {/*{0, 1},*/ {1, 0, 1}, {0, 1}});
+                {/*{0, 1},*/ {1, 0, 1}, {0, 1, 1, 1}});
     }
 
     if (d4pi_a_2_1320) {
