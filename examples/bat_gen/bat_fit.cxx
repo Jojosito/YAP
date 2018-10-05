@@ -124,23 +124,34 @@ bat_fit::bat_fit(std::string name, std::unique_ptr<yap::Model> M, const std::vec
     }
 
     // // add observables for all fit fractions
-    // int N = std::accumulate(Integral_.integrals().begin(), Integral_.integrals().end(), 0,
-    //                         [](int n, const yap::IntegralMap::value_type& v)
-    //                         {return n + v.second.decayTrees().size();});
-    // if (N > 1) {
-    /*for (const auto& mci : Integral_.integrals())
-        for (const auto& dt : mci.Integral.decayTrees()) {
-            DecayTrees_.push_back(dt);
+//    // int N = std::accumulate(Integral_.integrals().begin(), Integral_.integrals().end(), 0,
+//    //                         [](int n, const yap::IntegralMap::value_type& v)
+//    //                         {return n + v.second.decayTrees().size();});
+//    // if (N > 1) {
+//    for (const auto& mci : Integral_.integrals()) {
+//        for (const auto& dt : mci.Integral.decayTrees()) {
+//            DecayTrees_.push_back(dt);
+//
+//            std::string str = std::to_string(iVar++) + " ""fit_frac(" + to_string(*dt) + ")";
+//            std::replace(str.begin(), str.end(), '-', 'm'); // - will be omitted by BATs "safe name", and when decay channels only differ in some spin projections (-1 vs 1), the safe name would be identical
+//            std::replace(str.begin(), str.end(), '\n', ';'); // make into one line
+//            std::replace(str.begin(), str.end(), '\t', ' ');
+//
+//            AddObservable(str, 0, 1.1);
+//            //GetObservables().Back().SetNbins(1000);
+//        }
+//    }
+//    // }
+    GroupedDecayTrees_ = group_by_free_amplitudes(FitFractionIntegral_.integrals().at(0).Integral.decayTrees());
+    for (auto dt : GroupedDecayTrees_) {
+        std::string str = std::to_string(iVar++) + " ""fit_frac(" + to_string(*dt[0]) + ")";
+        std::replace(str.begin(), str.end(), '-', 'm'); // - will be omitted by BATs "safe name", and when decay channels only differ in some spin projections (-1 vs 1), the safe name would be identical
+        std::replace(str.begin(), str.end(), '\n', ';'); // make into one line
+        std::replace(str.begin(), str.end(), '\t', ' ');
 
-            std::string str = std::to_string(iVar++) + " ""fit_frac(" + to_string(*dt) + ")";
-            std::replace(str.begin(), str.end(), '-', 'm'); // - will be omitted by BATs "safe name", and when decay channels only differ in some spin projections (-1 vs 1), the safe name would be identical
-            std::replace(str.begin(), str.end(), '\n', ';'); // make into one line
-            std::replace(str.begin(), str.end(), '\t', ' ');
-
-            AddObservable(str, 0, 1.1);
-            //GetObservables().Back().SetNbins(1000);
-        }*/
-    // }
+        LOG(INFO) << "Add observable " << str;
+        AddObservable(str, 0, 1.1);
+    }
 
     FirstParameter_ = GetParameters().Size();
 
@@ -360,15 +371,29 @@ void bat_fit::setParameters(const std::vector<double>& p)
     integrate();
 
     // calculate fit fractions
-    // if (!CalculatedFitFractions_.empty()) {
-    /*unsigned c = GetCurrentChain();
-    size_t i = 0;
-    for (const auto& mci : Integral_.integrals()) {
-        auto ff = fit_fractions(mci.Integral);
-        for (const auto& f : ff)
-            CalculatedFitFractions_[c][i++] = f;
+    /*if (!CalculatedFitFractions_.empty()) {
+        unsigned c = GetCurrentChain();
+        size_t i = 0;
+        for (const auto& mci : Integral_.integrals()) {
+            auto ff = fit_fractions(mci.Integral);
+            for (const auto& f : ff)
+                CalculatedFitFractions_[c][i++] = f;
+        }
     }*/
-    // }
+
+    if (!CalculatedFitFractions_.empty()) {
+        unsigned c = GetCurrentChain();
+        auto ff = fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, GroupedDecayTrees_);
+        for (size_t i = 0; i < ff.size(); ++i) {
+
+            if (GroupedDecayTrees_[i].empty())
+                continue;
+            if (!GroupedDecayTrees_[i][0])
+                continue;
+
+            CalculatedFitFractions_[c][i] = ff[i];
+        }
+    }
 }
 
 //-------------------------
@@ -419,6 +444,7 @@ double bat_fit::LogLikelihood(const std::vector<double>& p)
 //-------------------------
 double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
 {
+    /* Abs Arg Prior
     //LOG(INFO) << "bat_fit::LogAPrioriProbability";
     double logP = 0;
     for (size_t i = 0; i < FreeAmplitudes_.size(); ++i) {
@@ -434,6 +460,18 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
     for (size_t i = FreeAmplitudes_.size() * 2; i < GetParameters().Size(); ++i)
         if (GetParameter(i).GetPrior())
             logP += GetParameter(i).GetLogPrior(p[i]);
+    */
+
+
+
+
+    double logP = 0;
+    for (size_t i = 0; i < GetParameters().Size(); ++i)
+        if (GetParameter(i).GetPrior())
+            logP += GetParameter(i).GetLogPrior(p[i]);
+
+
+
 
     // model selection
     if (modelSelection_ > 0.) {
@@ -594,10 +632,11 @@ void bat_fit::CalculateObservables(const std::vector<double>& p)
         GetObservables()[i * 2 + 0] = abs(A);
         GetObservables()[i * 2 + 1] = yap::deg(arg(A));
     }
-    /*unsigned c = GetCurrentChain();
+
+    unsigned c = GetCurrentChain();
     for (size_t i = 0; i < CalculatedFitFractions_[c].size(); ++i)
         GetObservables()[FreeAmplitudes_.size() * 2 + i] = CalculatedFitFractions_[c][i].value();
-        */
+
 }
 
 //-------------------------
@@ -711,7 +750,12 @@ void bat_fit::fixAdmixtures()
 void bat_fit::MCMCUserInitialize()
 {
     bat_yap_base::MCMCUserInitialize();
-    // if (!CalculatedFitFractions_.empty())
-    //CalculatedFitFractions_.assign(GetNChains(), yap::RealIntegralElementVector(DecayTrees_.size()));
+    /*if (!CalculatedFitFractions_.empty())
+        CalculatedFitFractions_.assign(GetNChains(), yap::RealIntegralElementVector(DecayTrees_.size()));
+        */
+
+    GroupedDecayTrees_ = group_by_free_amplitudes(FitFractionIntegral_.integrals().at(0).Integral.decayTrees());
+    LOG(INFO) << "number of grouped decay trees: " << GroupedDecayTrees_.size();
+    CalculatedFitFractions_.assign(GetNChains(), yap::RealIntegralElementVector(GroupedDecayTrees_.size()));
 }
 

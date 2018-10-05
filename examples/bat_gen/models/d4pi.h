@@ -377,7 +377,8 @@ inline std::unique_ptr<Model> d4pi()
 
 
     if (d4pi_f_2_f_2) {
-        D->addWeakDecay<0>(f_2, f_2);
+        //D->addWeakDecay<0>(f_2, f_2);
+        D->addWeakDecay<d4pi_max_L>(f_2, f_2);
         for (auto& fa : free_amplitudes(*D, to(f_2, f_2)))
             *fa = static_cast<std::complex<double> >(d4pi_amp_f_2_f_2[fa->spinAmplitude()->L()]);
     }
@@ -508,7 +509,7 @@ inline std::unique_ptr<Model> d4pi()
                 pi_2_1670_plus, pi_2_1670_minus,
                 d4pi_amp_pi_2_1670_plus, d4pi_amp_pi_2_1670_minus,
                 {f_2, rho, pipiS},
-                {{1, 0, d4pi_amp_f_2_D}, {0, d4pi_amp_rho}, {0, 0, d4pi_amp_pipiS}});
+                {{1, 0, d4pi_amp_f_2_D}, {0, d4pi_amp_rho, 0, 1}, {0, 0, d4pi_amp_pipiS}});
     }
 
     //

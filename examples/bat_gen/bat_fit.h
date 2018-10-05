@@ -207,6 +207,9 @@ protected:
     /// Calculated fit fractions (for observables)
     std::vector<yap::RealIntegralElementVector> CalculatedFitFractions_;
 
+    /// Grouped Decay trees for the calculation of fit fractions
+    std::vector<yap::DecayTreeVector> GroupedDecayTrees_;
+
     // set to true when sampling
     bool useJacobian_;
 

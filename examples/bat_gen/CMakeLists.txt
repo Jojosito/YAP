@@ -21,6 +21,7 @@ set(PROGRAMS
     runBatGen
     runBatFit
     runBatFit_4pi
+    runBatFit_4pi_FF
     runBatFitFitFractions
     runFitFractions
     runRootGen_4pi

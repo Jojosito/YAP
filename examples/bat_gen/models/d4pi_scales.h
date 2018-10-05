@@ -20,8 +20,8 @@ const bool d4pi_a_1_1640       = true;
 const bool d4pi_pi1300         = true; // todo: too broad for BreitWigner???
 const bool d4pi_pi1800         = true; // heavy and overlapping with other resonances
 //
-const bool d4pi_a_2_1320       = false; // -> rho pi // seems to have low ff in data
-const bool d4pi_pi_2_1670      = false; // -> rho pi, f_2(1270) pi, pipiS pi // seems to have low ff in data
+const bool d4pi_a_2_1320       = true; // -> rho pi // seems to have low ff in data
+const bool d4pi_pi_2_1670      = true; // -> rho pi, f_2(1270) pi, pipiS pi // seems to have low ff in data
 //
 const bool d4pi_pipiS_pipiS    = true;
 const bool d4pi_pipiS_f_0      = true; // large overlap with pipiS_pipiS and f_0_f_0
@@ -41,7 +41,7 @@ const bool d4pi_rho_f_2        = false;
 const bool d4pi_omega_omega    = true and d4pi_omega;
 const bool d4pi_omega_f_2      = false and d4pi_omega; // eher kleine ff
 //
-const bool d4pi_f_2_f_2        = true; // only S wave
+const bool d4pi_f_2_f_2        = true; // up to d4pi_max_L // only S wave
 //
 const bool d4pi_f_0_1370_pipiS = false; // large overlap with pipiS, pipiS
 

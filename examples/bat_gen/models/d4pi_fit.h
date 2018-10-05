@@ -8,6 +8,7 @@
 #define __BAT__D4PI_FIT__H
 
 #include "../bat_fit.h"
+#include "../bat_fit_fractions.h"
 #include "../fit_fitFraction.h"
 #include "../tools.h"
 
@@ -19,7 +20,7 @@
 #include <BAT/BCGaussianPrior.h>
 #include <BAT/BCConstantPrior.h>
 //#include <BAT/BCLog.h>
-//#include <BAT/BCParameterSet.h>
+#include <BAT/BCParameterSet.h>
 
 #include <TDirectory.h>
 #include <TEventList.h>
@@ -318,6 +319,176 @@ inline bat_fit d4pi_fit(std::string name, std::vector<double> pars = {})
 
     return m;
 }
+
+//-------------------------
+inline bat_fit_fractions d4pi_fit_fractions(std::string name, std::vector<double> pars = {})
+{
+    bat_fit_fractions m(name, d4pi(), {});
+
+    // check if pars need to be completed with free parameters
+    bool addFreeParams = false;
+    if ((int)pars.size() == m.firstParameter())
+        addFreeParams = true;
+
+
+
+    if (not pars.empty()) {
+        m.setParameters(pars);
+        LOG(INFO) << "Amplitudes after setting parameters: ";
+        printAmplitudes(*m.model());
+    }
+
+    if (d4pi_fix_amplitudes) {
+        //fix_free_amplitudes(*m.model());
+        m.fixAmplitudes();
+        m.fixAdmixtures();
+    }
+
+    // set priors: range around expected value
+    double range = 2.;
+    for (const auto& fa : m.freeAmplitudes()) {
+        //double re = real(fa->value());
+        //double im = imag(fa->value());
+
+        double ab = abs(fa->value());
+        double ar = deg(arg(fa->value()));
+        m.setPriors(fa, new BCConstantPrior(0, range*ab),
+                new BCConstantPrior(ar - 180, ar + 180));
+        m.setRealImagRanges(fa, -range*ab, range*ab, -range*ab, range*ab);
+        m.setAbsArgRanges(fa, 0, range*ab,
+                          ar - 180, ar + 180);
+    }
+    //m.setRealImagRanges(range);
+
+    LOG(INFO) << "Amplitudes: ";
+    printAmplitudes(*m.model());
+
+    return m;
+}
+
+
+//-------------------------
+inline std::vector<double> get_bat_parameter_values(bat_fit_fractions& m)
+{
+    std::vector<double> parameterValues;
+    auto& batParameters = m.GetParameters();
+    for (unsigned i = 0; i < batParameters.Size(); ++i)
+    {
+        auto& batPar = batParameters.At(i);
+        double val(0.);
+
+        if (batPar.Fixed())
+        {
+            val = batPar.GetFixedValue();
+        }
+        else
+        {
+            val = batPar.GetPriorMean();
+        }
+
+        parameterValues.push_back(val);
+    }
+
+    return parameterValues;
+}
+
+
+//-------------------------
+inline bat_fit_fractions d4pi_fit_fractions(std::string name, std::string pars)
+{
+    bat_fit_fractions m(name, d4pi(), {});
+
+    LOG(INFO) << "BAT parameters:";
+    auto& batParameters = m.GetParameters();
+    for (unsigned i = 0; i < batParameters.Size(); ++i)
+    {
+        auto& batPar = batParameters.At(i);
+        LOG(INFO) << batPar.GetName();
+
+        // default value: fixed to 0
+        batPar.Fix(0);
+        batPar.SetLimits(0, 0);
+    }
+
+
+    //
+    // set BAT parameters
+    //
+    LOG(INFO) << "trying to match parameters:";
+    std::istringstream parsSs(pars);
+    for (std::string line; std::getline(parsSs, line); )
+    {
+        // remove parameter id from line
+        std::regex regexReal("real\\(\\d+");
+        std::regex regexImag("imag\\(\\d+");
+        std::regex regexOther("\"\\(\\d+");
+
+        line = std::regex_replace(line, regexReal, "real(");
+        line = std::regex_replace(line, regexImag, "imag(");
+        line = std::regex_replace(line, regexOther, "\"");
+
+        bool found = false;
+
+        // loop over parameters
+        for (unsigned i = 0; i < batParameters.Size(); ++i)
+        {
+            auto& batPar = batParameters.At(i);
+
+            // remove parameter id from batParName
+            std::string batParName = batPar.GetName();
+            batParName = std::regex_replace(batParName, regexReal, "real(");
+            batParName = std::regex_replace(batParName, regexImag, "imag(");
+            batParName = std::regex_replace(batParName, std::regex("^\\d+"), "");
+
+            if (line.find(batParName) != std::string::npos) {
+                LOG(INFO) << "found param " << batParName;
+
+                // parse string
+                std::regex regexValueAndError("[0-9\\ +-\\.]+$");
+                std::smatch valueAndErrorMatch;
+
+                std::regex_search(line, valueAndErrorMatch, regexValueAndError);
+                std::string valueAndError = valueAndErrorMatch.str(0);
+
+                LOG(INFO) << "line = " << line;
+                //LOG(INFO) << "valueAndErrorMatch = " << valueAndErrorMatch;
+                LOG(INFO) << "valueAndError = " << valueAndError;
+
+                std::string plusMinus(" +- ");
+                std::size_t plusMinusFound = valueAndError.find(plusMinus);
+
+                double value = std::stod(valueAndError);
+                double error = std::stod(valueAndError.substr(plusMinusFound + plusMinus.size()));
+
+                LOG(INFO) << "parsed value = " << value << " +- " << error;
+
+                // set priors
+                batPar.Unfix();
+                batPar.SetPrior(new BCGaussianPrior(value, error));
+                batPar.SetLimits(value - 5.*error, value + 5.*error);
+
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            LOG(INFO) << "NOT found param for " << line;
+            exit(0);
+        }
+    }
+
+    // set YAP parameters
+    m.setParameters(get_bat_parameter_values(m));
+
+
+    // print
+    LOG(INFO) << "Amplitudes: ";
+    printAmplitudes(*m.model());
+    m.PrintSummary();
+
+    return m;
+}
+
 
 //-------------------------
 std::string to_short_string(const DecayTree& dt)
