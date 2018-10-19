@@ -80,8 +80,8 @@ Summary :  35)  Parameter \"imag(17 pi(1300)+ --> rho0, pi+ L = 1 S = 1)\"  : 0.
 Summary :  36)  Parameter \"18 admixture_flat_4pi_0\"                       : 5.636 +- 0.1364"
             )));
 
-    const unsigned nPreRun = 100;
-    const unsigned nRun    = 1000;
+    const unsigned nPreRun = 0;
+    const unsigned nRun    = 10000;
     const unsigned nChains = 4;
 
     const unsigned nData = 300000; // 300000; max number of Data points we want
