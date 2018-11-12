@@ -39,46 +39,46 @@ int main()
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
-    // 077 1 2 3
+    // 077 4 5 6
     bat_fit_fractions m(d4pi_fit_fractions(model_name + "_fit_fractions",
             std::string(
-"Summary :   0)  Parameter \"real(0 D0 --> a_1(1420)+, pi- L = 1 S = 1)\"    : 0.5305 +- 0.003083\n\
-Summary :   1)  Parameter \"imag(0 D0 --> a_1(1420)+, pi- L = 1 S = 1)\"    : -6.148 +- 0.1115\n\
-Summary :   2)  Parameter \"real(1 D0 --> a_1(1640)+, pi- L = 1 S = 1)\"    : -2.002 +- 0.02705\n\
-Summary :   3)  Parameter \"imag(1 D0 --> a_1(1640)+, pi- L = 1 S = 1)\"    : 2.159 +- 0.01743\n\
-Summary :   4)  Parameter \"real(2 D0 --> f_0, f_0 L = 0 S = 0)\"           : -13.45 +- 0.1059\n\
-Summary :   5)  Parameter \"imag(2 D0 --> f_0, f_0 L = 0 S = 0)\"           : -0.1261 +- 0.07767\n\
-Summary :   6)  Parameter \"real(3 D0 --> f_2, f_2 L = 0 S = 0)\"           : -1.194e+05 +- 1608\n\
-Summary :   7)  Parameter \"imag(3 D0 --> f_2, f_2 L = 0 S = 0)\"           : 1.341e+05 +- 4280\n\
-Summary :   8)  Parameter \"real(4 D0 --> pi(1300)+, pi- L = 0 S = 0)\"     : 0.1752 +- 0.006293\n\
-Summary :   9)  Parameter \"imag(4 D0 --> pi(1300)+, pi- L = 0 S = 0)\"     : 0.07154 +- 0.00245\n\
-Summary :  10)  Parameter \"real(5 D0 --> pi(1800)+, pi- L = 0 S = 0)\"     : -8.453 +- 0.05048\n\
-Summary :  11)  Parameter \"imag(5 D0 --> pi(1800)+, pi- L = 0 S = 0)\"     : -5.24 +- 0.05632\n\
-Summary :  12)  Parameter \"real(6 D0 --> pipiS, f_0 L = 0 S = 0)\"         : 1.435 +- 0.0373\n\
-Summary :  13)  Parameter \"imag(6 D0 --> pipiS, f_0 L = 0 S = 0)\"         : 1.561 +- 0.01275\n\
-Summary :  14)  Parameter \"real(7 D0 --> pipiS, f_2 L = 2 S = 2)\"         : -148 +- 1.69\n\
-Summary :  15)  Parameter \"imag(7 D0 --> pipiS, f_2 L = 2 S = 2)\"         : 8.376 +- 1.247\n\
-Summary :  16)  Parameter \"real(8 D0 --> pipiS, pipiS L = 0 S = 0)\"       : -0.1269 +- 0.009262\n\
-Summary :  17)  Parameter \"imag(8 D0 --> pipiS, pipiS L = 0 S = 0)\"       : -0.3284 +- 0.008333\n\
-Summary :  18)  Parameter \"real(9 D0 --> rho0, rho0 L = 0 S = 0)\"         : -6.92 +- 0.01529\n\
-Summary :  19)  Parameter \"imag(9 D0 --> rho0, rho0 L = 0 S = 0)\"         : 4.868 +- 0.02816\n\
-Summary :  20)  Parameter \"real(10 D0 --> rho0, rho0 L = 1 S = 1)\"        : -1.036 +- 0.04822\n\
-Summary :  21)  Parameter \"imag(10 D0 --> rho0, rho0 L = 1 S = 1)\"        : 0.4229 +- 0.01263\n\
-Summary :  22)  Parameter \"real(11 D0 --> rho0, rho0 L = 2 S = 2)\"        : 1.035 +- 0.02452\n\
-Summary :  23)  Parameter \"imag(11 D0 --> rho0, rho0 L = 2 S = 2)\"        : 7.657 +- 0.04567\n\
-Summary :  24)  Parameter \"real(12 a_1(1640)+ --> f_2, pi+ L = 1 S = 2)\"  : 12.5 +- 0.3125\n\
-Summary :  25)  Parameter \"imag(12 a_1(1640)+ --> f_2, pi+ L = 1 S = 2)\"  : 31.01 +- 0.4102\n\
-Summary :  26)  Parameter \"real(13 a_1(1640)+ --> rho0, pi+ L = 2 S = 1)\" : -1.705 +- 0.03031\n\
-Summary :  27)  Parameter \"imag(13 a_1(1640)+ --> rho0, pi+ L = 2 S = 1)\" : 0.8759 +- 0.02214\n\
-Summary :  28)  Parameter \"real(14 a_1+ --> f_2, pi+ L = 1 S = 2)\"        : 139.8 +- 1.767\n\
-Summary :  29)  Parameter \"imag(14 a_1+ --> f_2, pi+ L = 1 S = 2)\"        : -54.89 +- 1.34\n\
-Summary :  30)  Parameter \"real(15 a_1+ --> pipiS, pi+ L = 1 S = 0)\"      : -0.4478 +- 0.03445\n\
-Summary :  31)  Parameter \"imag(15 a_1+ --> pipiS, pi+ L = 1 S = 0)\"      : -9.893 +- 0.02863\n\
-Summary :  32)  Parameter \"real(16 a_1+ --> rho0, pi+ L = 2 S = 1)\"       : 5.27 +- 0.05306\n\
-Summary :  33)  Parameter \"imag(16 a_1+ --> rho0, pi+ L = 2 S = 1)\"       : -0.2722 +- 0.05068\n\
-Summary :  34)  Parameter \"real(17 pi(1300)+ --> rho0, pi+ L = 1 S = 1)\"  : 7.354 +- 0.1712\n\
-Summary :  35)  Parameter \"imag(17 pi(1300)+ --> rho0, pi+ L = 1 S = 1)\"  : -1.126 +- 0.1813\n\
-Summary :  36)  Parameter \"18 admixture_flat_4pi_0\"                       : 240.4 +- 0.4974"
+"Summary :   0)  Parameter \"real(0 D0 --> a_1(1420)+, pi- L = 1 S = 1)\"    : 1.608 +- 56.62\n\
+Summary :   1)  Parameter \"imag(0 D0 --> a_1(1420)+, pi- L = 1 S = 1)\"    : -3.025 +- 55.21\n\
+Summary :   2)  Parameter \"real(1 D0 --> a_1(1640)+, pi- L = 1 S = 1)\"    : -5.254 +- 16.97\n\
+Summary :   3)  Parameter \"imag(1 D0 --> a_1(1640)+, pi- L = 1 S = 1)\"    : -5.478 +- 16.86\n\
+Summary :   4)  Parameter \"real(2 D0 --> f_0, f_0 L = 0 S = 0)\"           : -60.81 +- 149\n\
+Summary :   5)  Parameter \"imag(2 D0 --> f_0, f_0 L = 0 S = 0)\"           : -11.92 +- 170.8\n\
+Summary :   6)  Parameter \"real(3 D0 --> f_2, f_2 L = 0 S = 0)\"           : -37500 +- 1660000\n\
+Summary :   7)  Parameter \"imag(3 D0 --> f_2, f_2 L = 0 S = 0)\"           : 523800 +- 1769000\n\
+Summary :   8)  Parameter \"real(4 D0 --> pi(1300)+, pi- L = 0 S = 0)\"     : 0.1662 +- 1.191\n\
+Summary :   9)  Parameter \"imag(4 D0 --> pi(1300)+, pi- L = 0 S = 0)\"     : -0.323 +- 1.022\n\
+Summary :  10)  Parameter \"real(5 D0 --> pi(1800)+, pi- L = 0 S = 0)\"     : -14.63 +- 33.27\n\
+Summary :  11)  Parameter \"imag(5 D0 --> pi(1800)+, pi- L = 0 S = 0)\"     : -12.38 +- 34.53\n\
+Summary :  12)  Parameter \"real(6 D0 --> pipiS, f_0 L = 0 S = 0)\"         : 5.778 +- 20.22\n\
+Summary :  13)  Parameter \"imag(6 D0 --> pipiS, f_0 L = 0 S = 0)\"         : -2.115 +- 18.41\n\
+Summary :  14)  Parameter \"real(7 D0 --> pipiS, f_2 L = 2 S = 2)\"         : -203.6 +- 73.64\n\
+Summary :  15)  Parameter \"imag(7 D0 --> pipiS, f_2 L = 2 S = 2)\"         : -92.27 +- 303.5\n\
+Summary :  16)  Parameter \"real(8 D0 --> pipiS, pipiS L = 0 S = 0)\"       : 0.4208 +- 2.095\n\
+Summary :  17)  Parameter \"imag(8 D0 --> pipiS, pipiS L = 0 S = 0)\"       : 0.05497 +- 2.016\n\
+Summary :  18)  Parameter \"real(9 D0 --> rho0, rho0 L = 0 S = 0)\"         : -0.4837 +- 48.82\n\
+Summary :  19)  Parameter \"imag(9 D0 --> rho0, rho0 L = 0 S = 0)\"         : 16.8 +- 51.9\n\
+Summary :  20)  Parameter \"real(10 D0 --> rho0, rho0 L = 1 S = 1)\"        : 3.037 +- 14.1\n\
+Summary :  21)  Parameter \"imag(10 D0 --> rho0, rho0 L = 1 S = 1)\"        : -3.748 +- 11.96\n\
+Summary :  22)  Parameter \"real(11 D0 --> rho0, rho0 L = 2 S = 2)\"        : -19.64 +- 51.2\n\
+Summary :  23)  Parameter \"imag(11 D0 --> rho0, rho0 L = 2 S = 2)\"        : -2.872 +- 58.45\n\
+Summary :  24)  Parameter \"real(12 a_1(1640)+ --> f_2, pi+ L = 1 S = 2)\"  : 38.25 +- 208.1\n\
+Summary :  25)  Parameter \"imag(12 a_1(1640)+ --> f_2, pi+ L = 1 S = 2)\"  : -26.2 +- 190.2\n\
+Summary :  26)  Parameter \"real(13 a_1(1640)+ --> rho0, pi+ L = 2 S = 1)\" : -0.3273 +- 2.068\n\
+Summary :  27)  Parameter \"imag(13 a_1(1640)+ --> rho0, pi+ L = 2 S = 1)\" : -1.46 +- 2.083\n\
+Summary :  28)  Parameter \"real(14 a_1+ --> f_2, pi+ L = 1 S = 2)\"        : 364.4 +- 1158\n\
+Summary :  29)  Parameter \"imag(14 a_1+ --> f_2, pi+ L = 1 S = 2)\"        : -247.1 +- 1000\n\
+Summary :  30)  Parameter \"real(15 a_1+ --> pipiS, pi+ L = 1 S = 0)\"      : -0.8165 +- 54.35\n\
+Summary :  31)  Parameter \"imag(15 a_1+ --> pipiS, pi+ L = 1 S = 0)\"      : -19.3 +- 46.41\n\
+Summary :  32)  Parameter \"real(16 a_1+ --> rho0, pi+ L = 2 S = 1)\"       : 22.73 +- 73.51\n\
+Summary :  33)  Parameter \"imag(16 a_1+ --> rho0, pi+ L = 2 S = 1)\"       : -1.758 +- 68.86\n\
+Summary :  34)  Parameter \"real(17 pi(1300)+ --> rho0, pi+ L = 1 S = 1)\"  : -4.901 +- 19.05\n\
+Summary :  35)  Parameter \"imag(17 pi(1300)+ --> rho0, pi+ L = 1 S = 1)\"  : -1.621 +- 20.38\n\
+Summary :  36)  Parameter \"18 admixture_flat_4pi_0\"                       : 887.8 +- 1323"
             )));
 
     const unsigned nPreRun = 0;
