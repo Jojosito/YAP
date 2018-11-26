@@ -45,7 +45,7 @@ int main()
     //bat_fit m(d4pi_fit(model_name + "_fit", {-0.62433, -0.921709, -1.604, -2.93185, -30.0463, 2.08589, 9118.93, 41872.3, 0.939386, -0.119934, -1.87191, -1.04226, 6.34088, -0.636662, -8.04528, 3.28629, -3.1712, -1.27643, -0.5887, 0.623089, -0.0168552, 0.0919871, -2.21818, -1.30751, 0.86097, -0.0747966, 0.0845792, 0.0164051, 8.10449, 0.645861, 0.24474, -2.34273, 1.46237, 0.48382, 0.18795, 0.508433, 5.63559, 1.22621, 0.465828, 0.0300001, 0.970173, 0.770889, 0.147539}));
     //const bool adjustRangesFF = false; // adjust the real and imag ranges so that all waves have similar ff
 
-    //m.setModelSelection(0.75); // LASSO/BCM parameter
+    m.setModelSelection(0.75); // LASSO/BCM parameter
 
 
     const bool minuit = true;
@@ -64,7 +64,7 @@ int main()
     const bool generate_mc = true;
 
 
-    std::string dir("/home/ne53mad/CopiedFromKEK/");
+    std::string dir("/scratch/ne53mad/CopiedFromKEK/");
 
 
     // real data, pre-filtered
@@ -99,7 +99,6 @@ int main()
     }
     { // MC data, pre-filtered
         LOG(INFO) << "Load integration (MC) data";
-        dir = "/home/ne53mad/CopiedFromKEK/";
         TChain t_mcmc("t");
         if (BDT_cut > 0.) {
             t_mcmc.Add((dir + "FourPionsSkim_analysis_phsp_bdt_gt_0.025.root").c_str());
@@ -117,7 +116,7 @@ int main()
     { // root generated PHSP
         LOG(INFO) << "Load fitFractionData data";
         TChain t_phsp("t");
-        t_phsp.Add("/home/ne53mad/YAPfork/output/D4pi_phsp_root.root");
+        t_phsp.Add("/scratch/ne53mad/YAPfork/output/D4pi_phsp_root.root");
         load_data_4pi(m.fitFractionData(), t_phsp, nData, 0, 0, false);
     }
 
@@ -158,6 +157,7 @@ int main()
     chi2(m);
     chi2_adaptiveBinning(m);
     chi2_adaptiveBinning(m, true);
+    chi2_Fred(m);
 
     LOG(INFO) << "MCMCUserInitialize";
     m.MCMCUserInitialize();
@@ -261,6 +261,7 @@ int main()
     chi2(m);
     chi2_adaptiveBinning(m);
     chi2_adaptiveBinning(m, true);
+    chi2_Fred(m);
 
     if (generate_mc) {
         LOG(INFO) << "Generate weight file with fitted amplitudes";

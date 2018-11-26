@@ -854,6 +854,104 @@ inline double chi2_adaptiveBinning(bat_fit& batFit, bool sigma = false, unsigned
 }
 
 //-------------------------
+inline double chi2_Fred(bat_fit& batFit, unsigned EvtsPerBin = 30)
+{
+    auto massAxes = batFit.model()->massAxes({{0, 1}, {0, 3}, {1, 2}, {2, 3}, {0, 2}});
+
+    unsigned dataDim = 5;
+    unsigned dataSize_meas = batFit.fitData().size();
+    std::vector<double> data_meas; // invariant mass squares; stride = 1 for the points and = N (the dataSize) for the dimension
+    data_meas.reserve(dataDim * dataSize_meas);
+
+    // fill data_meas
+    for (auto& indices : massAxes) { // must first loop over mass axes
+        for (auto& dp : batFit.fitData()) { // then over data points
+            FourVector<double> s;
+            for (auto fsp : indices->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            data_meas.push_back(s*s);
+        }
+    }
+
+    // adaptive binning
+    TKDTreeBinning kdBins(dataSize_meas, dataDim, &data_meas[0], dataSize_meas/EvtsPerBin);
+
+    // bin integralData
+    std::vector<double> histo_exp(kdBins.GetNBins(), 0.);
+    std::vector<double> histo_exp_sigma2(kdBins.GetNBins(), 0.);
+    std::vector<unsigned> histo_exp_N(kdBins.GetNBins(), 0.);
+    std::vector<double> ss(5, 0.); // invariant mass squares
+
+    for (auto& dp : batFit.integralData()) {
+        for (unsigned i = 0; i < massAxes.size(); ++i) {
+            FourVector<double> s;
+            for (auto fsp : massAxes[i]->indices())
+                s += batFit.model()->fourMomenta()->finalStateMomenta(dp)[fsp];
+
+            ss[i] = s*s;
+        }
+
+        // fill bin with intensity
+        histo_exp.at(kdBins.FindBin(&ss[0])) += intensity(*batFit.model(), dp);
+        histo_exp_sigma2.at(kdBins.FindBin(&ss[0])) += pow(intensity(*batFit.model(), dp), 2); // compare arXiv:1712.08609
+        histo_exp_N.at(kdBins.FindBin(&ss[0])) += 1;
+    }
+
+    // calculate chi^2
+    double n_exp = std::accumulate(histo_exp.begin(), histo_exp.end(), 0.0);
+
+    double norm_exp = dataSize_meas/n_exp;
+
+    double chi2(0.);
+    double NDF = -double(batFit.GetNFreeParameters());
+
+    for (unsigned i = 0; i < histo_exp.size(); ++i) {
+        // at least this much events
+        if (histo_exp_N.at(i) < 5.) {
+            //std::cout<< "x  ";
+            continue;
+        }
+
+        double NbExp = histo_exp.at(i) * norm_exp;
+        NbExp += 1./(2.*n_exp);
+        double Nb = kdBins.GetBinContent(i);
+        double sigma2 = histo_exp_sigma2.at(i) * norm_exp * norm_exp;
+        sigma2 += 1./(2.*n_exp*n_exp);
+
+        double chi2inc = pow(Nb - NbExp, 2) / (NbExp + sigma2);
+        //std::cout<< chi2inc << "  ";
+        chi2 += chi2inc;
+        NDF += 1.;
+    }
+    std::cout << "\n";
+
+    /**
+        You were generating X MC events and then determining what fraction of events ended up in a bin, f_i by simpling dividing the number of events that landed in that bin, x_i, by X:
+
+        f_i := x_i / X.
+
+        But the real value should be
+
+        f'_i = (x_i + 1/2) * x_i / X / x_i = (x_i + 1/2) / X = f_i + 1/(2X)
+
+        and the uncertainty was just s_i := sqrt(x_i) / X
+        and it should be
+
+        (s'_i)^2 := (x_i + 1/2) / X^2 = (s_i)^2 + 1/(2X^2)
+
+        So the variance should go up a little. And the chi^2 down.
+     */
+
+    std::cout << "total chi2 (Freds formula) with adaptive binning = " << chi2 << "\n";
+    std::cout << "NDF = " << NDF << "\n";
+    std::cout << "reduced chi2 = " << chi2/NDF << "\n";
+
+    return chi2;
+
+}
+
+//-------------------------
 inline double chi2(bat_fit& batFit, std::vector<double> sbinUpperBounds = {0.237108, 0.549527, 0.734061})
 {
     unsigned nBins = sbinUpperBounds.size() + 1;

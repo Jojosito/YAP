@@ -508,6 +508,8 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
             static BCGaussianPrior a1_sigma_pi_prior(9.6, 3.);
             static BCGaussianPrior rho_rho_prior(24., 5.);
 
+            static BCGaussianPrior flat_bg_prior(10., 3.);
+
             static std::vector<yap::DecayTreeVector> a1_rho_pi_S_groupedDecayTrees;
             static std::vector<yap::DecayTreeVector> a1_sigma_pi_groupedDecayTrees;
             static std::vector<yap::DecayTreeVector> rho_rho_groupedDecayTrees;
@@ -594,6 +596,25 @@ double bat_fit::LogAPrioriProbability(const std::vector<double>& p)
                 double ff = 100. * fit_fractions(FitFractionIntegral_.integrals().at(0).Integral, rho_rho_groupedDecayTrees).at(0).value();
                 double prior = rho_rho_prior.GetLogPrior(ff);
                 LOG(INFO) << "D -> rho rho fit fraction = " << ff << "%; " << prior;
+                logP += prior;
+            }
+
+            {
+                // sum of integrals
+                double sumIntegrals(0);
+                // loop over admixtures
+                for (const auto& mci : fitFractionIntegral().integrals()) {
+                    sumIntegrals += mci.Admixture->value() * integral(mci.Integral).value();
+                }
+
+                auto& mci = FitFractionIntegral_.integrals().at(1);
+                auto ff = fit_fractions(mci.Integral).at(0);
+
+                double fit_frac = mci.Admixture->value()  * integral(mci.Integral).value() / sumIntegrals * ff.value();
+                fit_frac *= 100.;
+
+                double prior = flat_bg_prior.GetLogPrior(fit_frac);
+                LOG(INFO) << "flat 4pi bg fit fraction = " << fit_frac << "%; " << prior;
                 logP += prior;
             }
         }
