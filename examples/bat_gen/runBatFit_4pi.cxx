@@ -35,7 +35,7 @@ int main()
 
     const std::string model_name = "D4PI_data";;
 
-    const double BDT_cut = 0.12; // 0.12 // negative for BG fit
+    const double BDT_cut = 0.15; // 0.12 // negative for BG fit
     const double K0_cut = 3. * 0.00397333297611; // sigma from constrained masses
 
     // create model
